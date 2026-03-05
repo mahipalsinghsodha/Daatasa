@@ -4,13 +4,14 @@ import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 import { FiTrash2, FiMinus, FiPlus } from 'react-icons/fi'
 import { toast } from 'react-toastify'
+import { useCart } from '../context/CartContext'
 
 const Cart = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
-
+  const { fetchCartCount } = useCart()
   useEffect(() => {
     if (!user) {
       navigate('/login')
@@ -23,6 +24,7 @@ const Cart = () => {
     try {
       const res = await axios.get('/api/cart')
       setCart(res.data)
+      fetchCartCount()
     } catch (error) {
       console.error('Error fetching cart:', error)
     } finally {
@@ -42,6 +44,7 @@ const Cart = () => {
       
       await axios.put(`/api/cart/items/${itemId}`, { quantity: newQuantity })
       fetchCart()
+      fetchCartCount()
     } catch (error) {
       console.error('Error updating cart:', error)
     }
@@ -51,6 +54,7 @@ const Cart = () => {
     try {
       await axios.delete(`/api/cart/items/${itemId}`)
       fetchCart()
+      fetchCartCount()
     } catch (error) {
       console.error('Error removing item:', error)
     }

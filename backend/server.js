@@ -27,6 +27,8 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/invoices', require('./routes/invoiceRoutes'));
+app.use('/api/payment', require('./routes/paymentRoutes'))
+app.use('/api/support', require('./routes/supportRoutes'));
 
 // Global error handler
 app.use((err, req, res, next) => {

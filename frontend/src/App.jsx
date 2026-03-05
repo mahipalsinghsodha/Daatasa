@@ -18,10 +18,14 @@ import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 import './App.css'
+import { CartProvider } from './context/CartContext'
+import Support from './pages/Support'
+import AdminSupport from './pages/Admin/AdminSupport'
 
 function App() {
   return (
     <AuthProvider>
+      <CartProvider>
       <Router>
         <div className="min-h-screen bg-gray-50">
            <ToastContainer
@@ -48,9 +52,12 @@ function App() {
             <Route path="/admin/add-product" element={<AddProduct />} />
             <Route path="/products/edit/:id" element={<AddProduct />} />
             <Route path="/admin/orders" element={<ManageOrders />} />
+            <Route path="/support" element={<Support />} />
+            <Route path="/admin/support" element={<AdminSupport />} />
           </Routes>
         </div>
       </Router>
+      </CartProvider>
     </AuthProvider>
   )
 }

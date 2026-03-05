@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 import { FiStar, FiShoppingCart } from 'react-icons/fi'
+import { useCart } from '../context/CartContext'
 
 const ProductDetail = () => {
   const { id } = useParams()
@@ -12,7 +13,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true)
   const [quantity, setQuantity] = useState(1)
   const [addedToCart, setAddedToCart] = useState(false)
-
+  const { fetchCartCount } = useCart()
   useEffect(() => {
     fetchProduct()
   }, [id])
@@ -43,6 +44,7 @@ const ProductDetail = () => {
         quantity: quantity
       })
       setAddedToCart(true)
+      fetchCartCount();
       setTimeout(() => setAddedToCart(false), 3000)
     } catch (error) {
       console.error('Error adding to cart:', error)

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
+import { toast } from 'react-toastify'
 
 const Checkout = () => {
   const { user } = useAuth()
@@ -62,29 +63,253 @@ const Checkout = () => {
     return { subtotal, tax, shipping, total }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+//   const handleSubmit = async (e) => {
+//   e.preventDefault()
+//   setLoading(true)
 
-    try {
-      const res = await axios.post('/api/orders', {
-        shippingAddress,
-        paymentMethod
-      })
-      navigate(`/orders`)
-    } catch (error) {
-      console.error('Error creating order:', error)
-      alert('Failed to create order. Please try again.')
-    } finally {
-      setLoading(false)
-    }
-  }
+//   try {
+//     const token = localStorage.getItem('token')
+
+//     // 1️⃣ CREATE ORDER FIRST (FOR BOTH COD & ONLINE)
+//     const { data: order } = await axios.post(
+//       '/api/orders',
+//       {
+//         shippingAddress,
+//         paymentMethod
+//       },
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`
+//         }
+//       }
+//     )
+
+//     // 2️⃣ COD → DONE
+//     if (paymentMethod === 'COD') {
+//       navigate('/orders')
+//       return
+//     }
+
+//     // 3️⃣ ONLINE → START PAYMENT
+//     await handleOnlinePayment()
+
+//   } catch (error) {
+//     console.error(error)
+//     toast.error('Order creation failed')
+//   } finally {
+//     setLoading(false)
+//   }
+// }
+
+
 
   const totals = calculateTotal()
 
   if (!cart || cart.items.length === 0) {
     return null
   }
+
+//   const handleOnlinePayment = async () => {
+//   try {
+//     const token = localStorage.getItem('token')
+
+//     // 1️⃣ Create Razorpay order (NO amount)
+//     const { data: razorOrder } = await axios.post(
+//       '/api/payment/create-order',
+//       {},
+//       {
+//         headers: {
+//           Authorization: `Bearer ${token}`
+//         }
+//       }
+//     )
+
+//     const options = {
+//       key: "rzp_test_EvzmZvtG1AJQAS",
+//       amount: razorOrder.amount,
+//       currency: 'INR',
+//       name: 'Shayar Dairy',
+//       description: 'Order Payment',
+//       order_id: razorOrder.id,
+
+//       // 2️⃣ Payment Success Handler
+//       handler: async (response) => {
+//         // 3️⃣ Verify payment
+//         const verifyRes = await axios.post(
+//           '/api/payment/verify',
+//           response,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${token}`
+//             }
+//           }
+//         )
+
+//         if (!verifyRes.data.success) {
+//           toast.error('Payment verification failed')
+//           return
+//         }
+
+//         // 4️⃣ Create order AFTER verification
+//         await axios.post(
+//           '/api/orders',
+//           {
+//             shippingAddress,
+//             paymentMethod: 'Online',
+//             paymentInfo: {
+//               razorpay_order_id: response.razorpay_order_id,
+//               razorpay_payment_id: response.razorpay_payment_id,
+//               razorpay_signature: response.razorpay_signature
+//             }
+//           },
+//           {
+//             headers: {
+//               Authorization: `Bearer ${token}`
+//             }
+//           }
+//         )
+
+//         navigate('/orders')
+//       },
+
+//       prefill: {
+//         name: user.name,
+//         email: user.email
+//       },
+
+//       theme: {
+//         color: '#3399cc'
+//       }
+//     }
+
+//     const rzp = new window.Razorpay(options)
+//     rzp.open()
+
+//   } catch (error) {
+//     console.error(error)
+//     toast.error('Payment failed, try again')
+//   }
+// }
+
+
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  setLoading(true)
+
+  try {
+    if (paymentMethod === 'COD') {
+      await createCODOrder()
+      navigate('/orders')
+    } else {
+      await startOnlinePayment()
+    }
+  } catch (error) {
+    console.error(error)
+    toast.error('Something went wrong')
+  } finally {
+    setLoading(false)
+  }
+}
+const createCODOrder = async () => {
+  const token = localStorage.getItem('token')
+
+  await axios.post(
+    '/api/orders',
+    {
+      shippingAddress,
+      paymentMethod: 'COD'
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    }
+  )
+}
+
+const startOnlinePayment = async () => {
+  const token = localStorage.getItem('token')
+
+  // 1️⃣ CREATE RAZORPAY ORDER FIRST
+   const { data: order } = await axios.post(
+    '/api/orders',
+    {
+      shippingAddress,
+      paymentMethod: 'Online'
+    },
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  )
+
+  // 2️⃣ CREATE RAZORPAY ORDER USING DB ORDER ID
+  const { data: razorOrder } = await axios.post(
+    '/api/payment/create-order',
+    { orderId: order._id },
+    {
+      headers: { Authorization: `Bearer ${token}` }
+    }
+  )
+
+  // 3️⃣ OPEN RAZORPAY
+  openRazorpay(razorOrder.id)
+}
+const openRazorpay = (razorpayOrderId) => {
+  const token = localStorage.getItem('token')
+
+  const options = {
+    key: 'rzp_test_EvzmZvtG1AJQAS',
+    order_id: razorpayOrderId,
+    name: 'Shayar Dairy',
+    currency: 'INR',
+
+    // ✅ SUCCESS
+    handler: async (response) => {
+      await axios.post(
+        '/api/payment/verify',
+        response,
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      )
+
+      navigate('/orders')
+    },
+
+    // ❌ POPUP CLOSED
+    modal: {
+      ondismiss: async () => {
+        await axios.post(
+          '/api/orders/fail',
+          { razorpay_order_id: razorpayOrderId },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        )
+
+        toast.error('Payment cancelled')
+      }
+    }
+  }
+
+  const rzp = new window.Razorpay(options)
+
+  // ❌ PAYMENT FAILED
+  rzp.on('payment.failed', async () => {
+    await axios.post(
+      '/api/orders/fail',
+      { razorpay_order_id: razorpayOrderId },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    )
+
+    toast.error('Payment failed')
+  })
+
+  rzp.open()
+}
+
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

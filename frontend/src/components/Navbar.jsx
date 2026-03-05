@@ -3,29 +3,15 @@ import { useAuth } from '../context/AuthContext'
 import { FiShoppingCart, FiUser, FiLogOut, FiMenu, FiX } from 'react-icons/fi'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { useCart } from '../context/CartContext'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
-  const [cartCount, setCartCount] = useState(0)
+ const { cartCount } = useCart()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      fetchCartCount()
-    }
-  }, [user])
-
-  const fetchCartCount = async () => {
-    try {
-      const res = await axios.get('/api/cart')
-      const count = res.data.items.reduce((sum, item) => sum + item.quantity, 0)
-      setCartCount(count)
-    } catch (error) {
-      console.error('Error fetching cart:', error)
-    }
-  }
-
+ 
   const handleLogout = () => {
     logout()
     navigate('/')
@@ -66,10 +52,31 @@ const Navbar = () => {
                 <Link to="/orders" className="text-gray-700 hover:text-primary-600 transition">
                   Orders
                 </Link>
+               { user.role !== 'admin' && (
+                    <Link
+                        to="/support"
+                        className="text-gray-700 hover:text-primary-600 transition"
+                     >
+                        Support
+                   </Link>
+                 )}
+
                 {user.role === 'admin' && (
-                  <Link to="/admin" className="text-gray-700 hover:text-primary-600 transition font-semibold">
-                    Admin
-                  </Link>
+                  <>
+                    <Link
+                      to="/admin"
+                      className="text-gray-700 hover:text-primary-600 transition font-semibold"
+                    >
+                      Admin
+                    </Link>
+
+                    <Link
+                       to="/admin/support"
+                       className="text-gray-700 hover:text-primary-600 transition font-semibold"
+                     >
+                       Support Panel
+                     </Link>
+                  </>
                 )}
                 <Link to="/profile" className="text-gray-700 hover:text-primary-600 transition">
                   <FiUser className="text-xl" />
@@ -148,14 +155,33 @@ const Navbar = () => {
               >
                 Orders
               </Link>
+               {user.role !== 'admin' && (<Link
+                        to="/support"
+                        className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition"
+                         onClick={closeMobileMenu}
+              >
+                            Support
+              </Link>)}
+
               {user.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition font-semibold"
-                  onClick={closeMobileMenu}
-                >
-                  Admin Panel
-                </Link>
+                 
+                   <>
+                     <Link
+                       to="/admin"
+                       className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition font-semibold"
+                       onClick={closeMobileMenu}
+                     >
+                       Admin Panel
+                     </Link>
+                 
+                     <Link
+                       to="/admin/support"
+                       className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition font-semibold"
+                       onClick={closeMobileMenu}
+                     >
+                       Support Panel
+                     </Link>
+                  </>
               )}
               <Link
                 to="/profile"
