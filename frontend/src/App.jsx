@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import Navbar from './components/Navbar'
+import ProtectedRoute from './components/ProtectedRoute'
 import Home from './pages/Home'
 import Products from './pages/Products'
 import ProductDetail from './pages/ProductDetail'
@@ -21,6 +22,7 @@ import './App.css'
 import { CartProvider } from './context/CartContext'
 import Support from './pages/Support'
 import AdminSupport from './pages/Admin/AdminSupport'
+import Contact from './pages/Contact'
 
 function App() {
   return (
@@ -45,15 +47,16 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/add-product" element={<AddProduct />} />
-            <Route path="/products/edit/:id" element={<AddProduct />} />
-            <Route path="/admin/orders" element={<ManageOrders />} />
+             <Route path="/contact" element={<Contact />} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute adminOnly={true}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/add-product" element={<ProtectedRoute adminOnly={true}><AddProduct /></ProtectedRoute>} />
+            <Route path="/products/edit/:id" element={<ProtectedRoute adminOnly={true}><AddProduct /></ProtectedRoute>} />
+            <Route path="/admin/orders" element={<ProtectedRoute adminOnly={true}><ManageOrders /></ProtectedRoute>} />
             <Route path="/support" element={<Support />} />
-            <Route path="/admin/support" element={<AdminSupport />} />
+            <Route path="/admin/support" element={<ProtectedRoute adminOnly={true}><AdminSupport /></ProtectedRoute>} />
           </Routes>
         </div>
       </Router>

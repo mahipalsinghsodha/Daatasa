@@ -39,6 +39,9 @@ const Navbar = () => {
             <Link to="/products" className="text-gray-700 hover:text-primary-600 transition">
               Products
             </Link>
+              <Link to="/contact" className="text-gray-700 hover:text-primary-600 transition">
+              Contact
+            </Link>
             {user ? (
               <>
                 <Link to="/cart" className="relative text-gray-700 hover:text-primary-600 transition">

@@ -10,6 +10,31 @@ const Login = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
 
+  const handleGoogleLogin = () => {
+  const width = 500;
+  const height = 600;
+
+  const left = window.screen.width / 2 - width / 2;
+  const top = window.screen.height / 2 - height / 2;
+
+  const popup = window.open(
+    "http://localhost:5000/api/auth/google",
+    "Google Login",
+    `width=${width},height=${height},top=${top},left=${left}`
+  );
+
+  // Listen for message from popup
+  window.addEventListener("message", (event) => {
+    if (event.origin !== "http://localhost:5000") return;
+
+    const token = event.data.token;
+
+    if (token) {
+      localStorage.setItem("token", token);
+      window.location.href = "/";
+    }
+  });
+};
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
@@ -66,6 +91,13 @@ const Login = () => {
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
+         <button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 transition"
+>
+  Continue with Google
+</button>
         </form>
 
         <p className="mt-4 text-center text-gray-600">

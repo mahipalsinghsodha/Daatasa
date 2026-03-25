@@ -15,6 +15,12 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
 html {
-  overflow-y: scroll;
+  scroll-behavior: smooth;
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: all 0.3s ease;
 }
