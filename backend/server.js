@@ -95,24 +95,37 @@ const allowedOrigins = [
   "https://dhanifresh-1.onrender.com"
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
+const corsOptions = {
+  origin: function (origin, callback) {
 
-      // allow requests with no origin (mobile / postman)
-      if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
 
-      return callback(
-        new Error("Not allowed by CORS")
-      );
-    },
-    credentials: true,
-  })
-);
+    console.log("Blocked by CORS:", origin);
+
+    callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: [
+    "GET",
+    "POST",
+    "PUT",
+    "DELETE",
+    "PATCH",
+    "OPTIONS"
+  ],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization"
+  ],
+};
+
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
