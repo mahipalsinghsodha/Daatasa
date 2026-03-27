@@ -149,6 +149,14 @@ const Navbar = () => {
           >
             Products
           </Link>
+           <Link
+            to="/contact"
+            className="block text-gray-700 hover:text-primary-600 hover:bg-gray-50 px-3 py-2 rounded-lg transition"
+            onClick={closeMobileMenu}
+          >
+             Contact
+          </Link>
+         
           {user ? (
             <>
               <Link
