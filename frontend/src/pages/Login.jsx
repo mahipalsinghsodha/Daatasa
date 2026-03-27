@@ -151,29 +151,43 @@ const Login = () => {
   const navigate                = useNavigate()
 
   /* ── Google OAuth popup ──────────────────────────────────────── */
-  const handleGoogleLogin = () => {
-    const w = 500, h = 600
-    const left = window.screen.width  / 2 - w / 2
-    const top  = window.screen.height / 2 - h / 2
+const handleGoogleLogin = () => {
+  const w = 500, h = 600
+  const left = window.screen.width / 2 - w / 2
+  const top  = window.screen.height / 2 - h / 2
 
-    const popup = window.open(
-      'https://dhanifresh.onrender.com/api/auth/google',
-      'Google Login',
-      `width=${w},height=${h},top=${top},left=${left}`
-    )
+  const popup = window.open(
+    'https://dhanifresh.onrender.com/api/auth/google',
+    'Google Login',
+    `width=${w},height=${h},top=${top},left=${left}`
+  )
 
-    const handler = (event) => {
-      if (event.origin !== 'https://dhanifresh-1.onrender.com') return
-      const token = event.data?.token
-      if (token) {
-        localStorage.setItem('token', token)
-        window.removeEventListener('message', handler)
-        window.location.href = '/'
-      }
+  const handler = (event) => {
+
+    // MUST match backend origin
+    if (event.origin !== 'https://dhanifresh.onrender.com') return
+
+    const token = event.data?.token
+
+    if (token) {
+      localStorage.setItem('token', token)
+
+      window.removeEventListener('message', handler)
+
+      window.location.href = '/'
     }
-    window.addEventListener('message', handler)
   }
 
+  window.addEventListener('message', handler)
+
+  // safety: detect popup closed
+  const timer = setInterval(() => {
+    if (!popup || popup.closed) {
+      clearInterval(timer)
+      window.removeEventListener('message', handler)
+    }
+  }, 500)
+}
   /* ── Email / Password submit ─────────────────────────────────── */
   const handleSubmit = async (e) => {
     e.preventDefault()

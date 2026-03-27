@@ -166,7 +166,7 @@ const auth        = require('../middleware/auth');
 const dbCheck     = require('../middleware/dbCheck');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';
-const CLIENT_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 const makeToken = (id) => jwt.sign({ id }, JWT_SECRET, { expiresIn: '30d' });
 
