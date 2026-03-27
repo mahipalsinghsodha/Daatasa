@@ -1,40 +1,113 @@
+// const mongoose = require('mongoose');
+// const bcrypt = require('bcryptjs');
+
+// const addressSchema = new mongoose.Schema({
+//   label: { type: String, default: 'Home' }, // Home, Work, Other
+//   name: { type: String, required: true },
+//   phone: { type: String, required: true },
+//   street: { type: String, required: true },
+//   city: { type: String, required: true },
+//   district: { type: String, required: true },
+//   state: { type: String, required: true },
+//   zipCode: { type: String, required: true },
+//   country: { type: String, default: 'India' },
+//   isDefault: { type: Boolean, default: false },
+// }, { _id: true, timestamps: true });
+
+// const userSchema = new mongoose.Schema({
+//   name: { type: String, required: true, trim: true },
+//   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+//   password: { type: String, required: true, minlength: 6 },
+//   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+//   phone: String,
+//   addresses: [addressSchema],
+//   // keep legacy single address for backward compat
+//   address: {
+//     street: String, city: String, state: String, zipCode: String, country: String
+//   },
+// }, { timestamps: true });
+
+// // Ensure only one default address
+// userSchema.pre('save', function (next) {
+//   const defaults = this.addresses.filter(a => a.isDefault);
+//   if (defaults.length === 0 && this.addresses.length > 0) {
+//     // Auto-set last address as default
+//     this.addresses[this.addresses.length - 1].isDefault = true;
+//   } else if (defaults.length > 1) {
+//     // Keep only the last-set default
+//     let found = false;
+//     for (let i = this.addresses.length - 1; i >= 0; i--) {
+//       if (this.addresses[i].isDefault) {
+//         if (found) this.addresses[i].isDefault = false;
+//         else found = true;
+//       }
+//     }
+//   }
+//   next();
+// });
+
+// userSchema.pre('save', async function (next) {
+//   if (!this.isModified('password')) return next();
+//   try {
+//     this.password = await bcrypt.hash(this.password, 10);
+//     next();
+//   } catch (error) { next(error); }
+// });
+
+// userSchema.methods.comparePassword = async function (candidatePassword) {
+//   return await bcrypt.compare(candidatePassword, this.password);
+// };
+
+// // Virtual: default address
+// userSchema.virtual('defaultAddress').get(function () {
+//   return this.addresses.find(a => a.isDefault) || this.addresses[this.addresses.length - 1] || null;
+// });
+
+// const User = mongoose.model('User', userSchema);
+// module.exports = User;
+// models/User.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const bcrypt   = require('bcryptjs');
 
 const addressSchema = new mongoose.Schema({
-  label: { type: String, default: 'Home' }, // Home, Work, Other
-  name: { type: String, required: true },
-  phone: { type: String, required: true },
-  street: { type: String, required: true },
-  city: { type: String, required: true },
+  label:    { type: String, default: 'Home' },
+  name:     { type: String, required: true },
+  phone:    { type: String, required: true },
+  street:   { type: String, required: true },
+  city:     { type: String, required: true },
   district: { type: String, required: true },
-  state: { type: String, required: true },
-  zipCode: { type: String, required: true },
-  country: { type: String, default: 'India' },
-  isDefault: { type: Boolean, default: false },
+  state:    { type: String, required: true },
+  zipCode:  { type: String, required: true },
+  country:  { type: String, default: 'India' },
+  isDefault:{ type: Boolean, default: false },
 }, { _id: true, timestamps: true });
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  name:     { type: String, required: true, trim: true },
+  email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  phone: String,
-  addresses: [addressSchema],
-  // keep legacy single address for backward compat
+  role:     { type: String, enum: ['user', 'admin'], default: 'user' },
+  phone:    String,
+  addresses:[addressSchema],
+
+  // Legacy single address for backward compat
   address: {
-    street: String, city: String, state: String, zipCode: String, country: String
+    street: String, city: String, state: String, zipCode: String, country: String,
   },
+
+  // ── Secure Password Reset Fields ──────────────────────────────────────────
+  resetPasswordToken:       { type: String, select: false }, // SHA-256 hash of raw token
+  resetPasswordExpire:      { type: Date,   select: false }, // 2-minute window
+  resetPasswordFingerprint: { type: String, select: false }, // SHA-256 hash of IP + User-Agent
+
 }, { timestamps: true });
 
-// Ensure only one default address
+/* ── Ensure only one default address ────────────────────────────── */
 userSchema.pre('save', function (next) {
   const defaults = this.addresses.filter(a => a.isDefault);
   if (defaults.length === 0 && this.addresses.length > 0) {
-    // Auto-set last address as default
     this.addresses[this.addresses.length - 1].isDefault = true;
   } else if (defaults.length > 1) {
-    // Keep only the last-set default
     let found = false;
     for (let i = this.addresses.length - 1; i >= 0; i--) {
       if (this.addresses[i].isDefault) {
@@ -46,6 +119,7 @@ userSchema.pre('save', function (next) {
   next();
 });
 
+/* ── Hash password before save ───────────────────────────────────── */
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
@@ -54,11 +128,12 @@ userSchema.pre('save', async function (next) {
   } catch (error) { next(error); }
 });
 
+/* ── Instance methods ────────────────────────────────────────────── */
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
-// Virtual: default address
+/* ── Virtual: default address ───────────────────────────────────── */
 userSchema.virtual('defaultAddress').get(function () {
   return this.addresses.find(a => a.isDefault) || this.addresses[this.addresses.length - 1] || null;
 });

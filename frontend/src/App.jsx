@@ -23,6 +23,8 @@ import { CartProvider } from './context/CartContext'
 import Support from './pages/Support'
 import AdminSupport from './pages/Admin/AdminSupport'
 import Contact from './pages/Contact'
+import ForgotPassword from './pages/Forgotpassword'
+import ResetPassword from './pages/ResetPassword'
 
 function App() {
   return (
@@ -47,6 +49,8 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password"    element={<ForgotPassword />} />         {/* ← new */}
+            <Route path="/reset-password/:token" element={<ResetPassword />} />       {/* ← new */}
              <Route path="/contact" element={<Contact />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
