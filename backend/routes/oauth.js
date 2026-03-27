@@ -1,3 +1,29 @@
+const express = require("express");
+const passport = require("passport");
+const jwt = require("jsonwebtoken");
+
+const router = express.Router();
+
+const makeToken = (id) =>
+  jwt.sign(
+    { id },
+    process.env.JWT_SECRET,
+    { expiresIn: "30d" }
+  );
+
+
+// GOOGLE LOGIN
+
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  })
+);
+
+
+// GOOGLE CALLBACK
+
 router.get(
   "/google/callback",
   passport.authenticate("google", {
@@ -24,3 +50,7 @@ router.get(
 
   }
 );
+
+
+
+module.exports = router;
