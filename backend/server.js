@@ -90,16 +90,29 @@ MIDDLEWARE
 =====================
 */
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://dhanifresh-1.onrender.com"
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:3000",
-      "https://dhanifresh-1.onrender.com"
-    ],
+    origin: function (origin, callback) {
+
+      // allow requests with no origin (mobile / postman)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(
+        new Error("Not allowed by CORS")
+      );
+    },
     credentials: true,
   })
 );
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
