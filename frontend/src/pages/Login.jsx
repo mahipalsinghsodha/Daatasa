@@ -163,7 +163,7 @@ const Login = () => {
     )
 
     const handler = (event) => {
-      if (event.origin !== 'https://dhanifresh.onrender.com') return
+      if (event.origin !== 'https://dhanifresh-1.onrender.com') return
       const token = event.data?.token
       if (token) {
         localStorage.setItem('token', token)
