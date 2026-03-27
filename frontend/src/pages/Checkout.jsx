@@ -424,7 +424,7 @@
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -527,7 +527,7 @@ const Checkout = () => {
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get('/api/cart')
+      const res = await api.get('/api/cart')
       setCart(res.data)
       if (res.data.items.length === 0) navigate('/cart')
     } catch (e) { console.error(e) }
@@ -536,7 +536,7 @@ const Checkout = () => {
   const fetchAddresses = async () => {
     try {
       const token = localStorage.getItem('token')
-      const res = await axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      const res = await api.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       const addrs = res.data.addresses || []
       setSavedAddresses(addrs)
       // Auto-select default
@@ -570,11 +570,11 @@ const Checkout = () => {
 
       // Optionally save new address to profile
       if (showNewForm && saveNewAddr) {
-        await axios.post('/api/auth/addresses', { ...newAddr, isDefault: savedAddresses.length === 0 }, { headers })
+        await api.post('/api/auth/addresses', { ...newAddr, isDefault: savedAddresses.length === 0 }, { headers })
       }
 
       if (paymentMethod === 'COD') {
-        await axios.post('/api/orders', { shippingAddress, paymentMethod: 'COD' }, { headers })
+        await api.post('/api/orders', { shippingAddress, paymentMethod: 'COD' }, { headers })
         navigate('/orders')
       } else {
         await startOnlinePayment(shippingAddress, headers)
@@ -588,19 +588,19 @@ const Checkout = () => {
   }
 
   const startOnlinePayment = async (shippingAddress, headers) => {
-    const { data: order } = await axios.post('/api/orders', { shippingAddress, paymentMethod: 'Online' }, { headers })
-    const { data: rzrOrder } = await axios.post('/api/payment/create-order', { orderId: order._id }, { headers })
+    const { data: order } = await api.post('/api/orders', { shippingAddress, paymentMethod: 'Online' }, { headers })
+    const { data: rzrOrder } = await api.post('/api/payment/create-order', { orderId: order._id }, { headers })
     const rzp = new window.Razorpay({
       key: 'rzp_test_EvzmZvtG1AJQAS', order_id: rzrOrder.id,
       name: 'Ghee Store', currency: 'INR', theme: { color: C.orange },
       prefill: { name: user.name, email: user.email },
       handler: async (res) => {
-        await axios.post('/api/payment/verify', res, { headers })
+        await api.post('/api/payment/verify', res, { headers })
         navigate('/orders')
       },
       modal: {
         ondismiss: async () => {
-          await axios.post('/api/orders/fail', { razorpay_order_id: rzrOrder.id }, { headers })
+          await api.post('/api/orders/fail', { razorpay_order_id: rzrOrder.id }, { headers })
           toast.error('Payment cancelled')
         },
       },

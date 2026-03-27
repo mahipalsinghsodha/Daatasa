@@ -50,7 +50,7 @@
 
 //   const fetchCart = async () => {
 //     try {
-//       const res = await axios.get('/api/cart')
+//       const res = await api.get('/api/cart')
 //       setCart(res.data)
 //       fetchCartCount()
 //     } catch (e) { console.error(e) }
@@ -61,7 +61,7 @@
 //     if (newQty < 1) return
 //     if (newQty > stock) { toast.error(`Only ${stock} item(s) in stock`); return }
 //     try {
-//       await axios.put(`/api/cart/items/${itemId}`, { quantity: newQty })
+//       await api.put(`/api/cart/items/${itemId}`, { quantity: newQty })
 //       fetchCart(); fetchCartCount()
 //     } catch (e) { console.error(e) }
 //   }
@@ -69,7 +69,7 @@
 //   const removeItem = async (itemId) => {
 //     setRemoving(itemId)
 //     try {
-//       await axios.delete(`/api/cart/items/${itemId}`)
+//       await api.delete(`/api/cart/items/${itemId}`)
 //       fetchCart(); fetchCartCount()
 //     } catch (e) { console.error(e) }
 //     finally { setRemoving(null) }
@@ -314,12 +314,12 @@
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import { useAuth } from '../context/AuthContext'
 import { FiTrash2, FiMinus, FiPlus, FiShoppingCart, FiArrowRight, FiTag, FiTruck, FiShield } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../context/CartContext'
+import api from '../api/axios'
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 const C = {
@@ -368,7 +368,7 @@ const Cart = () => {
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get('/api/cart')
+      const res = await api.get('/api/cart')
       setCart(res.data); fetchCartCount()
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -377,13 +377,13 @@ const Cart = () => {
   const updateQty = async (id, qty, stock) => {
     if (qty < 1) return
     if (qty > stock) { toast.error(`Only ${stock} item(s) in stock`); return }
-    try { await axios.put(`/api/cart/items/${id}`, { quantity: qty }); fetchCart(); fetchCartCount() }
+    try { await api.put(`/api/cart/items/${id}`, { quantity: qty }); fetchCart(); fetchCartCount() }
     catch (e) { console.error(e) }
   }
 
   const removeItem = async (id) => {
     setRemoving(id)
-    try { await axios.delete(`/api/cart/items/${id}`); fetchCart(); fetchCartCount() }
+    try { await api.delete(`/api/cart/items/${id}`); fetchCart(); fetchCartCount() }
     catch (e) { console.error(e) }
     finally { setRemoving(null) }
   }

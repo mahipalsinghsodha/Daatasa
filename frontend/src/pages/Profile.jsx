@@ -26,7 +26,7 @@
 
 //   const fetchUserDetails = async () => {
 //     try {
-//       const res = await axios.get('/api/auth/me')
+//       const res = await api.get('/api/auth/me')
 //       setFormData({
 //         name: res.data.name || '',
 //         email: res.data.email || '',
@@ -191,7 +191,7 @@
 // export default Profile
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
+import api from '../api/axios'
 import {
   FiUser, FiMapPin, FiPhone, FiMail, FiPlus, FiEdit2,
   FiTrash2, FiCheck, FiX, FiHome, FiBriefcase,
@@ -344,7 +344,7 @@ const Profile = () => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get('/api/auth/me', { headers })
+      const res = await api.get('/api/auth/me', { headers })
       setName(res.data.name || '')
       setPhone(res.data.phone || '')
       setAddresses(res.data.addresses || [])
@@ -374,7 +374,7 @@ const Profile = () => {
   const handleProfileSubmit = async (e) => {
     e.preventDefault(); setProfLoading(true)
     try {
-      const res = await axios.put('/api/auth/profile', { name, phone }, { headers })
+      const res = await api.put('/api/auth/profile', { name, phone }, { headers })
       setUser?.(prev => ({ ...prev, name: res.data.name }))
       setProfMsg({ type: 'success', text: 'Profile updated successfully!' })
     } catch (err) {
@@ -389,8 +389,8 @@ const Profile = () => {
     e.preventDefault(); setAddrLoading(true)
     try {
       const res = editId
-        ? await axios.put(`/api/auth/addresses/${editId}`, addrForm, { headers })
-        : await axios.post('/api/auth/addresses', addrForm, { headers })
+        ? await api.put(`/api/auth/addresses/${editId}`, addrForm, { headers })
+        : await api.post('/api/auth/addresses', addrForm, { headers })
       setAddresses(res.data.addresses)
       closeForm()
       setAddrMsg({ type: 'success', text: editId ? 'Address updated!' : 'Address added!' })
@@ -405,7 +405,7 @@ const Profile = () => {
   const handleDelete = async (id) => {
     setDeletingId(id)
     try {
-      const res = await axios.delete(`/api/auth/addresses/${id}`, { headers })
+      const res = await api.delete(`/api/auth/addresses/${id}`, { headers })
       setAddresses(res.data.addresses)
     } catch (e) { console.error(e) }
     finally { setDeletingId(null) }
@@ -413,7 +413,7 @@ const Profile = () => {
 
   const handleSetDefault = async (id) => {
     try {
-      const res = await axios.patch(`/api/auth/addresses/${id}/default`, {}, { headers })
+      const res = await api.patch(`/api/auth/addresses/${id}/default`, {}, { headers })
       setAddresses(res.data.addresses)
     } catch (e) { console.error(e) }
   }

@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiPackage, FiPrinter, FiChevronDown, FiMapPin,
   FiCalendar, FiCreditCard, FiCheckCircle, FiTruck,
   FiClock, FiShoppingBag,
 } from 'react-icons/fi'
+import api from '../api/axios'
 
 // ── Brand Tokens ──────────────────────────────────────────────────────────────
 const C = {
@@ -174,7 +175,7 @@ const Orders = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await axios.get('/api/orders/myorders')
+      const res = await api.get('/api/orders/myorders')
       setOrders(res.data)
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
@@ -184,7 +185,7 @@ const Orders = () => {
     setPrinting(order._id)
     try {
       let inv = {}
-      try { const res = await axios.get(`/api/invoices/${order._id}`); inv = res.data } catch {}
+      try { const res = await api.get(`/api/invoices/${order._id}`); inv = res.data } catch {}
       const html = buildInvoiceHTML(inv, order)
       const win = window.open('', '_blank')
       win.document.write(`<!DOCTYPE html><html><head><title>Invoice</title><style>${INV_CSS}</style></head><body>${html}<button class="print-btn" onclick="window.print()">🖨 Print Invoice</button></body></html>`)

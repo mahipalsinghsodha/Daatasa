@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
-import axios from 'axios'
+
 import {
   FiPlus,
   FiPackage,
   FiShoppingBag,
   FiAlertCircle
 } from 'react-icons/fi'
+import api from '../../api/axios'
 
 /* -------------------- COUNTER HOOK -------------------- */
 const useCountUp = (end, duration = 600) => {
@@ -60,8 +61,8 @@ const AdminDashboard = () => {
       setLoading(true)
 
       const [productsRes, ordersRes] = await Promise.all([
-        axios.get('/api/products'),
-        axios.get('/api/orders')
+        api.get('/api/products'),
+        api.get('/api/orders')
       ])
 
       const products = productsRes?.data || []

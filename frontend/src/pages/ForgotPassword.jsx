@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api/axios'
 
 const LS_KEY = 'resetPasswordSentAt' // must match ResetPassword.jsx
 
@@ -36,7 +36,7 @@ const ForgotPassword = () => {
     if (cooldown > 0) return // still cooling down
     setLoading(true)
     try {
-      await axios.post('/api/auth/forgot-password', { email })
+      await api.post('/api/auth/forgot-password', { email })
       localStorage.setItem(LS_KEY, Date.now().toString())
       setSent(true)
     } catch (err) {

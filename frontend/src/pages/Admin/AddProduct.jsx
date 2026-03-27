@@ -66,7 +66,7 @@ const AddProduct = () => {
   })
 
   useEffect(() => {
-    if (isEdit) axios.get(`/api/products/${id}`).then(res => setFormData(res.data))
+    if (isEdit) api.get(`/api/products/${id}`).then(res => setFormData(res.data))
   }, [id])
 
   const handleChange = e => {
@@ -82,9 +82,9 @@ const AddProduct = () => {
       const payload = { ...formData, price: Number(formData.price), stock: Number(formData.stock) }
       const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
       if (isEdit) {
-        await axios.put(`/api/products/${id}`, payload, { headers })
+        await api.put(`/api/products/${id}`, payload, { headers })
       } else {
-        await axios.post('/api/products', payload, { headers })
+        await api.post('/api/products', payload, { headers })
       }
       navigate('/products')
     } catch (err) {

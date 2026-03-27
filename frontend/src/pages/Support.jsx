@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import api from '../api/axios'
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, LifeBuoy, Clock, CheckCircle,
@@ -76,7 +76,7 @@ export default function Support() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/api/support/my", {
+      const res = await api.get("/api/support/my", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setTickets(res.data || []);
@@ -88,7 +88,7 @@ export default function Support() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await axios.post("/api/support", form, {
+      await api.post("/api/support", form, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setForm({ subject: "", category: "", message: "" });

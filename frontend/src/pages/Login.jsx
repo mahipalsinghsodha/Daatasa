@@ -157,13 +157,13 @@ const Login = () => {
     const top  = window.screen.height / 2 - h / 2
 
     const popup = window.open(
-      'http://localhost:5000/api/auth/google',
+      'https://dhanifresh.onrender.com/api/auth/google',
       'Google Login',
       `width=${w},height=${h},top=${top},left=${left}`
     )
 
     const handler = (event) => {
-      if (event.origin !== 'http://localhost:5000') return
+      if (event.origin !== 'https://dhanifresh.onrender.com') return
       const token = event.data?.token
       if (token) {
         localStorage.setItem('token', token)

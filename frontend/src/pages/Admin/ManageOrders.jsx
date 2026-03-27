@@ -232,7 +232,7 @@
 //   const loadOrders = async (showLoad = false) => {
 //     if (showLoad) setLoading(true)
 //     try {
-//       const res  = await axios.get('/api/orders')
+//       const res  = await api.get('/api/orders')
 //       const data = res.data.orders || res.data || []
 //       setOrders(data)
 //       const nc = res.data.newOrdersCount ??
@@ -246,17 +246,17 @@
 //   }
 
 //   const markPaid = async id => {
-//     try { await axios.put(`/api/orders/${id}/pay`);      loadOrders() }
+//     try { await api.put(`/api/orders/${id}/pay`);      loadOrders() }
 //     catch (e) { console.error(e) }
 //   }
 //   const markDelivered = async id => {
-//     try { await axios.put(`/api/orders/${id}/deliver`); loadOrders() }
+//     try { await api.put(`/api/orders/${id}/deliver`); loadOrders() }
 //     catch (e) { console.error(e) }
 //   }
 //   const bulkAction = async action => {
 //     if (!selected.length) return
 //     try {
-//       await axios.put('/api/orders/bulk/update', { orderIds: selected, action })
+//       await api.put('/api/orders/bulk/update', { orderIds: selected, action })
 //       setSelected([]); loadOrders()
 //     } catch (e) { console.error(e) }
 //   }
@@ -295,7 +295,7 @@
 //   // ── Print single invoice ────────────────────────────────────────────────────
 //   const printInv = async (orderId) => {
 //     try {
-//       const res = await axios.get(`/api/invoices/${orderId}`)
+//       const res = await api.get(`/api/invoices/${orderId}`)
 //       // Merge invoice data with order structure if needed
 //       const order = orders.find(o => o._id === orderId) || {}
 //       const merged = { ...order, ...res.data }
@@ -756,7 +756,7 @@
 // export default ManageOrders
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import axios from 'axios'
+import api from '../../api/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiPackage, FiCheckCircle, FiTruck, FiDollarSign, FiRefreshCw, FiBell, FiPrinter, FiCheckSquare, FiSquare, FiX, FiSearch, FiChevronDown, FiTag, FiUser, FiMapPin, FiCalendar } from 'react-icons/fi'
 
@@ -810,11 +810,11 @@ const ManageOrders=()=>{
 
   useEffect(()=>{if(user?.role==='admin'){loadOrders(true);intervalRef.current=setInterval(loadOrders,10000)}return()=>clearInterval(intervalRef.current)},[user])
 
-  const loadOrders=async(showLoad=false)=>{if(showLoad)setLoading(true);try{const res=await axios.get('/api/orders');const data=res.data.orders||res.data||[];setOrders(data);const nc=res.data.newOrdersCount??data.filter(o=>!o.isPaid&&new Date(o.createdAt)>new Date(Date.now()-5*60*1000)).length;if(nc>lastCount.current&&lastCount.current>0){setNotif(true);setTimeout(()=>setNotif(false),5000)}setNewCount(nc);lastCount.current=nc}catch(e){console.error(e)}finally{setLoading(false)}}
+  const loadOrders=async(showLoad=false)=>{if(showLoad)setLoading(true);try{const res=await api.get('/api/orders');const data=res.data.orders||res.data||[];setOrders(data);const nc=res.data.newOrdersCount??data.filter(o=>!o.isPaid&&new Date(o.createdAt)>new Date(Date.now()-5*60*1000)).length;if(nc>lastCount.current&&lastCount.current>0){setNotif(true);setTimeout(()=>setNotif(false),5000)}setNewCount(nc);lastCount.current=nc}catch(e){console.error(e)}finally{setLoading(false)}}
 
-  const markPaid=async id=>{try{await axios.put(`/api/orders/${id}/pay`);loadOrders()}catch(e){console.error(e)}}
-  const markDelivered=async id=>{try{await axios.put(`/api/orders/${id}/deliver`);loadOrders()}catch(e){console.error(e)}}
-  const bulkAction=async action=>{if(!selected.length)return;try{await axios.put('/api/orders/bulk/update',{orderIds:selected,action});setSelected([]);loadOrders()}catch(e){console.error(e)}}
+  const markPaid=async id=>{try{await api.put(`/api/orders/${id}/pay`);loadOrders()}catch(e){console.error(e)}}
+  const markDelivered=async id=>{try{await api.put(`/api/orders/${id}/deliver`);loadOrders()}catch(e){console.error(e)}}
+  const bulkAction=async action=>{if(!selected.length)return;try{await api.put('/api/orders/bulk/update',{orderIds:selected,action});setSelected([]);loadOrders()}catch(e){console.error(e)}}
 
   const filtered=orders.filter(o=>{
     const mF=filter==='all'?true:filter==='pending'?(!o.isPaid&&!o.isDelivered):filter==='paid'?(o.isPaid&&!o.isDelivered):o.isDelivered
@@ -826,7 +826,7 @@ const ManageOrders=()=>{
   const allSel=filtered.length>0&&filtered.every(o=>selected.includes(o._id))
   const toggleSel=id=>setSelected(p=>p.includes(id)?p.filter(x=>x!==id):[...p,id])
   const toggleAll=()=>setSelected(allSel?[]:filtered.map(o=>o._id))
-  const printInv=async(id)=>{try{const res=await axios.get(`/api/invoices/${id}`);openPrint(invoiceHTML({...orders.find(o=>o._id===id),...res.data}),INV_CSS,`Invoice ${id.slice(-8).toUpperCase()}`)}catch{const o=orders.find(o=>o._id===id);if(o)openPrint(invoiceHTML(o),INV_CSS,`Invoice`)}}
+  const printInv=async(id)=>{try{const res=await api.get(`/api/invoices/${id}`);openPrint(invoiceHTML({...orders.find(o=>o._id===id),...res.data}),INV_CSS,`Invoice ${id.slice(-8).toUpperCase()}`)}catch{const o=orders.find(o=>o._id===id);if(o)openPrint(invoiceHTML(o),INV_CSS,`Invoice`)}}
   const printLabel=id=>{const o=orders.find(o=>o._id===id);if(o)openPrint(labelHTML(o),LABEL_CSS,`Label`)}
   const printAllLabels=()=>{const targets=selected.length?orders.filter(o=>selected.includes(o._id)):filtered;if(targets.length)openPrint(targets.map(labelHTML).join(''),LABEL_CSS,`Labels (${targets.length})`)}
   const printAllInvoices=()=>{const targets=selected.length?orders.filter(o=>selected.includes(o._id)):filtered;if(targets.length)openPrint(targets.map(invoiceHTML).join(''),INV_CSS,`Invoices (${targets.length})`)}

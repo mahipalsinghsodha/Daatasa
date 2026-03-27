@@ -37,7 +37,7 @@
 
 //   const fetchFeatured = async () => {
 //     try {
-//       const res = await axios.get('/api/products?featured=true')
+//       const res = await api.get('/api/products?featured=true')
 //       setFeaturedProducts(res.data.slice(0, 4))
 //     } catch (e) { console.error(e) }
 //     finally { setLoading(false) }
@@ -370,7 +370,7 @@
 
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from '../api/axios'
 import { motion } from 'framer-motion'
 import ProductCard from '../components/ProductCard'
 import { FiArrowRight, FiShield, FiStar, FiTruck } from 'react-icons/fi'
@@ -395,7 +395,7 @@ const Home=()=>{
   const [loading,setLoading]=useState(true)
 
   useEffect(()=>{fetchFeatured()},[])
-  const fetchFeatured=async()=>{try{const res=await axios.get('/api/products?featured=true');setFeaturedProducts(res.data.slice(0,4))}catch(e){console.error(e)}finally{setLoading(false)}}
+  const fetchFeatured=async()=>{try{const res=await api.get('/api/products?featured=true');setFeaturedProducts(res.data.slice(0,4))}catch(e){console.error(e)}finally{setLoading(false)}}
 
   return(
     <div style={{fontFamily:C.font,color:C.text,background:C.bg}}>

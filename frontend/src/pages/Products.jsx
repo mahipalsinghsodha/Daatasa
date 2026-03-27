@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
 import { FiSearch } from 'react-icons/fi'
 
@@ -48,7 +48,7 @@ const Products = () => {
       const params = {}
       if (selectedCategory !== 'all') params.category = selectedCategory
       if (debouncedSearch.trim())      params.search   = debouncedSearch
-      const res = await axios.get('/api/products', { params })
+      const res = await api.get('/api/products', { params })
       setProducts(res.data)
     } catch (err) {
       console.error(err)

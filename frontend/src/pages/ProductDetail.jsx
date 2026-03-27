@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { FiStar, FiShoppingCart, FiEdit2, FiMinus, FiPlus, FiChevronLeft } from 'react-icons/fi'
 import { useCart } from '../context/CartContext'
@@ -41,7 +41,7 @@ const ProductDetail = () => {
 
   const fetchProduct = async () => {
     try {
-      const res = await axios.get(`/api/products/${id}`)
+      const res = await api.get(`/api/products/${id}`)
       setProduct(res.data)
     } catch (err) {
       console.error(err)
@@ -53,7 +53,7 @@ const ProductDetail = () => {
   const handleAddToCart = async () => {
     if (!user) { navigate('/login'); return }
     try {
-      await axios.post('/api/cart/items', { productId: product._id, quantity })
+      await api.post('/api/cart/items', { productId: product._id, quantity })
       setAddedToCart(true)
       fetchCartCount()
       setTimeout(() => setAddedToCart(false), 3000)

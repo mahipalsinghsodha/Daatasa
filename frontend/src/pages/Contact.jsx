@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import axios from 'axios'
+import api from '../api/axios'
 import {
   FiMail, FiPhone, FiMapPin, FiSend, FiCheckCircle,
   FiUser, FiMessageSquare, FiClock, FiInstagram,
@@ -127,7 +127,7 @@ const Contact = () => {
     setLoading(true)
     setApiError('')
     try {
-      await axios.post('/api/contact', form)
+      await api.post('/api/contact', form)
       setSuccess(true)
       setForm({ name: '', email: '', phone: '', subject: '', message: '' })
     } catch (err) {

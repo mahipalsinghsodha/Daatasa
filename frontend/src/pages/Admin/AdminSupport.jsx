@@ -100,7 +100,7 @@ export default function AdminSupport() {
   const fetchTickets = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/api/support/admin", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await api.get("/api/support/admin", { headers: { Authorization: `Bearer ${token}` } });
       setTickets(res.data || []);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
@@ -110,7 +110,7 @@ export default function AdminSupport() {
     if (!replyText[id]?.trim()) return;
     setBusy(b => ({ ...b, [`r${id}`]: true }));
     try {
-      await axios.post(`/api/support/${id}/reply`, { message: replyText[id] }, { headers: { Authorization: `Bearer ${token}` } });
+      await api.post(`/api/support/${id}/reply`, { message: replyText[id] }, { headers: { Authorization: `Bearer ${token}` } });
       setReplyText(p => ({ ...p, [id]: "" }));
       fetchTickets();
     } catch (e) { console.error(e); }
@@ -120,7 +120,7 @@ export default function AdminSupport() {
   const updateStatus = async (id, status) => {
     setBusy(b => ({ ...b, [`s${id}${status}`]: true }));
     try {
-      await axios.put(`/api/support/${id}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/api/support/${id}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
       fetchTickets();
     } catch (e) { console.error(e); }
     finally { setBusy(b => ({ ...b, [`s${id}${status}`]: false })); }

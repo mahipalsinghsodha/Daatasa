@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import api from '../api/axios'
 
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -93,7 +93,7 @@ const ResetPassword = () => {
     if (isExpiredLocally)     return setError('The link has expired. Please request a new one.')
     setLoading(true)
     try {
-      await axios.post(`/api/auth/reset-password/${token}`, { password })
+      await api.post(`/api/auth/reset-password/${token}`, { password })
       clearInterval(timerRef.current)
       localStorage.removeItem(LS_KEY)
       setSuccess(true)
