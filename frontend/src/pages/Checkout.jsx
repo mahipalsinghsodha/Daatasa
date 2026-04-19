@@ -426,6 +426,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
+import { useCart } from '../context/CartContext'
 import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -518,7 +519,7 @@ const Checkout = () => {
   const [showNewForm,   setShowNewForm]   = useState(false)
   const [newAddr,       setNewAddr]       = useState(emptyNew)
   const [saveNewAddr,   setSaveNewAddr]   = useState(true)
-
+ const { fetchCartCount }  = useCart()
   useEffect(() => {
     if (!user) { navigate('/login'); return }
     fetchCart()
@@ -579,9 +580,11 @@ const Checkout = () => {
       } else {
         await startOnlinePayment(shippingAddress, headers)
       }
+       fetchCartCount()
     } catch (err) {
       console.error(err)
-      toast.error('Something went wrong')
+      const message = err.response?.data?.message || err.message || 'Something went wrong'          
+       toast.error(message)
     } finally {
       setLoading(false)
     }

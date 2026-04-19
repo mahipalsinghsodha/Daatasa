@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageSquare, LifeBuoy, Clock, CheckCircle,
   User, Send, RefreshCw, ChevronDown, Search, Filter,
 } from "lucide-react";
+import api from "../../api/axios";
 
 // ── Brand Tokens ──────────────────────────────────────────────────────────────
 const C = {
