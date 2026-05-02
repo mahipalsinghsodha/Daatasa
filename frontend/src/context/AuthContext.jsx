@@ -126,9 +126,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
   }
 
+  const hasPermission = (permission) => {
+    if (!user) return false;
+    if (user.role === 'superadmin') return true;
+    return user.role === 'admin' && user.permissions?.includes(permission);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, fetchUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, fetchUser, hasPermission }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }

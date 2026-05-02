@@ -33,7 +33,7 @@ router.get("/my", auth, async (req, res) => {
 });
 
 // Admin: Get All Tickets
-router.get("/admin", auth, auth.admin, async (req, res) => {
+router.get("/admin", auth, auth.admin, auth.hasPermission('support'), async (req, res) => {
   const tickets = await SupportTicket.find()
     .populate("user")
     .populate("order")
@@ -45,14 +45,30 @@ router.get("/admin", auth, auth.admin, async (req, res) => {
 // Reply to Ticket
 router.post("/:id/reply", auth, async (req, res) => {
   const ticket = await SupportTicket.findById(req.params.id);
+  if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
-  ticket.messages.push({
-    sender: req.user.role === "admin" ? "admin" : "user",
-    message: req.body.message
-  });
-
-  if (req.user.role === "admin") {
-    ticket.status = "IN_PROGRESS";
+  const isAdmin = req.user.role === 'superadmin' || (req.user.role === 'admin' && req.user.permissions?.includes('support'));
+  
+  // If admin is replying, check permissions
+  if (req.user.role === 'admin' || req.user.role === 'superadmin') {
+      if (!isAdmin) {
+          return res.status(403).json({ message: 'Access denied' });
+      }
+      ticket.messages.push({
+        sender: "admin",
+        message: req.body.message
+      });
+      ticket.status = "IN_PROGRESS";
+      await logAction(req, 'REPLY_TICKET', 'SUPPORT', ticket._id, { status: ticket.status });
+  } else {
+      // Regular user check
+      if (ticket.user.toString() !== req.user._id.toString()) {
+          return res.status(403).json({ message: 'Unauthorized' });
+      }
+      ticket.messages.push({
+        sender: "user",
+        message: req.body.message
+      });
   }
 
   await ticket.save();
@@ -60,8 +76,9 @@ router.post("/:id/reply", auth, async (req, res) => {
 });
 
 // Update Status (Admin)
-router.put("/:id/status", auth, auth.admin, async (req, res) => {
+router.put("/:id/status", auth, auth.admin, auth.hasPermission('support'), async (req, res) => {
   const ticket = await SupportTicket.findById(req.params.id);
+  if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
 
   ticket.status = req.body.status;
 
@@ -70,6 +87,7 @@ router.put("/:id/status", auth, auth.admin, async (req, res) => {
   }
 
   await ticket.save();
+  await logAction(req, 'UPDATE_TICKET_STATUS', 'SUPPORT', ticket._id, { status: ticket.status });
   res.json(ticket);
 });
 

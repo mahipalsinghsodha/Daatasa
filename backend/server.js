@@ -64,7 +64,7 @@
 // // Start server only after MongoDB connection
 // const startServer = async () => {
 //   await connectDB();
-  
+
 //   const PORT = process.env.PORT || 5000;
 //   app.listen(PORT, () => {
 //     console.log(`Server running on port ${PORT}`);
@@ -152,6 +152,10 @@ app.use("/api/invoices", require("./routes/invoiceRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/support", require("./routes/supportRoutes"));
 app.use('/api/contact', require('./routes/contactRoute'));
+app.use('/api/coupons', require('./routes/couponRoutes'));
+app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/upload', require('./routes/upload'));
+app.use('/api/admin', require('./routes/adminRoutes'));
 /*
 =====================
 ERROR HANDLER

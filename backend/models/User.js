@@ -86,10 +86,12 @@ const userSchema = new mongoose.Schema({
   name:     { type: String, required: true, trim: true },
   email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
-  role:     { type: String, enum: ['user', 'admin'], default: 'user' },
+  role:     { type: String, enum: ['user', 'admin', 'superadmin'], default: 'user' },
+  permissions: [{ type: String }], // e.g., ['products', 'orders', 'users']
   phone:    String,
   addresses:[addressSchema],
-
+  // Add to models/User.js inside userSchema:
+isBlocked: { type: Boolean, default: false },
   // Legacy single address for backward compat
   address: {
     street: String, city: String, state: String, zipCode: String, country: String,

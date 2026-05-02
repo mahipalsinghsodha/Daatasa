@@ -1,183 +1,167 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
-
+import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  FiPackage, FiPrinter, FiChevronDown, FiMapPin,
-  FiCalendar, FiCreditCard, FiCheckCircle, FiTruck,
-  FiClock, FiShoppingBag,
+  FiPackage, FiPrinter, FiChevronDown, FiMapPin, FiCalendar,
+  FiCreditCard, FiCheckCircle, FiTruck, FiClock, FiShoppingBag,
+  FiTag, FiX, FiAlertCircle, FiRefreshCw
 } from 'react-icons/fi'
 import api from '../api/axios'
 
-// ── Brand Tokens ──────────────────────────────────────────────────────────────
-const C = {
-  orange:      '#e8621a',
-  orangeLight: '#fff4ee',
-  orangeMid:   '#fddcca',
-  bg:          '#f2f4f6',
-  white:       '#ffffff',
-  text:        '#1a1a2e',
-  textMid:     '#444455',
-  textLight:   '#8899aa',
-  border:      '#e4e9f0',
-  shadow:      '0 2px 12px rgba(0,0,0,0.07)',
-  shadowMd:    '0 6px 28px rgba(0,0,0,0.11)',
-  green:       '#16a34a', greenBg: '#dcfce7', greenMid: '#86efac',
-  blue:        '#1d4ed8', blueBg:  '#dbeafe',
-  yellow:      '#b45309', yellowBg:'#fef3c7',
-  red:         '#dc2626', redBg:   '#fee2e2',
-  gray:        '#64748b', grayBg:  '#f1f5f9',
-  font:        "'Plus Jakarta Sans', system-ui, sans-serif",
-}
-
-// ── Responsive hook ───────────────────────────────────────────────────────────
-const useW = () => {
-  const [w, setW] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
-  useEffect(() => {
-    const h = () => setW(window.innerWidth)
-    window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
-  }, [])
-  return w
-}
-
-// ── Status helpers ────────────────────────────────────────────────────────────
+// ── Status Config ──────────────────────────────────────────────────────────────
 const getStatus = (order) => {
-  if (order.isDelivered) return { label: 'Delivered', color: C.green,  bg: C.greenBg,  dot: '#16a34a', icon: FiCheckCircle }
-  if (order.isPaid)      return { label: 'Paid',      color: C.blue,   bg: C.blueBg,   dot: '#1d4ed8', icon: FiTruck }
-  return                        { label: 'Pending',   color: C.yellow, bg: C.yellowBg, dot: '#d97706', icon: FiClock }
+  if (order.isDelivered) return { label: 'Delivered', color: 'var(--color-success)', bg: 'var(--color-success-dim)', dot: 'var(--color-success)', icon: FiCheckCircle }
+  if (order.paymentStatus === 'CANCELLED') return { label: 'Cancelled', color: 'var(--color-text-dim)', bg: 'var(--color-surface-high)', dot: 'var(--color-text-dim)', icon: FiX }
+  if (order.paymentStatus === 'FAILED') return { label: 'Failed', color: 'var(--color-danger)', bg: 'var(--color-danger-dim)', dot: 'var(--color-danger)', icon: FiAlertCircle }
+  if (order.isPaid) return { label: 'Paid', color: 'var(--color-info)', bg: 'var(--color-info-dim)', dot: 'var(--color-info)', icon: FiTruck }
+  if (order.paymentStatus === 'COD_CONFIRMED') return { label: 'Confirmed', color: 'var(--color-info)', bg: 'var(--color-info-dim)', dot: 'var(--color-info)', icon: FiClock }
+  return { label: 'Pending', color: 'var(--color-warning)', bg: 'var(--color-warning-dim)', dot: 'var(--color-warning)', icon: FiClock }
 }
 
 const StatusPill = ({ order }) => {
   const s = getStatus(order)
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: s.bg, color: s.color,
-      padding: '4px 12px', borderRadius: 20,
-      fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot }} />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"
+      style={{ background: s.bg, color: s.color }}>
+      <div className="w-1 h-1 rounded-full animate-pulse" style={{ background: s.dot }} />
       {s.label}
     </span>
   )
 }
 
-// ── Invoice print CSS ─────────────────────────────────────────────────────────
-const INV_CSS = `
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI',sans-serif;background:#fff;color:#1a1a2e}
-  .page{max-width:760px;margin:0 auto;padding:36px}
-  .head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:3px solid #e8621a}
-  .brand{font-size:26px;font-weight:800;color:#e8621a}
-  .brand-sub{font-size:12px;color:#888;margin-top:2px}
-  .inv-right{text-align:right}
-  .inv-title{font-size:20px;font-weight:700;letter-spacing:2px;color:#1a1a2e}
-  .inv-id{font-size:14px;font-weight:700;color:#e8621a;margin-top:4px}
-  .inv-date{font-size:12px;color:#888;margin-top:2px}
-  .info{display:flex;justify-content:space-between;margin-bottom:28px;gap:20px}
-  .bill{flex:1}.bill-label{font-size:10px;font-weight:700;letter-spacing:2px;color:#e8621a;text-transform:uppercase;margin-bottom:8px}
-  .bill-name{font-size:16px;font-weight:700;margin-bottom:4px}
-  .bill-detail{font-size:13px;color:#555;line-height:1.7}
-  .qr{text-align:center}.qr-label{font-size:10px;color:#888;margin-top:5px}
-  table{width:100%;border-collapse:collapse;margin-bottom:24px}
-  th{background:#f2f4f6;padding:10px 12px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;border-bottom:2px solid #e4e9f0}
-  td{padding:10px 12px;font-size:13px;border-bottom:1px solid #f0f2f4}
-  tbody tr:last-child td{border-bottom:2px solid #e4e9f0}
-  tfoot td{padding:8px 12px;font-size:13px;color:#555}
-  .total-row td{font-size:15px;font-weight:700;padding-top:12px;border-top:2px solid #1a1a2e}
-  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:28px;padding-top:16px;border-top:1px solid #e4e9f0;flex-wrap:wrap;gap:10px}
-  .pay-badge{padding:6px 18px;border-radius:20px;font-size:12px;font-weight:800;letter-spacing:1px}
-  .paid{background:#dcfce7;color:#16a34a}.unpaid{background:#fee2e2;color:#dc2626}
-  .foot-note{font-size:12px;color:#888}
-  .print-btn{display:block;margin:24px auto;padding:12px 32px;background:#e8621a;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer}
-  @media print{.print-btn{display:none}}
-`
+// ── Cancel Modal (Professional & Clean) ─────────────────────────────────────────
+const CancelModal = ({ order, onClose, onConfirm, loading }) => {
+  const [reason, setReason] = useState('')
+  const REASONS = [
+    'Changed my mind',
+    'Ordered by mistake',
+    'Other'
+  ]
+  const willRefund = order.paymentStatus === 'PAID' && order.paymentMethod === 'Online'
 
-const qrUrl = (data) =>
-  `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(data)}&margin=6`
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 sm:p-6 bg-slate-900/40 backdrop-blur-sm">
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        className="bg-white rounded-[32px] shadow-2xl border border-gray-100 max-w-md w-full overflow-hidden"
+      >
+        <div className="p-8">
+          <div className="flex justify-between items-start mb-6">
+            <div className="p-3 bg-red-50 rounded-2xl text-red-600">
+              <FiPackage size={24} />
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-50 rounded-xl transition-colors text-gray-400">
+              <FiX size={20} />
+            </button>
+          </div>
 
-const buildInvoiceHTML = (inv, order) => {
-  const items = (inv.items || order.orderItems || []).map(i => `
-    <tr>
-      <td>${i.name}</td>
-      <td style="text-align:center">${i.quantity}</td>
-      <td style="text-align:right">₹${Number(i.price).toFixed(2)}</td>
-      <td style="text-align:right">₹${(i.price * i.quantity).toFixed(2)}</td>
-    </tr>`).join('')
+          <h2 className="text-2xl font-black text-gray-900 mb-2 font-head tracking-tight">Cancel Order?</h2>
+          <p className="text-gray-500 text-sm font-medium mb-8">
+            Order <span className="text-gray-900 font-bold">#{order._id.slice(-8).toUpperCase()}</span> will be permanently removed from processing.
+          </p>
 
-  const sub  = Number(inv.subtotal  ?? order.itemsPrice   ?? 0).toFixed(2)
-  const tax  = Number(inv.tax       ?? order.taxPrice      ?? 0).toFixed(2)
-  const ship = Number(inv.shipping  ?? order.shippingPrice ?? 0).toFixed(2)
-  const tot  = Number(inv.total     ?? order.totalPrice    ?? 0).toFixed(2)
-  const paid = order.isPaid
+          {willRefund && (
+            <div className="mb-8 p-4 bg-green-50 rounded-2xl border border-green-100 flex gap-3">
+              <FiRefreshCw className="text-green-600 shrink-0 mt-0.5" size={16} />
+              <div className="text-xs font-bold text-green-700 leading-relaxed">
+                Full refund of ₹{Number(order.totalPrice).toFixed(2)} will be auto-initiated to your original bank account.
+              </div>
+            </div>
+          )}
 
-  const cust = inv.customer || { name: '', email: '', address: {} }
-  const addr = cust.address || order.shippingAddress || {}
+          <div className="space-y-3 mb-10 text-left">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block ml-1">Select Reason</label>
+            {REASONS.map(r => (
+              <button
+                key={r}
+                onClick={() => setReason(r)}
+                className={`w-full p-4 rounded-2xl text-left text-sm font-bold transition-all border-2 ${reason === r
+                    ? 'border-orange-500 bg-orange-50 text-orange-600'
+                    : 'border-gray-50 bg-gray-50 text-gray-500 hover:border-gray-200'
+                  }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
 
-  return `
-  <div class="page">
-    <div class="head">
-      <div><div class="brand">🧈 Ghee Store</div><div class="brand-sub">Pure &amp; Natural A1 Ghee</div></div>
-      <div class="inv-right">
-        <div class="inv-title">TAX INVOICE</div>
-        <div class="inv-id">#${(inv.invoiceNumber || order._id.slice(-10)).toUpperCase()}</div>
-        <div class="inv-date">${new Date(inv.date || order.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={onClose}
+              className="py-3.5 rounded-2xl text-sm font-black text-gray-400 bg-white border border-gray-100 hover:bg-gray-50 transition-colors"
+            >
+              Keep Order
+            </button>
+            <button
+              disabled={loading || !reason}
+              onClick={() => onConfirm(reason)}
+              className="py-3.5 rounded-2xl text-sm font-black text-white bg-red-600 shadow-xl shadow-red-200 hover:bg-red-700 disabled:opacity-50 disabled:shadow-none transition-all"
+            >
+              {loading ? 'Wait...' : 'Yes, Cancel'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
     </div>
-    <div class="info">
-      <div class="bill">
-        <div class="bill-label">BILL TO</div>
-        <div class="bill-name">${cust.name || ''}</div>
-        <div class="bill-detail">${cust.email || ''}</div>
-        <div class="bill-detail">${addr.street || ''}</div>
-        <div class="bill-detail">${addr.city || ''}, ${addr.state || ''} – ${addr.zipCode || ''}</div>
-        <div class="bill-detail">${addr.country || ''}</div>
-      </div>
-      <div class="qr">
-        <img src="${qrUrl(`ORDER:${order._id}`)}" width="90" height="90" alt="QR"/>
-        <div class="qr-label">Scan to track</div>
-      </div>
-    </div>
-    <table>
-      <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
-      <tbody>${items}</tbody>
-      <tfoot>
-        <tr><td colspan="3">Subtotal</td><td>₹${sub}</td></tr>
-        <tr><td colspan="3">Tax (18% GST)</td><td>₹${tax}</td></tr>
-        <tr><td colspan="3">Shipping</td><td>₹${ship}</td></tr>
-        <tr class="total-row"><td colspan="3"><strong>TOTAL</strong></td><td><strong>₹${tot}</strong></td></tr>
-      </tfoot>
-    </table>
-    <div class="foot">
-      <div class="pay-badge ${paid ? 'paid' : 'unpaid'}">${paid ? '✓ PAID' : '⚠ PAYMENT PENDING'}</div>
-      <div class="foot-note">Payment: ${inv.paymentMethod || order.paymentMethod || 'N/A'} &nbsp;|&nbsp; Thank you for choosing Ghee Store!</div>
-    </div>
-  </div>`
+  )
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
-const Orders = () => {
-  const { user }    = useAuth()
-  const navigate    = useNavigate()
-  const w           = useW()
-  const isMobile    = w < 640
-  const isDesktop   = w >= 1024
+// ── Print Helper ──────────────────────────────────────────────────────────────
+const buildInvoiceHTML = (inv, order) => {
+  const items = (inv.items || order.orderItems || []).map(i => `
+    <tr><td>${i.name}</td><td style="text-align:center">${i.quantity}</td>
+    <td style="text-align:right">₹${Number(i.price).toFixed(2)}</td>
+    <td style="text-align:right">₹${(i.price * i.quantity).toFixed(2)}</td></tr>`).join('')
+  const sub = Number(inv.subtotal ?? order.itemsPrice ?? 0).toFixed(2)
+  const discount = Number(order.discount ?? 0)
+  const tax = Number(inv.tax ?? order.taxPrice ?? 0).toFixed(2)
+  const ship = Number(inv.shipping ?? order.shippingPrice ?? 0).toFixed(2)
+  const tot = Number(inv.total ?? order.totalPrice ?? 0).toFixed(2)
+  const cust = inv.customer || { name: '', email: '', address: {} }
+  const addr = cust.address || order.shippingAddress || {}
+  const discountRow = discount > 0 ? `<tr><td colspan="3" style="color:#10b981">Discount${order.coupon?.code ? ` (${order.coupon.code})` : ''}</td><td style="color:#10b981">-₹${discount.toFixed(2)}</td></tr>` : ''
+  return `
+    <div style="max-width:760px;margin:0 auto;padding:40px;font-family:sans-serif;color:#0f172a">
+      <div style="display:flex;justify-content:space-between;margin-bottom:40px;border-bottom:3px solid #e8621a;padding-bottom:20px">
+        <div><h1 style="color:#e8621a;margin:0">Ghee Store</h1><p style="color:#64748b;margin:5px 0">Pure & Natural Ghee</p></div>
+        <div style="text-align:right"><h2 style="margin:0">INVOICE</h2><p style="color:#e8621a;font-weight:bold;margin:5px 0">#${(inv.invoiceNumber || order._id.slice(-10)).toUpperCase()}</p></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:40px">
+        <div><p style="font-size:11px;color:#94a3b8;font-weight:bold;margin-bottom:8px">BILL TO</p><strong>${cust.name || ''}</strong><br/>${cust.email || ''}<br/>${addr.street || ''}<br/>${addr.city || ''}, ${addr.state || ''}</div>
+        <div style="text-align:right"><p style="font-size:11px;color:#94a3b8;font-weight:bold;margin-bottom:8px">DATE</p>${new Date(order.createdAt).toLocaleDateString()}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:40px">
+        <thead><tr style="background:#f1f5f9"><th style="padding:12px;text-align:left">ITEM</th><th style="padding:12px">QTY</th><th style="padding:12px;text-align:right">PRICE</th><th style="padding:12px;text-align:right">TOTAL</th></tr></thead>
+        <tbody>${items}</tbody>
+        <tfoot style="border-top:2px solid #e2e8f0"><tr style="font-weight:bold"><td></td><td></td><td style="padding:12px;text-align:right">SUBTOTAL</td><td style="padding:12px;text-align:right">₹${sub}</td></tr>${discountRow}<tr><td></td><td></td><td style="padding:12px;text-align:right">TAX</td><td style="padding:12px;text-align:right">₹${tax}</td></tr><tr><td></td><td></td><td style="padding:12px;text-align:right;font-size:20px;color:#e8621a">TOTAL</td><td style="padding:12px;text-align:right;font-size:20px;color:#e8621a">₹${tot}</td></tr></tfoot>
+      </table>
+    </div>`
+}
 
-  const [orders, setOrders]     = useState([])
-  const [loading, setLoading]   = useState(true)
+const Orders = () => {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(null)
   const [printing, setPrinting] = useState(null)
-  const [filter, setFilter]     = useState('all')
+  const [filter, setFilter] = useState('all')
+  const [cancelModal, setCancelModal] = useState(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
 
   useEffect(() => { if (user) fetchOrders() }, [user])
 
   const fetchOrders = async () => {
     try {
+      setLoading(true)
       const res = await api.get('/api/orders/myorders')
       setOrders(res.data)
-    } catch (e) { console.error(e) }
+    } catch { toast.error('Failed to sync order history') }
     finally { setLoading(false) }
   }
 
@@ -185,321 +169,261 @@ const Orders = () => {
     setPrinting(order._id)
     try {
       let inv = {}
-      try { const res = await api.get(`/api/invoices/${order._id}`); inv = res.data } catch {}
+      try { const res = await api.get(`/api/invoices/${order._id}`); inv = res.data } catch { }
       const html = buildInvoiceHTML(inv, order)
       const win = window.open('', '_blank')
-      win.document.write(`<!DOCTYPE html><html><head><title>Invoice</title><style>${INV_CSS}</style></head><body>${html}<button class="print-btn" onclick="window.print()">🖨 Print Invoice</button></body></html>`)
+      win.document.write(`<!DOCTYPE html><html><head><title>Invoice</title></head><body onload="window.print()">${html}</body></html>`)
       win.document.close()
-    } catch (e) { console.error(e) }
+    } catch { toast.error('Print failure') }
     finally { setPrinting(null) }
   }
 
-  // ── Filter ──────────────────────────────────────────────────────────────────
-  const counts = {
-    all:       orders.length,
-    pending:   orders.filter(o => !o.isPaid && !o.isDelivered).length,
-    paid:      orders.filter(o => o.isPaid && !o.isDelivered).length,
-    delivered: orders.filter(o => o.isDelivered).length,
+  const handleCancelOrder = async (reason) => {
+    setCancelLoading(true)
+    try {
+      await api.post(`/api/orders/${cancelModal._id}/cancel`, { reason })
+      toast.success('Order cancelled successfully')
+      setCancelModal(null)
+      fetchOrders()
+    } catch { toast.error('Cancellation failed') }
+    finally { setCancelLoading(false) }
   }
+
+  const canCancel = (o) => !o.isDelivered && !['CANCELLED', 'FAILED'].includes(o.paymentStatus)
+
   const visible = orders.filter(o => {
-    if (filter === 'all')       return true
-    if (filter === 'pending')   return !o.isPaid && !o.isDelivered
-    if (filter === 'paid')      return o.isPaid && !o.isDelivered
-    if (filter === 'delivered') return o.isDelivered
+    if (filter === 'all') return true
+    if (filter === 'pending') return !o.isPaid && !o.isDelivered && !['CANCELLED', 'FAILED'].includes(o.paymentStatus)
+    if (filter === 'paid') return o.isPaid && !o.isDelivered
+    if (filter === 'success') return o.isDelivered
+    if (filter === 'failed') return ['CANCELLED', 'FAILED'].includes(o.paymentStatus)
     return true
   })
 
-  // ── Summary stat ────────────────────────────────────────────────────────────
-  const totalSpent = orders.reduce((s, o) => s + (o.isPaid ? o.totalPrice : 0), 0)
-
-  // ── Guards ──────────────────────────────────────────────────────────────────
-  if (!user) return (
-    <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: C.bg, fontFamily: C.font }}>
-      <FiPackage size={48} style={{ color: C.border, marginBottom: 16 }} />
-      <p style={{ color: C.textLight, fontSize: 15, marginBottom: 20 }}>Please log in to view your orders</p>
-      <button onClick={() => navigate('/login')} style={{ padding: '11px 24px', background: C.orange, border: 'none', borderRadius: 11, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: C.font }}>
-        Login
-      </button>
-    </div>
-  )
-
   if (loading) return (
-    <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.bg }}>
-      <div style={{ width: 38, height: 38, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.orange}`, borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center bg-[var(--color-bg)]">
+      <div className="w-10 h-10 border-4 border-orange-600/20 border-t-orange-600 rounded-full animate-spin" />
+      <p className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Retrieving history...</p>
     </div>
   )
+
+  if (!user) return (navigate('/login') || null)
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: C.font, color: C.text }}>
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="min-h-screen bg-[var(--color-bg)] pb-20">
 
-      {/* ── Page Header ──────────────────────────────────────────────────── */}
-      <div style={{ background: C.white, borderBottom: `1.5px solid ${C.border}`, padding: isMobile ? '14px 16px' : '20px 28px', boxShadow: C.shadow }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12, marginBottom: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: isMobile ? 38 : 44, height: isMobile ? 38 : 44, background: C.orange, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <FiShoppingBag size={isMobile ? 18 : 21} color="#fff" />
+      {/* ── Header ── */}
+      <div className="bg-white border-b border-[var(--color-border)] pt-12 pb-8 sm:pt-16 sm:pb-12 shadow-sm relative z-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-8 mb-10">
+            <div className="text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 border border-orange-200 mb-4">
+                <FiShoppingBag size={14} className="text-orange-600" />
+                <span className="text-[10px] uppercase tracking-widest font-black text-orange-600">Consumer Account</span>
               </div>
-              <div>
-                <h1 style={{ margin: 0, fontSize: isMobile ? 18 : 22, fontWeight: 800 }}>My Orders</h1>
-                <p style={{ margin: 0, fontSize: 12, color: C.textLight }}>{orders.length} order{orders.length !== 1 ? 's' : ''} placed</p>
-              </div>
+              <h1 className="text-3xl sm:text-5xl font-black text-gray-900 font-head tracking-tight">Order History</h1>
+              <p className="text-gray-500 font-medium max-w-lg mt-2">Manage your purchases, download invoices, and track your ghee journey.</p>
             </div>
 
-            {/* Total spent badge */}
-            {totalSpent > 0 && (
-              <div style={{ background: C.orangeLight, border: `1.5px solid ${C.orangeMid}`, borderRadius: 12, padding: '10px 16px', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: C.textLight, fontWeight: 600 }}>Total Spent</div>
-                <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 900, color: C.orange }}>₹{totalSpent.toFixed(2)}</div>
-              </div>
-            )}
+            <div className="hidden sm:block text-right">
+              <div className="text-[10px] uppercase tracking-widest font-black text-gray-300 mb-1">Lifetime Value</div>
+              <div className="text-2xl font-black text-gray-900 font-head">₹{orders.reduce((acc, o) => acc + (o.paymentStatus !== 'CANCELLED' ? o.totalPrice : 0), 0).toLocaleString()}</div>
+            </div>
           </div>
 
-          {/* Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(4, 1fr)`, gap: 10 }}>
+          {/* Filters */}
+          <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar">
             {[
-              { key: 'all',       label: 'All',       val: counts.all,       color: C.orange, bg: C.orangeLight },
-              { key: 'pending',   label: 'Pending',   val: counts.pending,   color: C.yellow, bg: C.yellowBg },
-              { key: 'paid',      label: 'Paid',      val: counts.paid,      color: C.blue,   bg: C.blueBg },
-              { key: 'delivered', label: 'Delivered', val: counts.delivered, color: C.green,  bg: C.greenBg },
-            ].map(tab => (
-              <button key={tab.key} onClick={() => setFilter(tab.key)}
-                style={{ background: filter === tab.key ? tab.bg : C.white, border: `1.5px solid ${filter === tab.key ? tab.color + '50' : C.border}`, borderRadius: 12, padding: isMobile ? '10px 6px' : '12px 8px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.18s', fontFamily: C.font }}>
-                <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: filter === tab.key ? tab.color : C.text }}>{tab.val}</div>
-                <div style={{ fontSize: isMobile ? 10 : 11, fontWeight: 600, color: filter === tab.key ? tab.color : C.textLight, marginTop: 2 }}>{tab.label}</div>
+              { id: 'all', label: 'Everything', icon: FiPackage },
+              { id: 'pending', label: 'Unpaid', icon: FiClock },
+              { id: 'paid', label: 'Processing', icon: FiTruck },
+              { id: 'success', label: 'Delivered', icon: FiCheckCircle },
+              { id: 'failed', label: 'Cancelled', icon: FiX },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-2xl text-sm font-bold whitespace-nowrap transition-all border-2 ${filter === f.id
+                    ? 'border-gray-900 bg-gray-900 text-white shadow-xl shadow-gray-200'
+                    : 'border-gray-50 bg-white text-gray-500 hover:border-gray-200'
+                  }`}
+              >
+                <f.icon size={16} />
+                {f.label}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* ── Body ─────────────────────────────────────────────────────────── */}
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: isMobile ? '16px 12px' : '28px 24px' }}>
-
-        {/* Empty state */}
+      {/* ── Order List ── */}
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {visible.length === 0 ? (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: isMobile ? '52px 20px' : '80px 24px', textAlign: 'center', boxShadow: C.shadow }}>
-            <div style={{ width: 72, height: 72, background: C.orangeLight, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
-              <FiPackage size={32} style={{ color: C.orange }} />
-            </div>
-            <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800 }}>
-              {filter === 'all' ? 'No orders yet' : `No ${filter} orders`}
-            </h2>
-            <p style={{ color: C.textLight, fontSize: 14, marginBottom: 22 }}>
-              {filter === 'all' ? "You haven't placed any orders. Start shopping!" : 'Try a different filter.'}
-            </p>
-            {filter === 'all' && (
-              <button onClick={() => navigate('/products')}
-                style={{ padding: '11px 24px', background: C.orange, border: 'none', borderRadius: 11, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: C.font }}>
-                Browse Products
-              </button>
-            )}
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+            className="py-24 bg-white rounded-[40px] border border-dashed border-gray-200 flex flex-col items-center text-center p-12">
+            <div className="text-6xl mb-6 opacity-20">📦</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2 font-head">History is Clear</h2>
+            <p className="text-gray-400 font-medium max-w-xs mx-auto">No orders found matching this filter. Ready to fill your pantry with pure ghee?</p>
+            <button onClick={() => navigate('/products')} className="mt-8 px-8 py-3.5 bg-gray-900 text-white text-sm font-black rounded-2xl hover:bg-orange-600 transition-colors shadow-xl shadow-gray-900/10">Browse Store</button>
           </motion.div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {visible.map((order, i) => {
-              const isExp  = expanded === order._id
-              const status = getStatus(order)
-
+          <div className="flex flex-col gap-6">
+            {visible.map((o, i) => {
+              const isExp = expanded === o._id
+              const state = getStatus(o)
               return (
-                <motion.div key={order._id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                  <div style={{ background: C.white, border: `1.5px solid ${isExp ? C.orange + '55' : C.border}`, borderRadius: 16, overflow: 'hidden', boxShadow: isExp ? C.shadowMd : C.shadow, transition: 'all 0.2s' }}>
-
-                    {/* ── Order Header Row ──────────────────────────────── */}
-                    <div style={{ padding: isMobile ? '14px 14px' : '18px 22px' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          {/* ID + Status */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>
-                            <span style={{ fontWeight: 800, fontSize: isMobile ? 14 : 16, color: C.text }}>
-                              Order #{order._id.slice(-8).toUpperCase()}
-                            </span>
-                            <StatusPill order={order} />
-                            <span style={{ fontSize: 11, background: C.grayBg, color: C.textLight, padding: '2px 9px', borderRadius: 9, fontWeight: 600 }}>
-                              {order.paymentMethod}
-                            </span>
-                          </div>
-                          {/* Meta */}
-                          <div style={{ display: 'flex', gap: isMobile ? 10 : 18, flexWrap: 'wrap' }}>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: C.textLight }}>
-                              <FiCalendar size={11} /> {new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </span>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: C.textLight }}>
-                              <FiPackage size={11} /> {order.orderItems?.length} item{order.orderItems?.length !== 1 ? 's' : ''}
-                            </span>
-                            {order.shippingAddress?.city && (
-                              <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: C.textLight }}>
-                                <FiMapPin size={11} /> {order.shippingAddress.city}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Price + Print */}
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontWeight: 900, fontSize: isMobile ? 16 : 20, color: C.orange }}>
-                            ₹{Number(order.totalPrice).toFixed(2)}
-                          </div>
-                          <button
-                            onClick={() => printInvoice(order)}
-                            disabled={printing === order._id}
-                            style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', background: C.orangeLight, border: `1.5px solid ${C.orangeMid}`, borderRadius: 8, color: C.orange, fontSize: 12, fontWeight: 700, cursor: printing === order._id ? 'not-allowed' : 'pointer', fontFamily: C.font }}>
-                            {printing === order._id
-                              ? <><div style={{ width: 12, height: 12, border: `2px solid ${C.orangeMid}`, borderTop: `2px solid ${C.orange}`, borderRadius: '50%', animation: 'spin .7s linear infinite' }} /> Loading…</>
-                              : <><FiPrinter size={12} /> Invoice</>}
-                          </button>
-                        </div>
+                <motion.div
+                  key={o._id}
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className={`bg-white rounded-[32px] border-2 transition-all duration-300 overflow-hidden ${isExp ? 'border-gray-900 shadow-2xl' : 'border-white shadow-lg hover:border-gray-100'
+                    }`}
+                >
+                  <div className="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-lg font-black text-gray-900 tracking-tight">#{o._id.slice(-8).toUpperCase()}</span>
+                        <StatusPill order={o} />
+                        <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{o.paymentMethod}</span>
                       </div>
-
-                      {/* Product thumbnails preview */}
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        {order.orderItems.slice(0, isMobile ? 3 : 5).map((item, idx) => (
-                          <div key={idx} style={{ width: isMobile ? 44 : 52, height: isMobile ? 44 : 52, borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${C.border}`, flexShrink: 0 }}>
-                            <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          </div>
-                        ))}
-                        {order.orderItems.length > (isMobile ? 3 : 5) && (
-                          <div style={{ width: isMobile ? 44 : 52, height: isMobile ? 44 : 52, borderRadius: 10, background: C.grayBg, border: `1.5px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: C.textLight }}>
-                            +{order.orderItems.length - (isMobile ? 3 : 5)}
-                          </div>
-                        )}
-                        {/* Expand button */}
-                        <button
-                          onClick={() => setExpanded(isExp ? null : order._id)}
-                          style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: `1.5px solid ${C.border}`, borderRadius: 8, padding: '5px 10px', cursor: 'pointer', color: C.textMid, fontSize: 12, fontWeight: 600, fontFamily: C.font }}>
-                          <motion.div animate={{ rotate: isExp ? 180 : 0 }} transition={{ duration: 0.22 }}>
-                            <FiChevronDown size={14} />
-                          </motion.div>
-                          {isExp ? 'Less' : 'Details'}
-                        </button>
+                      <div className="flex items-center gap-6">
+                        <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
+                          <FiCalendar className="text-gray-300" />
+                          {new Date(o.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
+                          <FiPackage className="text-gray-300" />
+                          {o.orderItems.length} Item{o.orderItems.length !== 1 ? 's' : ''}
+                        </div>
                       </div>
                     </div>
 
-                    {/* ── Expanded Detail ───────────────────────────────── */}
-                    <AnimatePresence>
-                      {isExp && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.26 }}
-                          style={{ overflow: 'hidden' }}
-                        >
-                          <div style={{ borderTop: `1.5px solid ${C.border}`, background: '#fafbfc' }}>
-
-                            {/* Grid: items + info */}
-                            <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: 0 }}>
-
-                              {/* Order Items */}
-                              <div style={{ padding: isMobile ? '16px' : '20px 22px', borderRight: isDesktop ? `1.5px solid ${C.border}` : 'none', borderBottom: isDesktop ? 'none' : `1.5px solid ${C.border}` }}>
-                                <p style={{ margin: '0 0 12px', fontSize: 11, fontWeight: 700, color: C.orange, textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                                  Items ({order.orderItems.length})
-                                </p>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                                  {order.orderItems.map((item, idx) => (
-                                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 13px', background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 12 }}>
-                                      <div style={{ width: isMobile ? 48 : 56, height: isMobile ? 48 : 56, borderRadius: 10, overflow: 'hidden', border: `1.5px solid ${C.border}`, flexShrink: 0 }}>
-                                        <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                      </div>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontWeight: 700, fontSize: isMobile ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: C.text }}>{item.name}</div>
-                                        <div style={{ fontSize: 12, color: C.textLight, marginTop: 3 }}>Qty: {item.quantity} × ₹{Number(item.price).toFixed(2)}</div>
-                                      </div>
-                                      <div style={{ fontWeight: 800, fontSize: isMobile ? 13 : 15, color: C.orange, flexShrink: 0 }}>
-                                        ₹{(item.price * item.quantity).toFixed(2)}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Order Info */}
-                              <div style={{ padding: isMobile ? '16px' : '20px 22px' }}>
-                                {/* Shipping address */}
-                                {order.shippingAddress && (
-                                  <div style={{ marginBottom: 16 }}>
-                                    <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: C.orange, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Shipping Address</p>
-                                    <div style={{ padding: '12px 14px', background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 12 }}>
-                                      <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                                        <FiMapPin size={13} style={{ color: C.orange, marginTop: 2, flexShrink: 0 }} />
-                                        <div style={{ fontSize: 13, color: C.textMid, lineHeight: 1.6 }}>
-                                          {order.shippingAddress.street},<br />
-                                          {order.shippingAddress.city}, {order.shippingAddress.state} – {order.shippingAddress.zipCode},<br />
-                                          {order.shippingAddress.country}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-
-                                {/* Price breakdown */}
-                                <div style={{ marginBottom: 16 }}>
-                                  <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 700, color: C.orange, textTransform: 'uppercase', letterSpacing: '0.07em' }}>Price Breakdown</p>
-                                  <div style={{ padding: '12px 14px', background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 12 }}>
-                                    {[
-                                      { label: 'Items Total', val: `₹${Number(order.itemsPrice || 0).toFixed(2)}` },
-                                      { label: 'Tax (18% GST)', val: `₹${Number(order.taxPrice || 0).toFixed(2)}` },
-                                      { label: 'Shipping', val: order.shippingPrice > 0 ? `₹${order.shippingPrice.toFixed(2)}` : 'FREE' },
-                                    ].map(r => (
-                                      <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '3px 0' }}>
-                                        <span style={{ color: C.textLight }}>{r.label}</span>
-                                        <span style={{ fontWeight: 600, color: r.val === 'FREE' ? C.green : C.textMid }}>{r.val}</span>
-                                      </div>
-                                    ))}
-                                    <div style={{ borderTop: `1.5px solid ${C.border}`, marginTop: 8, paddingTop: 8, display: 'flex', justifyContent: 'space-between' }}>
-                                      <span style={{ fontWeight: 800, fontSize: 14 }}>Total</span>
-                                      <span style={{ fontWeight: 900, fontSize: 16, color: C.orange }}>₹{Number(order.totalPrice).toFixed(2)}</span>
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Timestamps */}
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.textLight }}>
-                                    <FiCalendar size={12} style={{ color: C.orange }} />
-                                    <span>Ordered: <strong style={{ color: C.textMid }}>{new Date(order.createdAt).toLocaleString('en-IN')}</strong></span>
-                                  </div>
-                                  {order.isPaid && order.paidAt && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.textLight }}>
-                                      <FiCreditCard size={12} style={{ color: C.green }} />
-                                      <span>Paid: <strong style={{ color: C.green }}>{new Date(order.paidAt).toLocaleString('en-IN')}</strong></span>
-                                    </div>
-                                  )}
-                                  {order.isDelivered && order.deliveredAt && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: C.textLight }}>
-                                      <FiTruck size={12} style={{ color: C.blue }} />
-                                      <span>Delivered: <strong style={{ color: C.blue }}>{new Date(order.deliveredAt).toLocaleString('en-IN')}</strong></span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                            </div>
-
-                            {/* Footer strip */}
-                            <div style={{ borderTop: `1.5px solid ${C.border}`, padding: isMobile ? '12px 16px' : '14px 22px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, background: C.grayBg }}>
-                              <button
-                                onClick={() => printInvoice(order)}
-                                disabled={printing === order._id}
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 20px', background: C.orange, border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 14, cursor: printing === order._id ? 'not-allowed' : 'pointer', fontFamily: C.font, opacity: printing === order._id ? 0.7 : 1 }}>
-                                <FiPrinter size={14} /> {printing === order._id ? 'Generating…' : 'Print Invoice'}
-                              </button>
-                            </div>
-
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-
+                    <div className="flex items-center gap-8 justify-between border-t sm:border-0 pt-4 sm:pt-0">
+                      <div className="text-right">
+                        <div className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Final Amount</div>
+                        <div className={`text-3xl font-black font-head ${o.paymentStatus === 'CANCELLED' ? 'text-gray-300 line-through' : 'text-gray-900'}`}>
+                          ₹{Number(o.totalPrice).toLocaleString()}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setExpanded(isExp ? null : o._id)}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${isExp ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-900'
+                          }`}
+                      >
+                        <motion.div animate={{ rotate: isExp ? 180 : 0 }}><FiChevronDown size={20} /></motion.div>
+                      </button>
+                    </div>
                   </div>
+
+                  <AnimatePresence>
+                    {isExp && (
+                      <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden bg-gray-50/50">
+                        <div className="p-6 sm:p-10 border-t border-gray-100">
+                          <div className="grid lg:grid-cols-2 gap-10">
+                            {/* Summary */}
+                            <div className="space-y-6">
+                              <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-6">Package Contents</h3>
+                              <div className="space-y-3">
+                                {o.orderItems.map(item => (
+                                  <div key={item._id} className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-50 shadow-sm">
+                                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shrink-0">
+                                      <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-black text-gray-900 text-sm truncate">{item.name}</div>
+                                      <div className="text-[10px] font-bold text-gray-400">{item.quantity} × ₹{item.price}</div>
+                                    </div>
+                                    <div className="text-sm font-black text-gray-900">₹{(item.quantity * item.price).toLocaleString()}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Logistics */}
+                            <div className="space-y-10">
+                              <div className="bg-white p-8 rounded-[32px] border border-gray-50 shadow-sm">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600"><FiMapPin size={16} /></div>
+                                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Delivery Route</h3>
+                                </div>
+                                <div className="text-sm font-medium text-gray-500 leading-relaxed uppercase tracking-wider">
+                                  <strong className="text-gray-900">{o.shippingAddress.city} HUB</strong><br />
+                                  {o.shippingAddress.street}, {o.shippingAddress.city}<br />
+                                  {o.shippingAddress.state} – {o.shippingAddress.zipCode}
+                                </div>
+                              </div>
+
+                              <div className="bg-white p-8 rounded-[32px] border border-gray-50 shadow-sm">
+                                <div className="flex items-center gap-3 mb-6">
+                                  <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600"><FiCreditCard size={16} /></div>
+                                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-widest">Pricing Matrix</h3>
+                                </div>
+                                <div className="space-y-3">
+                                  <div className="flex justify-between text-sm font-medium">
+                                    <span className="text-gray-400">Cart Total</span>
+                                    <span className="text-gray-900">₹{Number(o.itemsPrice).toLocaleString()}</span>
+                                  </div>
+                                  {o.discount > 0 && (
+                                    <div className="flex justify-between text-sm font-bold text-green-600">
+                                      <span>Discount Applied</span>
+                                      <span>-₹{Number(o.discount).toLocaleString()}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-sm font-medium">
+                                    <span className="text-gray-400">Shipping (Pan India)</span>
+                                    <span className={o.shippingPrice === 0 ? 'text-green-600 font-black text-[10px] tracking-widest' : 'text-gray-900'}>
+                                      {o.shippingPrice === 0 ? 'FREE' : `₹${o.shippingPrice}`}
+                                    </span>
+                                  </div>
+                                  <div className="h-[1px] bg-gray-50 my-2" />
+                                  <div className="flex justify-between items-end">
+                                    <span className="text-xs font-black text-gray-400 uppercase tracking-widest">Final Amount</span>
+                                    <span className="text-2xl font-black text-gray-900 font-head leading-none">₹{Number(o.totalPrice).toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-12 flex flex-wrap gap-4 justify-end border-t border-gray-100 pt-8">
+                            <button onClick={() => printInvoice(o)} disabled={printing === o._id}
+                              className="px-8 py-4 bg-white border border-gray-100 rounded-2xl text-sm font-black text-gray-900 flex items-center gap-3 hover:bg-gray-50 transition-colors">
+                              <FiPrinter size={18} /> {printing === o._id ? 'Building PDF...' : 'Download Invoice'}
+                            </button>
+                            {canCancel(o) && (
+                              <button onClick={() => setCancelModal(o)}
+                                className="px-8 py-4 bg-red-50 text-red-600 border border-red-100 rounded-2xl text-sm font-black flex items-center gap-3 hover:bg-red-600 hover:text-white transition-all">
+                                <FiX size={18} /> Cancel Order
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </motion.div>
               )
             })}
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {cancelModal && (
+          <CancelModal
+            order={cancelModal}
+            onClose={() => setCancelModal(null)}
+            onConfirm={handleCancelOrder}
+            loading={cancelLoading}
+          />
+        )}
+      </AnimatePresence>
+
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   )
 }

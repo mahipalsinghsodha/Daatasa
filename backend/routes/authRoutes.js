@@ -162,8 +162,9 @@ const jwt         = require('jsonwebtoken');
 const crypto      = require('crypto');
 const transporter = require('../utils/sendEmail');
 const User        = require('../models/User');
-const auth        = require('../middleware/auth');
-const dbCheck     = require('../middleware/dbCheck');
+const auth     = require('../middleware/auth');
+const dbCheck  = require('../middleware/dbCheck');
+const { logAction } = require('../utils/logger');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -175,6 +176,7 @@ const safeUser = (u) => ({
   name:      u.name,
   email:     u.email,
   role:      u.role,
+  permissions: u.permissions || [],
   phone:     u.phone || '',
   addresses: u.addresses || [],
 });
@@ -512,5 +514,92 @@ router.patch('/addresses/:addrId/default', auth, async (req, res) => {
     res.status(500).json({ message: error.message || 'Failed to set default' });
   }
 });
+
+// Add to authRoutes.js
+
+// Admin: Get all users with total orders and spent amount
+router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
+  try {
+
+    const User = require('../models/User');
+    const Order = require('../models/Order');
+
+    // 1. Fetch all users
+    const users = await User.find().select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint').lean();
+
+    // 2. Fetch all orders and aggregate by user
+    const orders = await Order.aggregate([
+      {
+        $group: {
+          _id: "$user",
+          totalOrders: { $sum: 1 },
+          totalSpent: { $sum: "$totalPrice" }
+        }
+      }
+    ]);
+
+    // 3. Map aggregates back to users map
+    const orderStatsMap = {};
+    orders.forEach(stat => {
+      if (stat._id) {
+        orderStatsMap[stat._id.toString()] = {
+          totalOrders: stat.totalOrders,
+          totalSpent: stat.totalSpent
+        };
+      }
+    });
+
+    const enrichedUsers = users.map(u => ({
+      ...u,
+      totalOrders: orderStatsMap[u._id.toString()]?.totalOrders || 0,
+      totalSpent: orderStatsMap[u._id.toString()]?.totalSpent || 0
+    }));
+
+    res.json(enrichedUsers);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Admin: block or unblock a user (toggles)
+router.put('/users/:id/block', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const User = require('../models/User');
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: 'User not found' });
+
+    target.isBlocked = !target.isBlocked;
+    await target.save();
+
+    await logAction(req, target.isBlocked ? 'BLOCK_USER' : 'UNBLOCK_USER', 'USER', target._id, {
+      reason,
+      userName: target.name,
+      userEmail: target.email
+    });
+
+    // Send email notification to user
+    try {
+      const { sendBlockEmail } = require('../services/emailService');
+      await sendBlockEmail({
+        to:        target.email,
+        userName:  target.name,
+        isBlocked: target.isBlocked,
+        reason,
+      });
+    } catch (e) { console.error('Block email error (non-fatal):', e); }
+
+    res.json({
+      message:   `User ${target.isBlocked ? 'blocked' : 'unblocked'} successfully`,
+      isBlocked: target.isBlocked,
+      userId:    target._id,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Also update all order routes that do .populate('user', 'name email')
+// Change to: .populate('user', 'name email isBlocked')
 
 module.exports = router;

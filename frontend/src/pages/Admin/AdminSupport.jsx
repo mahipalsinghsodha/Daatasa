@@ -1,395 +1,368 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  MessageSquare, LifeBuoy, Clock, CheckCircle,
-  User, Send, RefreshCw, ChevronDown, Search, Filter,
-} from "lucide-react";
+  FiMessageSquare, FiLifeBuoy, FiClock, FiCheckCircle,
+  FiUser, FiSend, FiRefreshCw, FiChevronDown, FiSearch, FiFilter, 
+  FiArrowLeft, FiPaperclip, FiMoreVertical, FiTag, FiShieldOff, FiSlash, 
+  FiChevronRight, FiX, FiActivity
+} from "react-icons/fi";
 import api from "../../api/axios";
+import { useAuth } from "../../context/AuthContext";
+import RestrictedAccess from "../../components/RestrictedAccess";
+import { toast } from "react-toastify";
 
-// ── Brand Tokens ──────────────────────────────────────────────────────────────
-const C = {
-  orange:     "#e8621a",
-  orangeHov:  "#d4561a",
-  orangeLight:"#fff4ee",
-  orangeMid:  "#fddcca",
-  bg:         "#f0f4f8",
-  white:      "#ffffff",
-  text:       "#1a1a2e",
-  textMid:    "#444455",
-  textLight:  "#8899aa",
-  border:     "#e4e9f0",
-  shadow:     "0 2px 12px rgba(0,0,0,0.07)",
-  shadowMd:   "0 6px 24px rgba(0,0,0,0.10)",
-  green:      "#16a34a", greenBg:  "#dcfce7",
-  yellow:     "#b45309", yellowBg: "#fef3c7",
-  red:        "#dc2626", redBg:    "#fee2e2",
-  blue:       "#1d4ed8", blueBg:   "#dbeafe",
-  gray:       "#64748b", grayBg:   "#f1f5f9",
-  font:       "'Inter', system-ui, sans-serif",
-};
+// ── Design Tokens ──────────────────────────────────────────────────────────────
+const T = {
+  bg: '#f8fafc', 
+  surface: '#ffffff', 
+  surfaceHigh: '#f1f5f9', 
+  border: '#e2e8f0',
+  accent: '#e8621a', 
+  accentDim: '#fff4ee', 
+  success: '#10b981', 
+  successDim: '#f0fdf4',
+  danger: '#ef4444', 
+  dangerDim: '#fef2f2', 
+  info: '#3b82f6', 
+  infoDim: '#eff6ff',
+  warning: '#f59e0b', 
+  warningDim: '#fff7ed',
+  text: '#0f172a', 
+  textMid: '#475569', 
+  textDim: '#94a3b8',
+  white: '#ffffff',
+  font: '"Inter", "Plus Jakarta Sans", sans-serif',
+}
 
-const BADGE_CFG = {
-  OPEN:        { label: "Open",        color: C.red,    bg: C.redBg },
-  IN_PROGRESS: { label: "In Progress", color: C.yellow, bg: C.yellowBg },
-  RESOLVED:    { label: "Resolved",    color: C.green,  bg: C.greenBg },
-  CLOSED:      { label: "Closed",      color: C.gray,   bg: C.grayBg },
+const STATUS_CFG = {
+  OPEN:        { label: "OPEN",        color: T.danger,  bg: T.dangerDim },
+  IN_PROGRESS: { label: "IN PROGRESS", color: T.warning, bg: T.warningDim },
+  RESOLVED:    { label: "RESOLVED",    color: T.success, bg: T.successDim },
+  CLOSED:      { label: "CLOSED",      color: T.textDim, bg: T.surfaceHigh },
 };
 
 // ── Primitives ─────────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const s = BADGE_CFG[status] || BADGE_CFG.OPEN;
+const StatusMarker = ({ status }) => {
+  const s = STATUS_CFG[status] || STATUS_CFG.OPEN;
   return (
     <span style={{
-      background: s.bg, color: s.color, padding: "4px 11px",
-      borderRadius: 20, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap",
+      background: s.bg, color: s.color, padding: "4px 10px",
+      borderRadius: 10, fontSize: 10, fontWeight: 900, whiteSpace: "nowrap",
+      border: `1.5px solid ${s.color}20`, letterSpacing: '0.05em'
     }}>{s.label}</span>
   );
 };
 
-const StatCard = ({ icon: Icon, label, value, color, bg }) => (
-  <div style={{
-    background: C.white, border: `1.5px solid ${C.border}`,
-    borderRadius: 14, padding: "18px 20px",
-    display: "flex", alignItems: "center", gap: 14,
-    boxShadow: C.shadow,
-  }}>
-    <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-      <Icon size={20} style={{ color }} />
-    </div>
-    <div>
-      <p style={{ margin: 0, fontSize: 12, color: C.textLight, fontWeight: 500 }}>{label}</p>
-      <p style={{ margin: "3px 0 0", fontSize: 26, fontWeight: 800, color: C.text, fontFamily: C.font, lineHeight: 1 }}>{value}</p>
-    </div>
-  </div>
-);
-
-const ActionBtn = ({ children, onClick, color, bg, disabled, icon: Icon }) => (
-  <motion.button
-    whileHover={disabled ? {} : { scale: 1.03 }}
-    whileTap={disabled ? {} : { scale: 0.97 }}
-    onClick={onClick}
-    disabled={disabled}
-    style={{
-      display: "inline-flex", alignItems: "center", gap: 6,
-      padding: "8px 14px", background: disabled ? C.grayBg : bg,
-      border: `1.5px solid ${disabled ? C.border : color + "40"}`,
-      borderRadius: 9, color: disabled ? C.textLight : color,
-      fontSize: 12, fontWeight: 700, cursor: disabled ? "not-allowed" : "pointer",
-      fontFamily: C.font, transition: "all 0.15s",
-    }}
-  >
-    {Icon && <Icon size={13} />}
-    {children}
-  </motion.button>
-);
-
-// ── Main ──────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 export default function AdminSupport() {
-  const [tickets, setTickets]     = useState([]);
-  const [replyText, setReplyText] = useState({});
-  const [loading, setLoading]     = useState(false);
-  const [expanded, setExpanded]   = useState(null);
-  const [filter, setFilter]       = useState("ALL");
-  const [search, setSearch]       = useState("");
-  const [busy, setBusy]           = useState({});
+  const { user, hasPermission } = useAuth();
+  const [tickets, setTickets]       = useState([]);
+  const [selectedTicket, setSelectedTicket] = useState(null);
+  const [replyText, setReplyText]   = useState("");
+  const [loading, setLoading]       = useState(false);
+  const [filter, setFilter]         = useState("ALL");
+  const [search, setSearch]         = useState("");
+  const [sending, setSending]       = useState(false);
+  const [isMobile, setIsMobile]     = useState(typeof window !== 'undefined' && window.innerWidth < 1024);
 
+  const messagesEndRef = useRef(null);
   const token = localStorage.getItem("token");
 
-  useEffect(() => { fetchTickets(); }, []);
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener("resize", handleResize);
+    if (hasPermission('support')) fetchTickets(true);
+    
+    const interval = setInterval(() => {
+      if (hasPermission('support')) fetchTickets(false);
+    }, 10000);
+    
+    return () => {
+       clearInterval(interval);
+       window.removeEventListener("resize", handleResize);
+    };
+  }, [hasPermission]);
 
-  const fetchTickets = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selectedTicket?.messages?.length]);
+
+  const fetchTickets = async (showLoad = false) => {
+    if (!hasPermission('support')) return;
+    if (showLoad) setLoading(true);
     try {
       const res = await api.get("/api/support/admin", { headers: { Authorization: `Bearer ${token}` } });
-      setTickets(res.data || []);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+      const data = res.data || [];
+      setTickets(data);
+      if (selectedTicket) {
+        const updated = data.find(t => t._id === selectedTicket._id);
+        if (updated && (updated.messages.length !== selectedTicket.messages.length || updated.status !== selectedTicket.status)) {
+          setSelectedTicket(updated);
+        }
+      }
+    } catch (e) { 
+      console.error(e); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
-  const sendReply = async (id) => {
-    if (!replyText[id]?.trim()) return;
-    setBusy(b => ({ ...b, [`r${id}`]: true }));
+  const sendReply = async (e) => {
+    if (e) e.preventDefault();
+    if (!replyText.trim() || !selectedTicket) return;
+    setSending(true);
     try {
-      await api.post(`/api/support/${id}/reply`, { message: replyText[id] }, { headers: { Authorization: `Bearer ${token}` } });
-      setReplyText(p => ({ ...p, [id]: "" }));
-      fetchTickets();
-    } catch (e) { console.error(e); }
-    finally { setBusy(b => ({ ...b, [`r${id}`]: false })); }
+      await api.post(`/api/support/reply/${selectedTicket._id}`, { message: replyText }, { headers: { Authorization: `Bearer ${token}` } });
+      setReplyText("");
+      fetchTickets(false);
+    } catch (e) {
+      toast.error("Transmission failed");
+    } finally {
+      setSending(false);
+    }
   };
 
-  const updateStatus = async (id, status) => {
-    setBusy(b => ({ ...b, [`s${id}${status}`]: true }));
+  const updateStatus = async (status) => {
+    if (!selectedTicket) return;
     try {
-      await api.put(`/api/support/${id}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
-      fetchTickets();
-    } catch (e) { console.error(e); }
-    finally { setBusy(b => ({ ...b, [`s${id}${status}`]: false })); }
+      await api.patch(`/api/support/status/${selectedTicket._id}`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success(`Protocol state: ${status}`);
+      fetchTickets(false);
+    } catch (e) { toast.error("State transition failed"); }
   };
 
-  const stats = {
-    total:    tickets.length,
-    open:     tickets.filter(t => t.status === "OPEN").length,
-    progress: tickets.filter(t => t.status === "IN_PROGRESS").length,
-    resolved: tickets.filter(t => t.status === "RESOLVED").length,
-  };
+  const filtered = tickets.filter(t => {
+    const matchF = filter === "ALL" ? true : t.status === filter;
+    const q = search.toLowerCase();
+    const matchS = !q || t.subject.toLowerCase().includes(q) || t.user?.name?.toLowerCase().includes(q) || t._id.includes(q);
+    return matchF && matchS;
+  });
 
-  const FILTERS = ["ALL", "OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED"];
+  if (!hasPermission('support')) return <RestrictedAccess title="Support Restricted" message="Your account lacks the clearance to monitor or respond to client distress signals. Contact system overseer." />;
 
-  const filtered = tickets
-    .filter(t => filter === "ALL" || t.status === filter)
-    .filter(t =>
-      !search ||
-      t.subject?.toLowerCase().includes(search.toLowerCase()) ||
-      t.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      t.user?.email?.toLowerCase().includes(search.toLowerCase())
-    );
-
-  return (
-    <div style={{ minHeight: "100vh", background: C.bg, fontFamily: C.font, color: C.text }}>
-
-      {/* Top Bar */}
-      <div style={{
-        background: C.white, borderBottom: `1.5px solid ${C.border}`,
-        padding: "0 28px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", height: 60, boxShadow: C.shadow,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, background: C.orange, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <LifeBuoy size={17} color="#fff" />
-          </div>
-          <span style={{ fontWeight: 800, fontSize: 17, color: C.text }}>Support Panel</span>
-          <span style={{ background: C.orangeLight, color: C.orange, padding: "3px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700, border: `1px solid ${C.orangeMid}` }}>Admin</span>
-        </div>
-        <motion.button
-          whileHover={{ rotate: 180 }} transition={{ duration: 0.35 }}
-          onClick={fetchTickets}
-          style={{
-            width: 36, height: 36, borderRadius: 9,
-            background: C.grayBg, border: `1.5px solid ${C.border}`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            cursor: "pointer", color: C.textLight,
-          }}>
-          <RefreshCw size={15} />
-        </motion.button>
-      </div>
-
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "28px 24px" }}>
-
-        {/* Stats */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14, marginBottom: 28 }}>
-          {[
-            { icon: LifeBuoy,      label: "Total Tickets", value: stats.total,    color: C.orange, bg: C.orangeLight },
-            { icon: MessageSquare, label: "Open",          value: stats.open,     color: C.red,    bg: C.redBg },
-            { icon: Clock,         label: "In Progress",   value: stats.progress, color: C.yellow, bg: C.yellowBg },
-            { icon: CheckCircle,   label: "Resolved",      value: stats.resolved, color: C.green,  bg: C.greenBg },
-          ].map((s, i) => (
-            <motion.div key={s.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-              <StatCard {...s} />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Toolbar */}
-        <div style={{
-          background: C.white, border: `1.5px solid ${C.border}`,
-          borderRadius: 14, padding: "14px 18px", marginBottom: 18,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          flexWrap: "wrap", gap: 12, boxShadow: C.shadow,
-        }}>
-          {/* Filter tabs */}
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {FILTERS.map(f => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                style={{
-                  padding: "6px 14px", borderRadius: 20,
-                  background: filter === f ? C.orange : C.grayBg,
-                  border: `1.5px solid ${filter === f ? C.orange : C.border}`,
-                  color: filter === f ? "#fff" : C.textMid,
-                  fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  fontFamily: C.font, transition: "all 0.18s",
-                }}
-              >
-                {f === "ALL" ? `All (${stats.total})` : f.replace(/_/g, " ")}
-              </button>
-            ))}
-          </div>
-
-          {/* Search */}
-          <div style={{ position: "relative", minWidth: 220 }}>
-            <Search size={14} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: C.textLight }} />
-            <input
-              placeholder="Search tickets, users…"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              style={{
-                paddingLeft: 32, paddingRight: 12, paddingTop: 8, paddingBottom: 8,
-                border: `1.5px solid ${C.border}`, borderRadius: 9,
-                fontSize: 13, color: C.text, outline: "none",
-                fontFamily: C.font, width: "100%", boxSizing: "border-box",
-                background: C.grayBg, transition: "border-color 0.2s",
-              }}
-              onFocus={e => e.target.style.borderColor = C.orange}
-              onBlur={e => e.target.style.borderColor = C.border}
-            />
-          </div>
-        </div>
-
-        {/* Ticket List */}
-        {loading ? (
-          <div style={{ textAlign: "center", padding: 80, color: C.textLight }}>
-            <div style={{
-              width: 34, height: 34, border: `3px solid ${C.border}`,
-              borderTop: `3px solid ${C.orange}`, borderRadius: "50%",
-              animation: "spin 0.8s linear infinite", margin: "0 auto 14px",
-            }} />
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-            Loading tickets…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 14, padding: "60px 24px", textAlign: "center", color: C.textLight, boxShadow: C.shadow }}>
-            <LifeBuoy size={40} style={{ color: C.border, marginBottom: 12 }} />
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 500 }}>No tickets found</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {filtered.map((ticket, i) => {
-              const isOpen = expanded === ticket._id;
-              return (
-                <motion.div
-                  key={ticket._id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                >
-                  <div style={{
-                    background: C.white, border: `1.5px solid ${isOpen ? C.orange + "50" : C.border}`,
-                    borderRadius: 14, overflow: "hidden", boxShadow: isOpen ? C.shadowMd : C.shadow,
-                    transition: "all 0.2s",
-                  }}>
-                    {/* Ticket header */}
-                    <div
-                      onClick={() => setExpanded(isOpen ? null : ticket._id)}
-                      style={{ padding: "16px 20px", cursor: "pointer", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 6 }}>
-                          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: C.text }}>{ticket.subject}</h3>
-                          <StatusBadge status={ticket.status} />
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: C.textLight }}>
-                            <User size={12} /> {ticket.user?.name} · {ticket.user?.email}
-                          </span>
-                          <span style={{ fontSize: 12, color: C.textLight }}>{ticket.category?.replace(/_/g, " ")}</span>
-                          <span style={{ fontSize: 12, color: C.textLight }}>{ticket.messages?.length || 0} msg{ticket.messages?.length !== 1 ? "s" : ""}</span>
-                        </div>
-                      </div>
-                      <motion.div animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.22 }}>
-                        <ChevronDown size={18} style={{ color: C.textLight }} />
-                      </motion.div>
-                    </div>
-
-                    {/* Expanded content */}
-                    <AnimatePresence>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.25 }}
-                          style={{ overflow: "hidden" }}
-                        >
-                          {/* Conversation */}
-                          <div style={{ borderTop: `1.5px solid ${C.border}`, padding: "18px 20px" }}>
-                            <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "0.07em" }}>Conversation</p>
-                            {(!ticket.messages || ticket.messages.length === 0) ? (
-                              <p style={{ color: C.textLight, fontSize: 13, textAlign: "center", padding: "12px 0" }}>No messages yet.</p>
-                            ) : (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                                {ticket.messages.map((msg, idx) => (
-                                  <div key={idx} style={{
-                                    maxWidth: "65%",
-                                    alignSelf: msg.sender === "admin" ? "flex-end" : "flex-start",
-                                    background: msg.sender === "admin" ? C.orangeLight : C.grayBg,
-                                    border: `1.5px solid ${msg.sender === "admin" ? C.orangeMid : C.border}`,
-                                    borderRadius: msg.sender === "admin" ? "13px 13px 3px 13px" : "13px 13px 13px 3px",
-                                    padding: "10px 14px",
-                                  }}>
-                                    <div style={{ fontSize: 10, fontWeight: 700, color: msg.sender === "admin" ? C.orange : C.textLight, marginBottom: 4, textTransform: "uppercase" }}>
-                                      {msg.sender === "admin" ? "You (Admin)" : ticket.user?.name || "User"}
-                                    </div>
-                                    <div style={{ fontSize: 13, color: C.text, lineHeight: 1.5 }}>{msg.message}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Reply area */}
-                          <div style={{ borderTop: `1.5px solid ${C.border}`, padding: "16px 20px", background: C.grayBg }}>
-                            <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: C.textLight, textTransform: "uppercase", letterSpacing: "0.07em" }}>Reply to Customer</p>
-                            <textarea
-                              placeholder="Type your reply…"
-                              value={replyText[ticket._id] || ""}
-                              onChange={e => setReplyText(p => ({ ...p, [ticket._id]: e.target.value }))}
-                              style={{
-                                width: "100%", border: `1.5px solid ${C.border}`,
-                                borderRadius: 10, padding: "10px 13px",
-                                color: C.text, fontSize: 13, outline: "none",
-                                fontFamily: C.font, boxSizing: "border-box",
-                                minHeight: 85, resize: "vertical",
-                                background: C.white, marginBottom: 12,
-                                transition: "border-color 0.2s",
-                              }}
-                              onFocus={e => e.target.style.borderColor = C.orange}
-                              onBlur={e => e.target.style.borderColor = C.border}
-                            />
-                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                              <ActionBtn
-                                icon={Send}
-                                onClick={() => sendReply(ticket._id)}
-                                color={C.blue} bg={C.blueBg}
-                                disabled={busy[`r${ticket._id}`] || !replyText[ticket._id]?.trim()}
-                              >
-                                {busy[`r${ticket._id}`] ? "Sending…" : "Send Reply"}
-                              </ActionBtn>
-                              <ActionBtn
-                                icon={CheckCircle}
-                                onClick={() => updateStatus(ticket._id, "RESOLVED")}
-                                color={C.green} bg={C.greenBg}
-                                disabled={busy[`s${ticket._id}RESOLVED`] || ticket.status === "RESOLVED"}
-                              >
-                                Mark Resolved
-                              </ActionBtn>
-                              <ActionBtn
-                                icon={Clock}
-                                onClick={() => updateStatus(ticket._id, "IN_PROGRESS")}
-                                color={C.yellow} bg={C.yellowBg}
-                                disabled={busy[`s${ticket._id}IN_PROGRESS`] || ticket.status === "IN_PROGRESS"}
-                              >
-                                In Progress
-                              </ActionBtn>
-                              <ActionBtn
-                                onClick={() => updateStatus(ticket._id, "CLOSED")}
-                                color={C.gray} bg={C.grayBg}
-                                disabled={busy[`s${ticket._id}CLOSED`] || ticket.status === "CLOSED"}
-                              >
-                                Close Ticket
-                              </ActionBtn>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+  if (loading && tickets.length === 0) return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, fontFamily: T.font }}>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ width: 44, height: 44, border: `3px solid ${T.accent}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
+        <p style={{ color: T.textMid, marginTop: 16, fontWeight: 700 }}>Orchestrating Support Nodes...</p>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
   );
+
+  return (
+    <div style={{ display: 'flex', height: '100vh', background: T.bg, color: T.text, fontFamily: T.font, overflow: 'hidden' }}>
+      <style>{`
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 10px; }
+        .ticket-item:hover { background: #fcfcfd !important; }
+        .btn-hover:hover { background: ${T.surfaceHigh}; transform: translateY(-1px); }
+        @media (max-width: 1023px) { 
+           .sidebar { width: 100% !important; border-right: none !important; }
+           .chat-main { position: fixed !important; inset: 0; z-index: 200; background: ${T.bg} !important; }
+        }
+      `}</style>
+
+      {/* ── Side Matrix (Ticket List) ── */}
+      <div className="sidebar" style={{ 
+        width: 400, borderRight: `1.5px solid ${T.border}`, background: T.surface, 
+        display: (isMobile && selectedTicket) ? 'none' : 'flex', flexDirection: 'column', flexShrink: 0 
+      }}>
+        {/* Sidebar Header */}
+        <div style={{ padding: '24px', borderBottom: `1.5px solid ${T.border}`, background: T.white }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ width: 44, height: 44, background: T.accentDim, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.accent }}>
+              <FiLifeBuoy size={24}/>
+            </div>
+            <div>
+              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}>Distress Feed</h1>
+              <p style={{ margin: 0, fontSize: 12, color: T.textDim, fontWeight: 600 }}>Active Support Requests</p>
+            </div>
+          </div>
+          <div style={{ position: 'relative' }}>
+            <FiSearch size={16} color={T.textDim} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
+            <input type="text" placeholder="Search signals…" value={search} onChange={e => setSearch(e.target.value)}
+              style={{ width: '100%', padding: '12px 14px 12px 42px', background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: 12, outline: 'none', fontSize: 14, fontWeight: 500 }} />
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div style={{ display: 'flex', gap: 8, padding: '12px 24px', background: T.bg, borderBottom: `1.5px solid ${T.border}`, overflowX: 'auto' }}>
+          {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED'].map(stat => (
+            <button key={stat} onClick={() => setFilter(stat)}
+              style={{ 
+                padding: '6px 12px', borderRadius: 8, fontSize: 10, fontWeight: 800, border: 'none', cursor: 'pointer', transition: '0.2s',
+                background: filter === stat ? T.accent : T.surfaceHigh,
+                color: filter === stat ? '#fff' : T.textMid,
+              }}>
+              {stat.replace(/_/g, ' ')}
+            </button>
+          ))}
+        </div>
+
+        {/* Scrollable Feed */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: 60, textAlign: 'center', color: T.textDim }}>
+              <FiMessageSquare size={48} style={{ opacity: 0.1, marginBottom: 16 }} />
+              <div style={{ fontSize: 14, fontWeight: 700 }}>Silence in the feed.</div>
+            </div>
+          ) : filtered.map(t => {
+            const active = selectedTicket?._id === t._id;
+            const lastMsg = t.messages[t.messages.length - 1];
+            return (
+              <div key={t._id} onClick={() => setSelectedTicket(t)} className="ticket-item"
+                style={{
+                  padding: '16px', borderRadius: 16, cursor: 'pointer', transition: '0.2s', marginBottom: 8,
+                  background: active ? T.accentDim : 'transparent',
+                  border: `1.5px solid ${active ? T.accent : 'transparent'}`
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <StatusMarker status={t.status} />
+                  <span style={{ fontSize: 11, color: T.textDim, fontWeight: 600 }}>{new Date(t.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div style={{ fontWeight: 800, fontSize: 14, color: active ? T.accent : T.text, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.subject}</div>
+                <div style={{ fontSize: 13, color: T.textMid, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                   <FiUser size={12}/> {t.user?.name || 'Anonymous Node'}
+                </div>
+                {lastMsg && (
+                  <div style={{ fontSize: 12, color: T.textDim, background: T.surfaceHigh, padding: '8px 12px', borderRadius: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {lastMsg.message}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Main Panel (Chat / Response) ── */}
+      <div className="chat-main" style={{ flex: 1, display: (selectedTicket || !isMobile) ? 'flex' : 'none', flexDirection: 'column', background: T.surface }}>
+        <AnimatePresence mode="wait">
+          {!selectedTicket ? (
+            <motion.div key="none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: T.textDim }}>
+               <FiMessageSquare size={60} style={{ opacity: 0.1, marginBottom: 24 }}/>
+               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Signal Monitor Standby</h2>
+               <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Select a distress signal to begin communication.</p>
+            </motion.div>
+          ) : (
+            <motion.div key="selected" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+               {/* Detail Header */}
+               <div style={{ padding: '24px 32px', borderBottom: `2px solid ${T.border}`, background: T.white, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                    {isMobile && <button onClick={() => setSelectedTicket(null)} style={{ background: T.surfaceHigh, border: 'none', borderRadius: 10, padding: 10 }}><FiArrowLeft/></button>}
+                    <div>
+                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+                          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, letterSpacing: '-0.01em' }}>{selectedTicket.subject}</h2>
+                          <StatusMarker status={selectedTicket.status} />
+                       </div>
+                       <div style={{ fontSize: 12, color: T.textMid, fontWeight: 600 }}>Protocol ID: {selectedTicket._id.toUpperCase()} • Sector: {selectedTicket.category || 'General'}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', background: T.bg, padding: 4, borderRadius: 12, border: `1.5px solid ${T.border}` }}>
+                      {['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'].map(st => (
+                        <button key={st} onClick={() => updateStatus(st)}
+                          style={{ 
+                            padding: '6px 10px', borderRadius: 8, fontSize: 10, fontWeight: 900, border: 'none', cursor: 'pointer', transition: '0.2s',
+                            background: selectedTicket.status === st ? T.white : 'transparent',
+                            color: selectedTicket.status === st ? T.accent : T.textDim,
+                            boxShadow: selectedTicket.status === st ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+                          }} title={`Transition to ${st.replace(/_/g, ' ')}`}>
+                          {st.charAt(0)}
+                        </button>
+                      ))}
+                    </div>
+                    <button className="btn-hover" style={{ padding: 10, borderRadius: 10, border: `1.5px solid ${T.border}`, background: T.white, cursor: 'pointer', color: T.textMid }}><FiMoreVertical/></button>
+                  </div>
+               </div>
+
+               {/* Messages Feed */}
+               <div style={{ flex: 1, overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: 24, background: '#fcfcfd' }}>
+                  {/* Internal Log: Ticket Creation */}
+                  <div style={{ textAlign: 'center' }}>
+                     <span style={{ fontSize: 11, fontWeight: 800, color: T.textDim, background: T.surfaceHigh, padding: '4px 16px', borderRadius: 20 }}>DISTRESS SIGNAL INITIATED • {new Date(selectedTicket.createdAt).toLocaleString()}</span>
+                  </div>
+
+                  {(selectedTicket.messages || []).map((m, idx) => {
+                    const isBot = m.sender === 'system';
+                    const isAdmin = m.senderRole === 'admin' || m.senderRole === 'superadmin';
+                    const isUser = !isAdmin && !isBot;
+                    return (
+                      <div key={idx} style={{ display: 'flex', justifyContent: isUser ? 'flex-start' : 'flex-end', alignItems: 'flex-start', gap: 12 }}>
+                         {isUser && <div style={{ width: 32, height: 32, borderRadius: 10, background: T.accentDim, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.accent, fontWeight: 900, fontSize: 12, mt: 4 }}>{selectedTicket.user?.name?.charAt(0) || 'U'}</div>}
+                         <div style={{ maxWidth: '70%' }}>
+                            <div style={{ 
+                               padding: '16px 20px', borderRadius: 20, fontSize: 14, fontWeight: 500, lineHeight: 1.6,
+                               background: isUser ? T.white : isAdmin ? T.accent : T.surfaceHigh,
+                               color: isUser ? T.text : isAdmin ? '#fff' : T.textMid,
+                               border: isUser ? `1.5px solid ${T.border}` : 'none',
+                               borderBottomLeftRadius: isUser ? 4 : 20,
+                               borderBottomRightRadius: !isUser ? 4 : 20,
+                               boxShadow: isUser ? '0 4px 12px rgba(0,0,0,0.02)' : 'none'
+                            }}>
+                              {m.message}
+                            </div>
+                            <div style={{ marginTop: 6, fontSize: 11, color: T.textDim, fontWeight: 600, textAlign: isUser ? 'left' : 'right' }}>
+                              {isAdmin ? 'MISSION CONTROL' : isUser ? 'CLIENT NODE' : 'SYSTEM'} • {formatTime(m.timestamp)}
+                            </div>
+                         </div>
+                         {!isUser && <div style={{ width: 32, height: 32, borderRadius: 10, background: isAdmin ? T.accent : T.surfaceHigh, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isAdmin ? '#fff' : T.textDim, fontWeight: 900, fontSize: 12, mt: 4 }}>{isAdmin ? 'A' : 'S'}</div>}
+                      </div>
+                    )
+                  })}
+                  <div ref={messagesEndRef} />
+               </div>
+
+               {/* Response Interface */}
+               {selectedTicket.status !== 'CLOSED' ? (
+                 <div style={{ padding: '24px 32px', borderTop: `2px solid ${T.border}`, background: T.white }}>
+                    <form onSubmit={sendReply} style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
+                       <div style={{ flex: 1, position: 'relative' }}>
+                          <textarea placeholder="Transmit response protocol…" value={replyText} onChange={e => setReplyText(e.target.value)}
+                            onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); } }}
+                            style={{ 
+                               width: '100%', minHeight: 60, maxHeight: 200, padding: '16px 20px', borderRadius: 16, 
+                               border: `2px solid ${T.border}`, background: T.bg, outline: 'none', 
+                               fontSize: 14, fontWeight: 500, fontFamily: T.font, resize: 'none'
+                             }} className="input-focus" />
+                       </div>
+                       <button type="submit" disabled={sending || !replyText.trim()}
+                         style={{ 
+                            width: 56, height: 56, borderRadius: 16, background: T.accent, color: '#fff', border: 'none', 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: '0.2s',
+                            opacity: (sending || !replyText.trim()) ? 0.6 : 1, boxShadow: `0 8px 20px ${T.accent}30`
+                         }}>
+                         {sending ? <FiRefreshCw className="spin"/> : <FiSend size={22}/>}
+                       </button>
+                    </form>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+                       <span style={{ fontSize: 11, color: T.textDim, fontWeight: 700 }}>OPERATOR: {user?.name.toUpperCase()} (MISSION CONTROL)</span>
+                       <div style={{ display: 'flex', gap: 12 }}>
+                         <button style={{ background: 'none', border: 'none', color: T.textDim, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}><FiPaperclip/> Attach Signal</button>
+                         <button onClick={() => updateStatus('RESOLVED')} style={{ background: 'none', border: 'none', color: T.success, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800 }}><FiCheckCircle/> Resolve Ticket</button>
+                       </div>
+                    </div>
+                 </div>
+               ) : (
+                 <div style={{ padding: '32px', textAlign: 'center', background: T.surfaceHigh, color: T.textDim, fontWeight: 800, textTransform: 'uppercase', fontSize: 13, borderTop: `2px solid ${T.border}` }}>
+                   PROTOCOL TERMINATED: Distress Signal Resolved and Secured.
+                 </div>
+               )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+const formatTime = (ts) => {
+  const d = new Date(ts);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

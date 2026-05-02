@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
 const auth = require('../middleware/auth');
+const { logAction } = require('../utils/logger');
 
 // Generate invoice for order
 router.get('/:orderId', auth, async (req, res) => {
@@ -14,8 +15,11 @@ router.get('/:orderId', auth, async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Check if user owns order or is admin
-    if (order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    // Check if user owns order or is admin with order permission/superadmin
+    const isOwner = order.user._id.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'superadmin' || (req.user.role === 'admin' && req.user.permissions?.includes('orders'));
+
+    if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -53,12 +57,8 @@ router.get('/:orderId', auth, async (req, res) => {
 });
 
 // Generate multiple invoices
-router.post('/bulk', auth, async (req, res) => {
+router.post('/bulk', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
-
     const { orderIds } = req.body;
     const invoices = [];
 
@@ -94,6 +94,7 @@ router.post('/bulk', auth, async (req, res) => {
       }
     }
 
+    await logAction(req, 'GENERATE_BULK_INVOICES', 'ORDER', null, { count: orderIds.length });
     res.json({ invoices });
   } catch (error) {
     res.status(500).json({ message: error.message });

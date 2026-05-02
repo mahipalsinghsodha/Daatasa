@@ -1,581 +1,180 @@
-// import { useState, useEffect } from 'react'
-// import { useNavigate } from 'react-router-dom'
-// import axios from 'axios'
-// import { useAuth } from '../context/AuthContext'
-// import { FiTrash2, FiMinus, FiPlus, FiShoppingCart, FiArrowRight, FiTag, FiTruck, FiShield } from 'react-icons/fi'
-// import { toast } from 'react-toastify'
-// import { motion, AnimatePresence } from 'framer-motion'
-// import { useCart } from '../context/CartContext'
-
-// // ── Brand Tokens ──────────────────────────────────────────────────────────────
-// const C = {
-//   orange:      '#e8621a',
-//   orangeHov:   '#cf5618',
-//   orangeLight: '#fff4ee',
-//   orangeMid:   '#fddcca',
-//   bg:          '#f2f4f6',
-//   white:       '#ffffff',
-//   text:        '#1a1a2e',
-//   textMid:     '#444455',
-//   textLight:   '#8899aa',
-//   border:      '#e4e9f0',
-//   shadow:      '0 2px 12px rgba(0,0,0,0.07)',
-//   shadowMd:    '0 6px 28px rgba(0,0,0,0.11)',
-//   green:       '#16a34a', greenBg: '#dcfce7',
-//   red:         '#dc2626', redBg:   '#fee2e2',
-//   font:        "'Plus Jakarta Sans', system-ui, sans-serif",
-// }
-
-// const inp = (focus) => ({
-//   border: `1.5px solid ${focus ? C.orange : C.border}`,
-//   borderRadius: 10, padding: '10px 14px',
-//   fontSize: 14, color: C.text, outline: 'none',
-//   fontFamily: C.font, background: C.white,
-//   transition: 'border-color 0.2s', width: '100%',
-//   boxSizing: 'border-box',
-// })
-
-// const Cart = () => {
-//   const { user }      = useAuth()
-//   const navigate      = useNavigate()
-//   const [cart, setCart] = useState(null)
-//   const [loading, setLoading] = useState(true)
-//   const [removing, setRemoving] = useState(null)
-//   const { fetchCartCount } = useCart()
-
-//   useEffect(() => {
-//     if (!user) { navigate('/login'); return }
-//     fetchCart()
-//   }, [user])
-
-//   const fetchCart = async () => {
-//     try {
-//       const res = await api.get('/api/cart')
-//       setCart(res.data)
-//       fetchCartCount()
-//     } catch (e) { console.error(e) }
-//     finally { setLoading(false) }
-//   }
-
-//   const updateQty = async (itemId, newQty, stock) => {
-//     if (newQty < 1) return
-//     if (newQty > stock) { toast.error(`Only ${stock} item(s) in stock`); return }
-//     try {
-//       await api.put(`/api/cart/items/${itemId}`, { quantity: newQty })
-//       fetchCart(); fetchCartCount()
-//     } catch (e) { console.error(e) }
-//   }
-
-//   const removeItem = async (itemId) => {
-//     setRemoving(itemId)
-//     try {
-//       await api.delete(`/api/cart/items/${itemId}`)
-//       fetchCart(); fetchCartCount()
-//     } catch (e) { console.error(e) }
-//     finally { setRemoving(null) }
-//   }
-
-//   const calcTotals = () => {
-//     if (!cart?.items) return { subtotal: 0, tax: 0, shipping: 0, total: 0 }
-//     const subtotal = cart.items.reduce((s, i) => s + (i.product?.price || 0) * i.quantity, 0)
-//     const tax      = subtotal * 0.18
-//     const shipping = subtotal > 500 ? 0 : 50
-//     return { subtotal, tax, shipping, total: subtotal + tax + shipping }
-//   }
-
-//   if (loading) return (
-//     <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.bg }}>
-//       <div style={{ width: 40, height: 40, border: `3px solid ${C.border}`, borderTop: `3px solid ${C.orange}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-//       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-//     </div>
-//   )
-
-//   const totals = calcTotals()
-
-//   return (
-//     <div style={{ minHeight: '100vh', background: C.bg, fontFamily: C.font, color: C.text }}>
-//       <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
-//       {/* Page Header */}
-//       <div style={{ background: C.white, borderBottom: `1.5px solid ${C.border}`, padding: '20px 28px', boxShadow: C.shadow }}>
-//         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-//           <div style={{ width: 44, height: 44, background: C.orange, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-//             <FiShoppingCart size={21} color="#fff" />
-//           </div>
-//           <div>
-//             <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800 }}>Shopping Cart</h1>
-//             <p style={{ margin: 0, fontSize: 13, color: C.textLight }}>
-//               {cart?.items?.length || 0} item{cart?.items?.length !== 1 ? 's' : ''} in your cart
-//             </p>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px' }}>
-
-//         {/* Empty state */}
-//         {(!cart || cart.items.length === 0) ? (
-//           <motion.div
-//             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
-//             style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 20, padding: '72px 24px', textAlign: 'center', boxShadow: C.shadow }}
-//           >
-//             <div style={{ width: 80, height: 80, background: C.orangeLight, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-//               <FiShoppingCart size={36} style={{ color: C.orange }} />
-//             </div>
-//             <h2 style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 800 }}>Your cart is empty</h2>
-//             <p style={{ color: C.textLight, fontSize: 15, marginBottom: 28 }}>Looks like you haven't added anything yet.</p>
-//             <motion.button
-//               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-//               onClick={() => navigate('/products')}
-//               style={{ padding: '12px 28px', background: C.orange, border: 'none', borderRadius: 12, color: '#fff', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: C.font, display: 'inline-flex', alignItems: 'center', gap: 8 }}
-//             >
-//               Browse Products <FiArrowRight size={15} />
-//             </motion.button>
-//           </motion.div>
-//         ) : (
-//           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 22, alignItems: 'start' }}>
-
-//             {/* ── Cart Items ─────────────────────────────────────────────── */}
-//             <div>
-//               {/* Free shipping notice */}
-//               {totals.shipping > 0 && (
-//                 <div style={{ background: C.orangeLight, border: `1.5px solid ${C.orangeMid}`, borderRadius: 12, padding: '11px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: C.orange, fontWeight: 600 }}>
-//                   <FiTruck size={15} />
-//                   Add ₹{(500 - totals.subtotal).toFixed(0)} more to get FREE delivery!
-//                 </div>
-//               )}
-//               {totals.shipping === 0 && (
-//                 <div style={{ background: C.greenBg, border: '1.5px solid #86efac', borderRadius: 12, padding: '11px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: C.green, fontWeight: 600 }}>
-//                   <FiTruck size={15} />
-//                   🎉 You qualify for FREE delivery!
-//                 </div>
-//               )}
-
-//               <AnimatePresence>
-//                 {cart.items.map((item, i) => (
-//                   <motion.div
-//                     key={item._id}
-//                     layout
-//                     initial={{ opacity: 0, y: 10 }}
-//                     animate={{ opacity: 1, y: 0 }}
-//                     exit={{ opacity: 0, x: -30, height: 0, marginBottom: 0 }}
-//                     transition={{ duration: 0.25, delay: i * 0.04 }}
-//                     style={{ marginBottom: 12 }}
-//                   >
-//                     <div style={{
-//                       background: C.white, border: `1.5px solid ${C.border}`,
-//                       borderRadius: 16, padding: '18px 20px',
-//                       display: 'flex', gap: 16, alignItems: 'center',
-//                       boxShadow: C.shadow, transition: 'box-shadow 0.2s',
-//                     }}>
-//                       {/* Product image */}
-//                       <div style={{ width: 88, height: 88, borderRadius: 12, overflow: 'hidden', flexShrink: 0, background: C.grayBg, border: `1.5px solid ${C.border}` }}>
-//                         <img src={item.product?.image} alt={item.product?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-//                       </div>
-
-//                       {/* Info */}
-//                       <div style={{ flex: 1, minWidth: 0 }}>
-//                         <h3 style={{ margin: '0 0 4px', fontWeight: 800, fontSize: 15, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-//                           {item.product?.name}
-//                         </h3>
-//                         {item.product?.weight && (
-//                           <span style={{ fontSize: 12, color: C.textLight, background: C.bg, padding: '2px 8px', borderRadius: 8, fontWeight: 500 }}>
-//                             {item.product.weight}
-//                           </span>
-//                         )}
-//                         <div style={{ marginTop: 8, fontSize: 16, fontWeight: 800, color: C.orange }}>
-//                           ₹{item.product?.price}
-//                           <span style={{ fontSize: 12, color: C.textLight, fontWeight: 500, marginLeft: 6 }}>per unit</span>
-//                         </div>
-//                       </div>
-
-//                       {/* Qty controls */}
-//                       <div style={{ display: 'flex', alignItems: 'center', gap: 0, border: `1.5px solid ${C.border}`, borderRadius: 10, overflow: 'hidden', flexShrink: 0 }}>
-//                         <button
-//                           onClick={() => updateQty(item._id, item.quantity - 1, item.product?.stock)}
-//                           style={{ width: 36, height: 36, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMid, fontSize: 16 }}
-//                         ><FiMinus size={14} /></button>
-//                         <span style={{ width: 36, textAlign: 'center', fontWeight: 800, fontSize: 15, color: C.text, borderLeft: `1px solid ${C.border}`, borderRight: `1px solid ${C.border}`, lineHeight: '36px' }}>
-//                           {item.quantity}
-//                         </span>
-//                         <button
-//                           onClick={() => updateQty(item._id, item.quantity + 1, item.product?.stock)}
-//                           style={{ width: 36, height: 36, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: C.textMid }}
-//                         ><FiPlus size={14} /></button>
-//                       </div>
-
-//                       {/* Line total + delete */}
-//                       <div style={{ textAlign: 'right', flexShrink: 0, minWidth: 80 }}>
-//                         <div style={{ fontWeight: 800, fontSize: 16, color: C.text }}>
-//                           ₹{((item.product?.price || 0) * item.quantity).toFixed(2)}
-//                         </div>
-//                         <button
-//                           onClick={() => removeItem(item._id)}
-//                           disabled={removing === item._id}
-//                           style={{ marginTop: 8, background: C.redBg, border: 'none', borderRadius: 8, padding: '5px 8px', cursor: 'pointer', color: C.red, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, fontFamily: C.font }}
-//                         >
-//                           <FiTrash2 size={13} /> Remove
-//                         </button>
-//                       </div>
-//                     </div>
-//                   </motion.div>
-//                 ))}
-//               </AnimatePresence>
-
-//               {/* Continue Shopping */}
-//               <button
-//                 onClick={() => navigate('/products')}
-//                 style={{ marginTop: 6, background: 'none', border: `1.5px solid ${C.border}`, borderRadius: 10, padding: '10px 18px', cursor: 'pointer', color: C.textMid, fontWeight: 600, fontSize: 13, fontFamily: C.font, display: 'flex', alignItems: 'center', gap: 7 }}
-//               >
-//                 ← Continue Shopping
-//               </button>
-//             </div>
-
-//             {/* ── Order Summary ──────────────────────────────────────────── */}
-//             <div style={{ position: 'sticky', top: 20 }}>
-//               <div style={{ background: C.white, border: `1.5px solid ${C.border}`, borderRadius: 18, overflow: 'hidden', boxShadow: C.shadowMd }}>
-//                 {/* Header */}
-//                 <div style={{ background: C.text, padding: '18px 22px' }}>
-//                   <h2 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: '#fff' }}>Order Summary</h2>
-//                   <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.5)' }}>{cart.items.length} item{cart.items.length !== 1 ? 's' : ''}</p>
-//                 </div>
-
-//                 <div style={{ padding: '20px 22px' }}>
-//                   {/* Items list */}
-//                   <div style={{ marginBottom: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
-//                     {cart.items.map(item => (
-//                       <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.textMid }}>
-//                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 10 }}>
-//                           {item.product?.name} <span style={{ color: C.textLight }}>×{item.quantity}</span>
-//                         </span>
-//                         <span style={{ fontWeight: 700, flexShrink: 0 }}>₹{((item.product?.price || 0) * item.quantity).toFixed(2)}</span>
-//                       </div>
-//                     ))}
-//                   </div>
-
-//                   {/* Breakdown */}
-//                   <div style={{ borderTop: `1.5px solid ${C.border}`, paddingTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-//                     <PriceRow label="Subtotal"    val={`₹${totals.subtotal.toFixed(2)}`} />
-//                     <PriceRow label="Tax (18% GST)" val={`₹${totals.tax.toFixed(2)}`} />
-//                     <PriceRow
-//                       label="Shipping"
-//                       val={totals.shipping === 0 ? 'FREE 🎉' : `₹${totals.shipping.toFixed(2)}`}
-//                       valColor={totals.shipping === 0 ? C.green : C.text}
-//                     />
-//                   </div>
-
-//                   {/* Total */}
-//                   <div style={{ borderTop: `1.5px solid ${C.border}`, marginTop: 14, paddingTop: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-//                     <span style={{ fontWeight: 800, fontSize: 16, color: C.text }}>Total</span>
-//                     <span style={{ fontWeight: 900, fontSize: 22, color: C.orange }}>₹{totals.total.toFixed(2)}</span>
-//                   </div>
-
-//                   {/* CTA */}
-//                   <motion.button
-//                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-//                     onClick={() => navigate('/checkout')}
-//                     style={{ width: '100%', marginTop: 18, padding: '14px', background: C.orange, border: 'none', borderRadius: 12, color: '#fff', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: C.font, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, boxShadow: '0 6px 20px rgba(232,98,26,0.32)' }}
-//                   >
-//                     Proceed to Checkout <FiArrowRight size={16} />
-//                   </motion.button>
-
-//                   {/* Trust */}
-//                   <div style={{ marginTop: 16, display: 'flex', gap: 14, justifyContent: 'center' }}>
-//                     {[
-//                       { icon: <FiShield size={13} />, label: 'Secure' },
-//                       { icon: <FiTruck size={13} />, label: 'Fast Delivery' },
-//                       { icon: <FiTag size={13} />, label: 'Best Price' },
-//                     ].map(t => (
-//                       <div key={t.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: C.textLight, fontWeight: 600 }}>
-//                         <span style={{ color: C.orange }}>{t.icon}</span> {t.label}
-//                       </div>
-//                     ))}
-//                   </div>
-//                 </div>
-//               </div>
-//             </div>
-
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   )
-// }
-
-// const PriceRow = ({ label, val, valColor }) => (
-//   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-//     <span style={{ color: C.textLight }}>{label}</span>
-//     <span style={{ fontWeight: 700, color: valColor || C.textMid }}>{val}</span>
-//   </div>
-// )
-
-// export default Cart
-
-
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { FiTrash2, FiMinus, FiPlus, FiShoppingCart, FiArrowRight, FiTag, FiTruck, FiShield } from 'react-icons/fi'
+import { FiTrash2, FiMinus, FiPlus, FiShoppingCart, FiArrowRight, FiTag, FiTruck, FiShield, FiChevronRight } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCart } from '../context/CartContext'
 import api from '../api/axios'
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
-const C = {
-  orange:'#e8621a', orangeHov:'#cf5618', orangeLight:'#fff4ee', orangeMid:'#fddcca',
-  bg:'#f2f4f6', white:'#ffffff', text:'#1a1a2e', textMid:'#444455', textLight:'#8899aa',
-  border:'#e4e9f0', shadow:'0 2px 12px rgba(0,0,0,0.07)', shadowMd:'0 6px 28px rgba(0,0,0,0.11)',
-  green:'#16a34a', greenBg:'#dcfce7', red:'#dc2626', redBg:'#fee2e2',
-  grayBg:'#f1f5f9', font:"'Plus Jakarta Sans', system-ui, sans-serif",
-}
-
-// ── Responsive hook ───────────────────────────────────────────────────────────
-const useW = () => {
-  const [w, setW] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200)
-  useEffect(() => {
-    const h = () => setW(window.innerWidth)
-    window.addEventListener('resize', h)
-    return () => window.removeEventListener('resize', h)
-  }, [])
-  return w
-}
-
-const PriceRow = ({ label, val, valColor }) => (
-  <div style={{ display:'flex', justifyContent:'space-between', fontSize:13 }}>
-    <span style={{ color:C.textLight }}>{label}</span>
-    <span style={{ fontWeight:700, color:valColor||C.textMid }}>{val}</span>
-  </div>
-)
-
-// ─────────────────────────────────────────────────────────────────────────────
 const Cart = () => {
-  const { user }            = useAuth()
-  const navigate            = useNavigate()
-  const { fetchCartCount }  = useCart()
-  const w                   = useW()
-  const isMobile            = w < 640
-  const isTablet            = w >= 640 && w < 1024
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { fetchCartCount } = useCart()
 
-  const [cart, setCart]         = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [removing, setRemoving] = useState(null)
+  const [cart, setCart] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [updatingId, setUpdatingId] = useState(null)
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return }
+    if (!user) {
+      navigate('/login')
+      return
+    }
     fetchCart()
   }, [user])
 
   const fetchCart = async () => {
     try {
       const res = await api.get('/api/cart')
-      setCart(res.data); fetchCartCount()
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
+      setCart(res.data)
+      fetchCartCount()
+    } catch (e) {
+      console.error('Error fetching cart:', e)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const updateQty = async (id, qty, stock) => {
-    if (qty < 1) return
-    if (qty > stock) { toast.error(`Only ${stock} item(s) in stock`); return }
-    try { await api.put(`/api/cart/items/${id}`, { quantity: qty }); fetchCart(); fetchCartCount() }
-    catch (e) { console.error(e) }
+  const updateQty = async (itemId, newQty, stock) => {
+    if (newQty < 1) return
+    if (newQty > stock) {
+      toast.error(`Only ${stock} items available`)
+      return
+    }
+    setUpdatingId(itemId)
+    try {
+      await api.put(`/api/cart/items/${itemId}`, { quantity: newQty })
+      fetchCart()
+    } catch {
+      toast.error('Failed to update quantity')
+    } finally {
+      setUpdatingId(null)
+    }
   }
 
-  const removeItem = async (id) => {
-    setRemoving(id)
-    try { await api.delete(`/api/cart/items/${id}`); fetchCart(); fetchCartCount() }
-    catch (e) { console.error(e) }
-    finally { setRemoving(null) }
+  const removeItem = async (itemId) => {
+    try {
+      await api.delete(`/api/cart/items/${itemId}`)
+      toast.success('Item removed')
+      fetchCart()
+    } catch {
+      toast.error('Failed to remove item')
+    }
   }
 
   const calcTotals = () => {
-    if (!cart?.items) return { subtotal:0, tax:0, shipping:0, total:0 }
-    const subtotal = cart.items.reduce((s,i)=>s+(i.product?.price||0)*i.quantity, 0)
-    const tax      = subtotal * 0.18
+    if (!cart?.items) return { subtotal: 0, tax: 0, shipping: 0, total: 0 }
+    const subtotal = cart.items.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0)
+    const tax = subtotal * 0.18 // Standard 18% GST Example
     const shipping = subtotal > 500 ? 0 : 50
-    return { subtotal, tax, shipping, total: subtotal+tax+shipping }
+    return { subtotal, tax, shipping, total: subtotal + tax + shipping }
   }
 
-  // ── Loading ─────────────────────────────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight:'60vh', display:'flex', alignItems:'center', justifyContent:'center', background:C.bg }}>
-      <div style={{ width:38, height:38, border:`3px solid ${C.border}`, borderTop:`3px solid ${C.orange}`, borderRadius:'50%', animation:'spin .8s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="min-h-[80vh] flex flex-col items-center justify-center bg-[var(--color-bg)]">
+      <div className="w-10 h-10 border-4 border-orange-600/20 border-t-orange-600 rounded-full animate-spin" />
+      <p className="mt-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">Organizing selection...</p>
     </div>
   )
 
   const totals = calcTotals()
-
-  // ── Summary card (shared between mobile/desktop) ────────────────────────────
-  const SummaryCard = () => (
-    <div style={{ background:C.white, border:`1.5px solid ${C.border}`, borderRadius:18, overflow:'hidden', boxShadow:C.shadowMd }}>
-      <div style={{ background:C.text, padding:'16px 20px' }}>
-        <h2 style={{ margin:0, fontWeight:800, fontSize:17, color:'#fff' }}>Order Summary</h2>
-        <p style={{ margin:'3px 0 0', fontSize:12, color:'rgba(255,255,255,0.5)' }}>
-          {cart.items.length} item{cart.items.length!==1?'s':''}
-        </p>
-      </div>
-      <div style={{ padding:'18px 20px' }}>
-        {/* Item list */}
-        <div style={{ marginBottom:16, display:'flex', flexDirection:'column', gap:7 }}>
-          {cart.items.map(item=>(
-            <div key={item._id} style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:C.textMid }}>
-              <span style={{ flex:1, marginRight:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                {item.product?.name} <span style={{ color:C.textLight }}>×{item.quantity}</span>
-              </span>
-              <span style={{ fontWeight:700, flexShrink:0 }}>₹{((item.product?.price||0)*item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
-        </div>
-        {/* Breakdown */}
-        <div style={{ borderTop:`1.5px solid ${C.border}`, paddingTop:12, display:'flex', flexDirection:'column', gap:9 }}>
-          <PriceRow label="Subtotal"     val={`₹${totals.subtotal.toFixed(2)}`}/>
-          <PriceRow label="Tax (18% GST)" val={`₹${totals.tax.toFixed(2)}`}/>
-          <PriceRow label="Shipping"
-            val={totals.shipping===0?'FREE 🎉':`₹${totals.shipping.toFixed(2)}`}
-            valColor={totals.shipping===0?C.green:undefined}/>
-        </div>
-        {/* Total */}
-        <div style={{ borderTop:`1.5px solid ${C.border}`, marginTop:12, paddingTop:12, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <span style={{ fontWeight:800, fontSize:16 }}>Total</span>
-          <span style={{ fontWeight:900, fontSize:22, color:C.orange }}>₹{totals.total.toFixed(2)}</span>
-        </div>
-        {/* CTA */}
-        <motion.button
-          whileHover={{ scale:1.02 }} whileTap={{ scale:0.97 }}
-          onClick={()=>navigate('/checkout')}
-          style={{ width:'100%', marginTop:16, padding:'13px', background:C.orange, border:'none', borderRadius:12, color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer', fontFamily:C.font, display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(232,98,26,0.32)' }}
-        >
-          Proceed to Checkout <FiArrowRight size={16}/>
-        </motion.button>
-        {/* Trust */}
-        <div style={{ marginTop:14, display:'flex', gap:isMobile?8:14, justifyContent:'center', flexWrap:'wrap' }}>
-          {[{icon:<FiShield size={12}/>,label:'Secure'},{icon:<FiTruck size={12}/>,label:'Fast Delivery'},{icon:<FiTag size={12}/>,label:'Best Price'}].map(t=>(
-            <div key={t.label} style={{ display:'flex', alignItems:'center', gap:4, fontSize:11, color:C.textLight, fontWeight:600 }}>
-              <span style={{ color:C.orange }}>{t.icon}</span>{t.label}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
+  const hasItems = cart?.items?.length > 0
 
   return (
-    <div style={{ minHeight:'100vh', background:C.bg, fontFamily:C.font, color:C.text }}>
-      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div style={{ background:C.white, borderBottom:`1.5px solid ${C.border}`, padding:`${isMobile?'14px 16px':'18px 28px'}`, boxShadow:C.shadow }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', gap:12 }}>
-          <div style={{ width:isMobile?38:44, height:isMobile?38:44, background:C.orange, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-            <FiShoppingCart size={isMobile?18:21} color="#fff"/>
-          </div>
-          <div>
-            <h1 style={{ margin:0, fontSize:isMobile?18:22, fontWeight:800 }}>Shopping Cart</h1>
-            <p style={{ margin:0, fontSize:12, color:C.textLight }}>
-              {cart?.items?.length||0} item{cart?.items?.length!==1?'s':''} in your cart
-            </p>
+    <div className="min-h-screen bg-[var(--color-bg)] pb-32">
+      
+      {/* ── Page Header ── */}
+      <div className="bg-white border-b border-[var(--color-border)] pt-12 pb-8 sm:pt-16 sm:pb-12 shadow-sm relative z-10">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+            <div className="text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 border border-orange-200 mb-4">
+                <FiShoppingCart size={14} className="text-orange-600" />
+                <span className="text-[10px] uppercase tracking-widest font-black text-orange-600">Purchase Pipeline</span>
+              </div>
+              <h1 className="text-3xl sm:text-5xl font-black text-gray-900 font-head tracking-tight">Shopping Cart</h1>
+              <p className="text-gray-500 font-medium max-w-lg mt-2">Check your selected goods and proceed to secure checkout.</p>
+            </div>
+            {hasItems && (
+              <div className="hidden sm:block text-right">
+                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Items for settlement</p>
+                <div className="text-2xl font-black text-gray-900 font-head">{cart.items.length} Unique Selections</div>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:isMobile?'16px 12px':isTablet?'22px 18px':'28px 24px' }}>
-
-        {/* ── Empty State ───────────────────────────────────────────────── */}
-        {(!cart||cart.items.length===0) ? (
-          <motion.div initial={{opacity:0,y:16}} animate={{opacity:1,y:0}}
-            style={{ background:C.white, border:`1.5px solid ${C.border}`, borderRadius:20, padding:isMobile?'48px 20px':'72px 24px', textAlign:'center', boxShadow:C.shadow }}>
-            <div style={{ width:72, height:72, background:C.orangeLight, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 18px' }}>
-              <FiShoppingCart size={32} style={{ color:C.orange }}/>
-            </div>
-            <h2 style={{ margin:'0 0 8px', fontSize:20, fontWeight:800 }}>Your cart is empty</h2>
-            <p style={{ color:C.textLight, fontSize:14, marginBottom:24 }}>Looks like you haven't added anything yet.</p>
-            <motion.button whileHover={{scale:1.03}} whileTap={{scale:0.97}}
-              onClick={()=>navigate('/products')}
-              style={{ padding:'11px 24px', background:C.orange, border:'none', borderRadius:12, color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer', fontFamily:C.font, display:'inline-flex', alignItems:'center', gap:8 }}>
-              Browse Products <FiArrowRight size={15}/>
-            </motion.button>
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {!hasItems ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="py-24 bg-white rounded-[40px] border border-dashed border-gray-200 flex flex-col items-center text-center p-12"
+          >
+            <div className="text-6xl mb-6 grayscale opacity-20">🛒</div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2 font-head">Abandoned Cart?</h2>
+            <p className="text-gray-400 font-medium max-w-xs mx-auto">Your selection is empty. Start adding our premium Bilona Ghee to your daily diet.</p>
+            <Link to="/products" className="mt-8 px-10 py-4 bg-gray-900 text-white text-sm font-black rounded-2xl hover:bg-orange-600 transition-all shadow-xl shadow-gray-900/10">Browse Our Collection</Link>
           </motion.div>
         ) : (
-          <div style={{
-            display:'grid',
-            gridTemplateColumns: isDesktop(w) ? '1fr 340px' : '1fr',
-            gap: isMobile ? 16 : 22,
-            alignItems:'start',
-          }}>
-
-            {/* ── Items Column ─────────────────────────────────────────── */}
-            <div>
-              {/* Shipping notice */}
-              {totals.shipping>0 ? (
-                <div style={{ background:C.orangeLight, border:`1.5px solid ${C.orangeMid}`, borderRadius:12, padding:'10px 14px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:13, color:C.orange, fontWeight:600 }}>
-                  <FiTruck size={14}/> Add ₹{(500-totals.subtotal).toFixed(0)} more for FREE delivery!
-                </div>
-              ):(
-                <div style={{ background:C.greenBg, border:'1.5px solid #86efac', borderRadius:12, padding:'10px 14px', marginBottom:12, display:'flex', alignItems:'center', gap:8, fontSize:13, color:C.green, fontWeight:600 }}>
-                  <FiTruck size={14}/> 🎉 You qualify for FREE delivery!
-                </div>
-              )}
-
+          <div className="grid lg:grid-cols-3 gap-12 items-start">
+            
+            {/* ── Left: Cart Items Matrix ── */}
+            <div className="lg:col-span-2 space-y-4">
               <AnimatePresence>
-                {cart.items.map((item,i)=>(
-                  <motion.div key={item._id} layout
-                    initial={{opacity:0,y:10}} animate={{opacity:1,y:0}}
-                    exit={{opacity:0,x:-30,height:0,marginBottom:0}}
-                    transition={{duration:0.25,delay:i*0.04}}
-                    style={{ marginBottom:10 }}>
-                    <div style={{ background:C.white, border:`1.5px solid ${C.border}`, borderRadius:16, padding:isMobile?'14px 12px':'18px 20px', display:'flex', gap:isMobile?10:16, alignItems:isMobile?'flex-start':'center', boxShadow:C.shadow }}>
+                {cart.items.map((item, idx) => (
+                  <motion.div 
+                    key={item._id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className="bg-white rounded-[32px] border border-white shadow-lg hover:border-gray-100 transition-all p-6 sm:p-8 flex items-center gap-6 group"
+                  >
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden bg-gray-50 border border-gray-50 shrink-0">
+                      <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-contain p-2 group-hover:scale-110 transition-transform duration-500" />
+                    </div>
 
-                      {/* Image */}
-                      <div style={{ width:isMobile?64:88, height:isMobile?64:88, borderRadius:12, overflow:'hidden', flexShrink:0, border:`1.5px solid ${C.border}` }}>
-                        <img src={item.product?.image} alt={item.product?.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div>
+                          <h3 className="text-base sm:text-lg font-black text-gray-900 font-head leading-tight group-hover:text-orange-600 transition-colors">{item.product?.name}</h3>
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">{item.product?.category}</p>
+                        </div>
+                        <button 
+                          onClick={() => removeItem(item._id)}
+                          className="p-2 text-gray-300 hover:text-red-500 transition-colors"
+                        >
+                          <FiTrash2 size={18} />
+                        </button>
                       </div>
 
-                      {/* Info + controls (mobile: stacked) */}
-                      <div style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', gap:isMobile?8:0 }}>
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:8 }}>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <h3 style={{ margin:'0 0 4px', fontWeight:800, fontSize:isMobile?13:15, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.product?.name}</h3>
-                            {item.product?.weight&&<span style={{ fontSize:11, color:C.textLight, background:C.bg, padding:'2px 7px', borderRadius:7, fontWeight:500 }}>{item.product.weight}</span>}
-                            <div style={{ marginTop:6, fontSize:isMobile?14:16, fontWeight:800, color:C.orange }}>₹{item.product?.price}</div>
-                          </div>
-                          {/* Mobile: delete top-right */}
-                          {isMobile&&(
-                            <button onClick={()=>removeItem(item._id)} disabled={removing===item._id}
-                              style={{ background:C.redBg, border:'none', borderRadius:8, padding:'6px', cursor:'pointer', color:C.red, display:'flex', flexShrink:0 }}>
-                              <FiTrash2 size={14}/>
-                            </button>
-                          )}
+                      <div className="flex items-center justify-between gap-4 mt-6">
+                        <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-1.5 border border-gray-100">
+                          <button 
+                            disabled={updatingId === item._id}
+                            onClick={() => updateQty(item._id, item.quantity - 1, item.product?.stock)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-colors"
+                          >
+                            <FiMinus size={14} />
+                          </button>
+                          <span className="w-8 text-center text-sm font-black text-gray-900 font-head">
+                            {updatingId === item._id ? '..' : item.quantity}
+                          </span>
+                          <button 
+                            disabled={updatingId === item._id}
+                            onClick={() => updateQty(item._id, item.quantity + 1, item.product?.stock)}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-colors"
+                          >
+                            <FiPlus size={14} />
+                          </button>
                         </div>
 
-                        {/* Qty + total row */}
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}>
-                          {/* Stepper */}
-                          <div style={{ display:'flex', alignItems:'center', border:`1.5px solid ${C.border}`, borderRadius:10, overflow:'hidden' }}>
-                            <button onClick={()=>updateQty(item._id,item.quantity-1,item.product?.stock)}
-                              style={{ width:32, height:32, background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:C.textMid }}>
-                              <FiMinus size={13}/>
-                            </button>
-                            <span style={{ width:34, textAlign:'center', fontWeight:800, fontSize:14, color:C.text, borderLeft:`1px solid ${C.border}`, borderRight:`1px solid ${C.border}`, lineHeight:'32px' }}>
-                              {item.quantity}
-                            </span>
-                            <button onClick={()=>updateQty(item._id,item.quantity+1,item.product?.stock)}
-                              style={{ width:32, height:32, background:'none', border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:C.textMid }}>
-                              <FiPlus size={13}/>
-                            </button>
-                          </div>
-
-                          {/* Line total */}
-                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <span style={{ fontWeight:800, fontSize:isMobile?14:16, color:C.text }}>₹{((item.product?.price||0)*item.quantity).toFixed(2)}</span>
-                            {/* Desktop: delete */}
-                            {!isMobile&&(
-                              <button onClick={()=>removeItem(item._id)} disabled={removing===item._id}
-                                style={{ background:C.redBg, border:'none', borderRadius:8, padding:'5px 9px', cursor:'pointer', color:C.red, display:'flex', alignItems:'center', gap:4, fontSize:12, fontWeight:600, fontFamily:C.font }}>
-                                <FiTrash2 size={12}/> Remove
-                              </button>
-                            )}
-                          </div>
+                        <div className="text-right">
+                          <div className="text-sm font-black text-gray-900">₹{(item.product?.price * item.quantity).toLocaleString()}</div>
+                          <div className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter mt-0.5">₹{item.product?.price}/unit</div>
                         </div>
                       </div>
                     </div>
@@ -583,68 +182,83 @@ const Cart = () => {
                 ))}
               </AnimatePresence>
 
-              <button onClick={()=>navigate('/products')}
-                style={{ marginTop:4, background:'none', border:`1.5px solid ${C.border}`, borderRadius:10, padding:'9px 16px', cursor:'pointer', color:C.textMid, fontWeight:600, fontSize:13, fontFamily:C.font, display:'flex', alignItems:'center', gap:6 }}>
-                ← Continue Shopping
-              </button>
-
-              {/* Mobile: summary appears below items */}
-              {!isDesktop(w)&&<div style={{ marginTop:16 }}><SummaryCard1/></div>}
+              <Link to="/products" className="inline-flex items-center gap-2 text-sm font-black text-orange-600 px-6 py-3 rounded-2xl hover:bg-orange-50 transition-all mt-8">
+                 <FiArrowRight className="rotate-180" /> Continue Adding Items
+              </Link>
             </div>
 
-            {/* ── Desktop Summary ──────────────────────────────────────── */}
-            {isDesktop(w)&&<div style={{ position:'sticky', top:20 }}><SummaryCard/></div>}
+            {/* ── Right: Settlement Summary ── */}
+            <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-32">
+              <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl shadow-gray-200/50 p-8 sm:p-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-orange-600/5 rounded-full translate-x-12 -translate-y-12" />
+                
+                <h2 className="text-xl font-black text-gray-900 mb-8 font-head tracking-tight relative z-10">Order Summary</h2>
+                
+                <div className="space-y-4 mb-8 border-b border-gray-50 pb-8 relative z-10">
+                   <div className="flex justify-between text-sm font-medium">
+                      <span className="text-gray-400 font-bold">Cart Subtotal</span>
+                      <span className="text-gray-900 font-black">₹{totals.subtotal.toLocaleString()}</span>
+                   </div>
+                   <div className="flex justify-between text-sm font-medium">
+                      <span className="text-gray-400 font-bold">Service Tax (GST)</span>
+                      <span className="text-gray-900 font-black">₹{totals.tax.toLocaleString()}</span>
+                   </div>
+                   <div className="flex justify-between text-sm font-medium">
+                      <span className="text-gray-400 font-bold">Logistics Fee</span>
+                      <span className={totals.shipping === 0 ? 'text-green-600 font-black text-xs' : 'text-gray-900 font-black'}>
+                        {totals.shipping === 0 ? 'FREE' : `₹${totals.shipping}`}
+                      </span>
+                   </div>
+                </div>
+
+                <div className="flex justify-between items-end mb-10">
+                  <div>
+                    <h3 className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Final Settlement</h3>
+                    <div className="text-4xl font-black text-gray-900 font-head tracking-tighter leading-none">₹{totals.total.toLocaleString()}</div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => navigate('/checkout')}
+                  className="w-full py-5 bg-gray-900 text-white font-black rounded-3xl shadow-xl shadow-gray-100 hover:bg-orange-600 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                >
+                  Confirm & Checkout <FiChevronRight />
+                </button>
+
+                <div className="mt-8 grid grid-cols-2 gap-4">
+                  {[
+                    { icon: <FiShield />, label: 'Secure Payment' },
+                    { icon: <FiTag />, label: 'Best Quality' }
+                  ].map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-[9px] font-black uppercase text-gray-400">
+                      <div className="text-orange-500">{item.icon}</div>
+                      {item.label}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Promo Banner */}
+              <div className="bg-orange-600 rounded-[32px] p-8 text-white relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
+                   <FiTag size={80} />
+                 </div>
+                 <h4 className="text-sm font-black uppercase tracking-widest mb-2">Free Delivery</h4>
+                 <p className="text-xs font-bold text-orange-100 leading-relaxed">
+                   {totals.subtotal > 500 
+                    ? 'Congratulations! You qualify for free nationwide shipping.'
+                    : `Add ₹${(501 - totals.subtotal).toLocaleString()} more to your cart to unlock free delivery across India.`
+                   }
+                 </p>
+              </div>
+            </div>
+
           </div>
         )}
       </div>
+
     </div>
   )
-
-  function SummaryCard1() {
-    return (
-      <div style={{ background:C.white, border:`1.5px solid ${C.border}`, borderRadius:18, overflow:'hidden', boxShadow:C.shadowMd }}>
-        <div style={{ background:C.text, padding:'16px 20px' }}>
-          <h2 style={{ margin:0, fontWeight:800, fontSize:17, color:'#fff' }}>Order Summary</h2>
-          <p style={{ margin:'3px 0 0', fontSize:12, color:'rgba(255,255,255,0.5)' }}>{cart.items.length} item{cart.items.length!==1?'s':''}</p>
-        </div>
-        <div style={{ padding:'18px 20px' }}>
-          <div style={{ marginBottom:14, display:'flex', flexDirection:'column', gap:7 }}>
-            {cart.items.map(item=>(
-              <div key={item._id} style={{ display:'flex', justifyContent:'space-between', fontSize:13, color:C.textMid }}>
-                <span style={{ flex:1, marginRight:10, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                  {item.product?.name} <span style={{ color:C.textLight }}>×{item.quantity}</span>
-                </span>
-                <span style={{ fontWeight:700, flexShrink:0 }}>₹{((item.product?.price||0)*item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
-          </div>
-          <div style={{ borderTop:`1.5px solid ${C.border}`, paddingTop:12, display:'flex', flexDirection:'column', gap:9 }}>
-            <PriceRow label="Subtotal"     val={`₹${totals.subtotal.toFixed(2)}`}/>
-            <PriceRow label="Tax (18% GST)" val={`₹${totals.tax.toFixed(2)}`}/>
-            <PriceRow label="Shipping" val={totals.shipping===0?'FREE 🎉':`₹${totals.shipping.toFixed(2)}`} valColor={totals.shipping===0?C.green:undefined}/>
-          </div>
-          <div style={{ borderTop:`1.5px solid ${C.border}`, marginTop:12, paddingTop:12, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontWeight:800, fontSize:16 }}>Total</span>
-            <span style={{ fontWeight:900, fontSize:22, color:C.orange }}>₹{totals.total.toFixed(2)}</span>
-          </div>
-          <motion.button whileHover={{scale:1.02}} whileTap={{scale:0.97}}
-            onClick={()=>navigate('/checkout')}
-            style={{ width:'100%', marginTop:16, padding:'13px', background:C.orange, border:'none', borderRadius:12, color:'#fff', fontWeight:800, fontSize:15, cursor:'pointer', fontFamily:C.font, display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:'0 6px 20px rgba(232,98,26,0.32)' }}>
-            Proceed to Checkout <FiArrowRight size={16}/>
-          </motion.button>
-          <div style={{ marginTop:14, display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap' }}>
-            {[{icon:<FiShield size={12}/>,label:'Secure'},{icon:<FiTruck size={12}/>,label:'Fast Delivery'},{icon:<FiTag size={12}/>,label:'Best Price'}].map(t=>(
-              <div key={t.label} style={{ display:'flex', alignItems:'center', gap:4, fontSize:11, color:C.textLight, fontWeight:600 }}>
-                <span style={{ color:C.orange }}>{t.icon}</span>{t.label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
 }
-
-const isDesktop = (w) => w >= 1024
 
 export default Cart

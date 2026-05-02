@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
+const { logAction } = require('../utils/logger');
 const dbCheck = require('../middleware/dbCheck');
 
 // Get all products with optional category filter
@@ -10,8 +11,12 @@ router.get('/', dbCheck, async (req, res) => {
     const { category, featured, search } = req.query;
     const query = {};
 
-    if (category && (category === 'a1' || category === 'a2')) {
+    if (category) {
       query.category = category;
+    }
+
+    if (req.query.all !== 'true') {
+      query.isActive = { $ne: false }; // Supports old docs without isActive 
     }
 
     if (featured === 'true') {
@@ -56,26 +61,30 @@ router.get('/:id', dbCheck, async (req, res) => {
   }
 });
 
-// Create product (Admin only)
-router.post('/', auth, async (req, res) => {
+// Create product (Admin with 'products' permission or Superadmin)
+router.post('/', auth, auth.admin, auth.hasPermission('products'), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
-
     const product = new Product(req.body);
     await product.save();
+    
+    await logAction(req, 'CREATE_PRODUCT', 'PRODUCT', product._id, {
+      name: product.name,
+      price: product.price,
+      category: product.category
+    });
+
     res.status(201).json(product);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-// Update product (Admin only)
-router.put('/:id', auth, async (req, res) => {
+// Update product (Admin with 'products' permission or Superadmin)
+router.put('/:id', auth, auth.admin, auth.hasPermission('products'), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
+    const oldProduct = await Product.findById(req.params.id);
+    if (!oldProduct) {
+      return res.status(404).json({ message: 'Product not found' });
     }
 
     const product = await Product.findByIdAndUpdate(
@@ -84,9 +93,10 @@ router.put('/:id', auth, async (req, res) => {
       { new: true, runValidators: true }
     );
 
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
-    }
+    await logAction(req, 'UPDATE_PRODUCT', 'PRODUCT', product._id, {
+      name: product.name,
+      changes: req.body // simplified for now
+    });
 
     res.json(product);
   } catch (error) {
@@ -94,17 +104,19 @@ router.put('/:id', auth, async (req, res) => {
   }
 });
 
-// Delete product (Admin only)
-router.delete('/:id', auth, async (req, res) => {
+// Delete product (Admin with 'products' permission or Superadmin)
+router.delete('/:id', auth, auth.admin, auth.hasPermission('products'), async (req, res) => {
   try {
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Access denied. Admin only.' });
-    }
-
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    await logAction(req, 'DELETE_PRODUCT', 'PRODUCT', product._id, {
+      name: product.name
+    });
+
+    await product.deleteOne();
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: error.message });

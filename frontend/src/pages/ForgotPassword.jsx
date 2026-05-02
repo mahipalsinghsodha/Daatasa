@@ -1,20 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
+import { FiMail, FiArrowLeft, FiClock, FiAlertCircle, FiArrowRight, FiCheckCircle } from 'react-icons/fi'
+import { motion, AnimatePresence } from 'framer-motion'
 
-const LS_KEY = 'resetPasswordSentAt' // must match ResetPassword.jsx
+const LS_KEY = 'resetPasswordSentAt'
 
 const ForgotPassword = () => {
-  const navigate              = useNavigate()
-  const [email, setEmail]     = useState('')
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [sent, setSent]       = useState(false)
-  const [notFound, setNotFound]     = useState(false) // 404 – not registered
-  const [cooldown, setCooldown]     = useState(0)     // 409 – link already active
-  const [error, setError]           = useState('')
+  const [sent, setSent] = useState(false)
+  const [notFound, setNotFound] = useState(false)
+  const [cooldown, setCooldown] = useState(0)
+  const [error, setError] = useState('')
   const cooldownRef = useRef(null)
 
-  /* ── Cooldown countdown (when backend says link is still active) ── */
   useEffect(() => {
     if (cooldown <= 0) return
     cooldownRef.current = setInterval(() => {
@@ -24,7 +25,7 @@ const ForgotPassword = () => {
       })
     }, 1000)
     return () => clearInterval(cooldownRef.current)
-  }, [cooldown]) // restarts only when a new cooldown value is set by the server
+  }, [cooldown])
 
   const cdMm = String(Math.floor(cooldown / 60)).padStart(2, '0')
   const cdSs = String(cooldown % 60).padStart(2, '0')
@@ -33,208 +34,147 @@ const ForgotPassword = () => {
     e.preventDefault()
     setError('')
     setNotFound(false)
-    if (cooldown > 0) return // still cooling down
+    if (cooldown > 0) return
     setLoading(true)
     try {
       await api.post('/api/auth/forgot-password', { email })
       localStorage.setItem(LS_KEY, Date.now().toString())
       setSent(true)
     } catch (err) {
-      const status    = err.response?.status
-      const data      = err.response?.data || {}
-
+      const status = err.response?.status
+      const data = err.response?.data || {}
       if (status === 404) {
-        // Email not registered → offer registration
         setNotFound(true)
       } else if (status === 409) {
-        // A valid link is already active — show remaining seconds
         const remaining = data.remainingSeconds || 120
-        localStorage.setItem(LS_KEY, (Date.now() - (120 - remaining) * 1000).toString())
         setCooldown(remaining)
       } else {
-        setError(data.message || 'Something went wrong. Please try again.')
+        setError(data.message || 'Transmission error. System failure.')
       }
     } finally {
       setLoading(false)
     }
   }
 
-  /* ── Success screen ────────────────────────────────────────────── */
   if (sent) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          <div className="bg-primary-600 px-8 py-7 text-center">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Check your inbox</h2>
+    <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="absolute top-0 -left-1/4 w-1/2 h-1/2 bg-orange-600/5 rounded-full blur-[120px]" />
+      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md relative z-10">
+        <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl p-10 text-center">
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-lg shadow-green-50">
+             <FiMail size={32} />
           </div>
-          <div className="px-8 py-10 text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-              </svg>
-            </div>
-            <p className="text-gray-800 font-semibold text-base">Reset link sent!</p>
-            <p className="text-gray-500 text-sm">
-              We sent a reset link to <strong className="text-gray-700">{email}</strong>.
-              <br/>It is valid for <strong>2 minutes</strong> — check your inbox now.
-            </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 text-xs text-yellow-800 font-medium">
-              ⚠️ Open the link on <strong>this device and browser</strong> — it won't work on a different one.
-            </div>
-            <p className="text-xs text-gray-400">
-              Didn't receive it?{' '}
-              <button
-                onClick={() => { setSent(false); setEmail('') }}
-                className="text-primary-600 hover:text-primary-700 font-semibold underline"
-              >
-                Try again
-              </button>
-            </p>
+          <h1 className="text-3xl font-black text-gray-900 font-head tracking-tight mb-4">Transmission Successful</h1>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-relaxed mb-8">
+            A secure recovery link has been dispatched to <span className="text-gray-900">{email}</span>. Use it within 2 minutes.
+          </p>
+          <div className="bg-orange-50 border border-orange-100 p-4 rounded-2xl mb-8">
+             <p className="text-[10px] font-black text-orange-600 uppercase tracking-widest">Crucial Protocol</p>
+             <p className="text-[11px] font-bold text-orange-900 mt-1">Open link on this device/browser only to maintain session integrity.</p>
           </div>
+          <button 
+            onClick={() => { setSent(false); setEmail(''); setNotFound(false) }}
+            className="w-full py-4 bg-gray-900 text-white font-black rounded-3xl shadow-xl hover:bg-orange-600 transition-all text-xs uppercase tracking-widest"
+          >
+            Acknowledge & Sync
+          </button>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 
-  /* ── Main form ─────────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-
-          <div className="bg-primary-600 px-8 py-7 text-center">
-            <div className="w-14 h-14 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
-              </svg>
+    <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-6 relative overflow-hidden">
+      <div className="absolute bottom-0 -right-1/4 w-1/2 h-1/2 bg-orange-600/5 rounded-full blur-[120px]" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
+        <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden">
+          <div className="p-10 sm:p-12">
+            <div className="mb-10 text-center">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 border border-orange-200 mb-6">
+                <FiClock size={14} className="text-orange-600" />
+                <span className="text-[10px] uppercase tracking-widest font-black text-orange-600">Recovery Protocol</span>
+              </div>
+              <h1 className="text-4xl font-black text-gray-900 font-head tracking-tight mb-2">Key Recovery</h1>
+              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Restore Access Control</p>
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Forgot password?</h2>
-            <p className="text-primary-100 text-sm mt-1">We'll send you a reset link</p>
-          </div>
 
-          <div className="px-8 py-8 space-y-5">
-
-            <p className="text-sm text-gray-500">
-              Enter the email address linked to your account and we'll send you a reset link.
-            </p>
-
-            {/* ── 409: link already active ── */}
-            {cooldown > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-4 space-y-3">
-                <div className="flex items-start gap-2">
-                  <svg className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                  </svg>
-                  <div>
-                    <p className="text-sm font-semibold text-blue-800">A reset link was already sent</p>
-                    <p className="text-xs text-blue-700 mt-0.5">
-                      Check your inbox — the previous link is still active.
-                      You can request a new one in:
-                    </p>
+            <AnimatePresence mode="wait">
+              {cooldown > 0 ? (
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-blue-50 border border-blue-100 rounded-3xl p-6 mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                     <FiClock className="text-blue-600" />
+                     <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest text-[10px]">Flood Protection Active</p>
                   </div>
-                </div>
-                {/* Cooldown timer */}
-                <div className="bg-white border border-blue-200 rounded-lg px-4 py-2 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 font-medium">⏱ Resend available in</span>
-                  <span className="text-sm font-bold tabular-nums text-blue-700">{cdMm}:{cdSs}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="h-1.5 rounded-full bg-blue-400 transition-all duration-1000"
-                    style={{ width: `${(cooldown / 120) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* ── 404: email not registered ── */}
-            {notFound && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-4 space-y-3">
-                <div className="flex items-start gap-2">
-                  <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                  </svg>
-                  <div>
-                    <p className="text-sm font-semibold text-amber-800">No account found for <span className="font-bold">{email}</span></p>
-                    <p className="text-xs text-amber-700 mt-0.5">This email is not registered. Create an account instead?</p>
+                  <p className="text-xs font-bold text-blue-900/60 leading-relaxed mb-6">Our system identifies an active link already in transit. Deployment cooling down.</p>
+                  <div className="flex items-center justify-between text-2xl font-black font-head text-blue-900 tabular-nums">
+                     <span>{cdMm}:{cdSs}</span>
+                     <div className="w-1/2 bg-white/50 h-1.5 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${(cooldown/120)*100}%` }} />
+                     </div>
                   </div>
-                </div>
-                <button
-                  onClick={() => navigate('/register')}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-sm font-semibold transition"
-                >
-                  Create an account →
-                </button>
-                <button
-                  onClick={() => { setNotFound(false); setEmail('') }}
-                  className="w-full text-xs text-gray-500 hover:text-gray-700 transition underline"
-                >
-                  Try a different email
-                </button>
-              </div>
-            )}
+                </motion.div>
+              ) : notFound ? (
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-amber-50 border border-amber-100 rounded-3xl p-6 mb-8">
+                  <div className="flex items-center gap-3 mb-4">
+                     <FiAlertCircle className="text-amber-600" />
+                     <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest text-[10px]">Identity Conflict</p>
+                  </div>
+                  <p className="text-xs font-bold text-amber-900/60 leading-relaxed mb-6">Digital coordinate <span className="text-amber-900">{email}</span> not found in nuestra vault.</p>
+                  <div className="grid grid-cols-2 gap-3">
+                     <button onClick={() => navigate('/register')} className="py-3 bg-amber-600 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest">Initialize New</button>
+                     <button onClick={() => { setNotFound(false); setEmail('') }} className="py-3 bg-white border border-amber-200 text-amber-900 rounded-2xl text-[9px] font-black uppercase tracking-widest">Retry Search</button>
+                  </div>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Digital Coordinate</label>
+                    <div className="relative group">
+                      <div className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-600 transition-colors">
+                        <FiMail size={18} />
+                      </div>
+                      <input 
+                        type="email"
+                        required
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="your@coordinate.com"
+                        className="w-full pl-14 pr-6 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-orange-500 outline-none text-sm font-bold transition-all"
+                      />
+                    </div>
+                  </div>
 
-            {/* Generic error */}
-            {error && (
-              <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
-                </svg>
-                <span>{error}</span>
-              </div>
-            )}
+                  {error && (
+                    <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-[11px] font-bold text-red-600 flex items-center gap-2">
+                       <FiAlertCircle /> {error}
+                    </div>
+                  )}
 
-            {/* Form — hidden when not-found banner is showing */}
-            {!notFound && (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email address</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    placeholder="you@example.com"
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm
-                               focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-                               placeholder:text-gray-400 transition"
-                  />
-                </div>
+                  <button 
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-5 bg-gray-900 text-white font-black rounded-3xl shadow-xl shadow-gray-100 hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                  >
+                    {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <FiArrowRight />}
+                    {loading ? 'Dispatched...' : 'Deploy Recovery Link'}
+                  </button>
+                </form>
+              )}
+            </AnimatePresence>
 
-                <button
-                  type="submit"
-                  disabled={loading || cooldown > 0}
-                  className="w-full bg-primary-600 hover:bg-primary-700 text-white py-2.5 rounded-lg
-                             text-sm font-semibold transition disabled:opacity-60 disabled:cursor-not-allowed
-                             flex items-center justify-center gap-2 shadow-sm"
-                >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                      </svg>
-                      Sending…
-                    </>
-                  ) : cooldown > 0
-                    ? `Resend available in ${cdMm}:${cdSs}`
-                    : 'Send Reset Link'
-                  }
-                </button>
-              </form>
-            )}
-
-            <Link to="/login"
-              className="flex items-center justify-center gap-1.5 text-sm text-gray-500 hover:text-primary-600 transition font-medium">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-              </svg>
-              Back to Login
-            </Link>
-
+            <div className="mt-10 text-center">
+              <Link to="/login" className="inline-flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-900 transition-colors">
+                <FiArrowLeft /> Return to Vault
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

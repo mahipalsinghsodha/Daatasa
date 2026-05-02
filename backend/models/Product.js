@@ -13,8 +13,8 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: true,
-    enum: ['a1', 'a2'],
-    lowercase: true
+    lowercase: true,
+    trim: true
   },
   price: {
     type: Number,
@@ -51,6 +51,10 @@ const productSchema = new mongoose.Schema({
   featured: {
     type: Boolean,
     default: false
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, {
   timestamps: true
