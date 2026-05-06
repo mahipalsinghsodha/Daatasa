@@ -93,12 +93,15 @@ const CustomTooltip = ({ active, payload, label }) => {
 }
 
 // ── Donut label ────────────────────────────────────────────────────────────────
-const DonutLabel = ({ cx, cy, total, label }) => (
-  <>
-    <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 22, fontWeight: 900, fill: T.text }}>{total}</text>
-    <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 11, fontWeight: 700, fill: T.textDim }}>{label}</text>
-  </>
-)
+const DonutLabel = ({ cx, cy, total, label }) => {
+  if (isNaN(cx) || isNaN(cy)) return null
+  return (
+    <>
+      <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 22, fontWeight: 900, fill: T.text }}>{total}</text>
+      <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 11, fontWeight: 700, fill: T.textDim }}>{label}</text>
+    </>
+  )
+}
 
 // ── Status Pill ────────────────────────────────────────────────────────────────
 const orderStatus = (o) => {

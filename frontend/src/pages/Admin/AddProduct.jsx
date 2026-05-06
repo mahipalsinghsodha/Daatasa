@@ -57,8 +57,12 @@ const AddProduct = () => {
   const [categories, setCategories] = useState([])
   const [formData, setFormData] = useState({
     name: '', description: '', category: '',
-    price: '', stock: '', weight: '', image: '', featured: false,
+    price: '', stock: '', weight: '500g', image: '', featured: false,
   })
+
+  const WEIGHT_OPTIONS = [
+    '250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg'
+  ]
 
   useEffect(() => {
     const init = async () => {
@@ -157,7 +161,7 @@ const AddProduct = () => {
 
   /* ── Main form ── */
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, fontFamily: C.font }}>
+    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: T.font }}>
 
       {/* Sub-header */}
       <div style={{ background: T.white, borderBottom: `2.5px solid ${T.border}`, padding: '24px 32px' }}>
@@ -166,9 +170,9 @@ const AddProduct = () => {
             <FiPackage size={22} style={{ color: T.accent }} />
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.accent, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Operations Protocol</p>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.accent, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product Management</p>
             <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: T.text, letterSpacing: '-0.02em' }}>
-              {isEdit ? 'Modify Asset' : 'Provision Asset'}
+              {isEdit ? 'Edit Product' : 'Add New Product'}
             </h1>
           </div>
         </div>
@@ -188,54 +192,65 @@ const AddProduct = () => {
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 32px' }}>
 
-              {/* Identity */}
-              <Field label="Categorical Label" required>
+              {/* Product Name */}
+              <Field label="Product Name" required>
                 <input type="text" name="name" value={formData.name} onChange={handleChange}
                   required placeholder="e.g., Pure Organic Bilona Ghee"
                   style={inputBase} onFocus={onFocus} onBlur={onBlur} className="input-focus" />
               </Field>
 
-              {/* Narrative */}
-              <Field label="Asset Narrative" required>
+              {/* Description */}
+              <Field label="Description" required>
                 <textarea name="description" value={formData.description} onChange={handleChange}
-                  required rows={5} placeholder="Specify origin, nutritional profile, and unique value proposition…"
+                  required rows={5} placeholder="Describe the product — origin, health benefits, quality..."
                   style={{ ...inputBase, resize: 'vertical', minHeight: 120, lineHeight: 1.6 }} onFocus={onFocus} onBlur={onBlur} className="input-focus" />
               </Field>
 
-              {/* Taxonomy */}
-              <Field label="Taxonomy Assignment" required half>
+              {/* Category */}
+              <Field label="Category" required half>
                 <CustomDropdown options={categoryOptions} value={formData.category} onChange={(val) => setFormData({...formData, category: val})} />
               </Field>
 
-              {/* Logistics */}
-              <Field label="Logistics Weight" required half>
-                <input type="text" name="weight" value={formData.weight} onChange={handleChange}
-                  required placeholder="e.g., 500ml, 1 Litre"
-                  style={inputBase} onFocus={onFocus} onBlur={onBlur} className="input-focus" />
+              {/* Weight / Size */}
+              <Field label="Weight / Size" required half>
+                <select
+                  name="weight"
+                  value={formData.weight}
+                  onChange={handleChange}
+                  required
+                  style={{ ...inputBase, cursor: 'pointer', appearance: 'auto' }}
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                >
+                  <option value="" disabled>Select weight</option>
+                  {WEIGHT_OPTIONS.map(w => (
+                    <option key={w} value={w}>{w}</option>
+                  ))}
+                </select>
               </Field>
 
-              {/* Valuation */}
-              <Field label="Market Valuation (₹)" required half>
+              {/* Price */}
+              <Field label="Price (₹)" required half>
                 <input type="number" name="price" value={formData.price} onChange={handleChange}
                   required min="0" step="0.01" placeholder="0.00"
                   style={inputBase} onFocus={onFocus} onBlur={onBlur} className="input-focus" />
               </Field>
 
-              {/* Unit Inventory */}
-              <Field label="Unit Inventory" required half>
+              {/* Stock */}
+              <Field label="Stock (Units)" required half>
                 <input type="number" name="stock" value={formData.stock} onChange={handleChange}
                   required min="0" placeholder="0"
                   style={inputBase} onFocus={onFocus} onBlur={onBlur} className="input-focus" />
               </Field>
 
-              {/* Visual Media */}
-              <Field label="Media Reference (URL)" hint="Synchronize a high-resolution asset URL. Default placeholder active if void.">
+              {/* Image URL */}
+              <Field label="Image URL" hint="Paste a Cloudinary or any public image link. Leave blank to use a default placeholder.">
                 <input type="url" name="image" value={formData.image} onChange={handleChange}
-                  placeholder="https://cloud.cdn/asset.webp"
+                  placeholder="https://res.cloudinary.com/..."
                   style={inputBase} onFocus={onFocus} onBlur={onBlur} className="input-focus" />
               </Field>
 
-              {/* Authority Highlight */}
+              {/* Featured */}
               <div style={{ gridColumn: 'span 2' }}>
                 <label style={{
                   display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer',
@@ -246,8 +261,8 @@ const AddProduct = () => {
                     checked={formData.featured} onChange={handleChange}
                     style={{ width: 18, height: 18, accentColor: T.accent, cursor: 'pointer' }} />
                   <div>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: formData.featured ? T.accent : T.text }}>Authority Highlight</p>
-                    <p style={{ margin: 0, fontSize: 13, color: T.textMid, fontWeight: 500, marginTop: 2 }}>Synchronize as a featured entity on the primary node discovery section.</p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: formData.featured ? T.accent : T.text }}>Featured Product</p>
+                    <p style={{ margin: 0, fontSize: 13, color: T.textMid, fontWeight: 500, marginTop: 2 }}>Show this product in the homepage featured section.</p>
                   </div>
                 </label>
               </div>
@@ -270,7 +285,7 @@ const AddProduct = () => {
                 onMouseEnter={e => { if (!loading) e.currentTarget.style.transform = 'translateY(-1px)' }}
                 onMouseLeave={e => { if (!loading) e.currentTarget.style.transform = 'none' }}
               >
-                {loading ? 'Synchronizing Archive...' : isEdit ? 'Commit Asset Update' : 'Provision Asset Archive'}
+                {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Product'}
               </button>
               <button type="button" onClick={() => navigate('/admin/products')}
                 style={{
@@ -281,7 +296,7 @@ const AddProduct = () => {
                 onMouseEnter={e => e.currentTarget.style.background = T.border}
                 onMouseLeave={e => e.currentTarget.style.background = T.surfaceHigh}
               >
-                Cancel Protocol
+                Cancel
               </button>
             </div>
           </form>

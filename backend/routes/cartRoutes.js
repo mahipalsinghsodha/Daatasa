@@ -4,6 +4,8 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 
+const MAX_QTY_PER_ITEM = 10; // Maximum quantity of a single product in cart
+
 // Get user's cart
 router.get('/', auth, async (req, res) => {
   try {
@@ -31,6 +33,11 @@ router.post('/items', auth, async (req, res) => {
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    // Block adding out-of-stock products
+    if (product.stock <= 0) {
+      return res.status(400).json({ message: 'This product is currently not available' });
+    }
+
     let cart = await Cart.findOne({ user: req.user._id });
     
     if (!cart) {
@@ -41,16 +48,18 @@ router.post('/items', auth, async (req, res) => {
       item => item.product.toString() === productId
     );
 
+    const requestedQty = quantity || 1;
+    // Cap = min(product.stock, MAX_QTY_PER_ITEM) — dynamic per product
+    const maxAllowed = Math.min(product.stock, MAX_QTY_PER_ITEM);
+
     if (itemIndex > -1) {
-      if(product.stock - cart.items[itemIndex].quantity>=quantity){
-         cart.items[itemIndex].quantity += quantity || 1;
-      }else{
-      let newQuantity = quantity - (product.stock - cart.items[itemIndex].quantity)
-      cart.items[itemIndex].quantity += (quantity -newQuantity);
-      }
-      
+      const newQty = cart.items[itemIndex].quantity + requestedQty;
+      cart.items[itemIndex].quantity = Math.min(newQty, maxAllowed);
     } else {
-      cart.items.push({ product: productId, quantity: quantity || 1 });
+      cart.items.push({ 
+        product: productId, 
+        quantity: Math.min(requestedQty, maxAllowed)
+      });
     }
 
     await cart.save();
@@ -75,6 +84,24 @@ router.put('/items/:itemId', auth, async (req, res) => {
     const item = cart.items.id(req.params.itemId);
     if (!item) {
       return res.status(404).json({ message: 'Item not found' });
+    }
+
+    // Need to populate the product to check stock
+    const product = await Product.findById(item.product);
+    if (!product) {
+       return res.status(404).json({ message: 'Product not found' });
+    }
+
+    // Dynamic cap: min(product.stock, MAX_QTY_PER_ITEM)
+    const maxAllowed = Math.min(product.stock, MAX_QTY_PER_ITEM);
+
+    if (quantity < 1) {
+      return res.status(400).json({ message: 'Quantity must be at least 1' });
+    }
+    if (quantity > maxAllowed) {
+      return res.status(400).json({ 
+        message: `Max ${maxAllowed} of this item allowed (stock: ${product.stock})` 
+      });
     }
 
     item.quantity = quantity;

@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const SupportTicket = require("../models/SupportTicket");
 const auth = require('../middleware/auth');
+const { logAction } = require('../utils/logger');
+
 
 // Create Ticket
 router.post("/", auth,  async (req, res) => {

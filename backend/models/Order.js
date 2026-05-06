@@ -22,11 +22,14 @@ const orderSchema = new mongoose.Schema({
   orderItems: [orderItemSchema],
 
   shippingAddress: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: String
+    name:     String,
+    phone:    String,
+    street:   String,
+    city:     String,
+    district: String,
+    state:    String,
+    zipCode:  String,
+    country:  String
   },
 cancelReason:  { type: String, default: '' },
 cancelledAt:   Date,
@@ -45,7 +48,7 @@ refundInfo: {
 
   paymentStatus: {
     type: String,
-    enum: ['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'COD_CONFIRMED'],
+    enum: ['PENDING', 'PAID', 'FAILED', 'CANCELLED', 'COD_CONFIRMED', 'EXPIRED'],
     default: 'PENDING'
   },
 

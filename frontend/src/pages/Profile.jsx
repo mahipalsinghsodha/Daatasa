@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import {
-  FiUser, FiMapPin, FiPhone, FiMail, FiPlus, FiEdit2,
-  FiTrash2, FiCheck, FiX, FiHome, FiBriefcase,
-  FiAlertCircle, FiCheckCircle, FiStar, FiSearch,
-  FiCamera, FiLock, FiChevronRight
+  FiUser, FiMapPin, FiPlus, FiEdit2, FiTrash2,
+  FiX, FiHome, FiBriefcase, FiStar, FiSearch,
+  FiChevronRight, FiPackage, FiLogOut, FiCheck,
+  FiAlertCircle
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
@@ -25,21 +26,25 @@ const emptyAddr = {
   city: '', district: '', state: '', zipCode: '', country: 'India', isDefault: false,
 }
 
+// ── Shared input style ──────────────────────────────────────────────────────
+const inp = 'w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-gray-400'
+const lbl = 'block text-sm font-medium text-gray-600 mb-1'
+
 const Profile = () => {
-  const { user, setUser } = useAuth()
-  
-  // Profile States
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
+  const { user, setUser, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const [name, setName]           = useState('')
+  const [phone, setPhone]         = useState('')
   const [profLoading, setProfLoading] = useState(false)
 
-  // Address States
   const [addresses, setAddresses] = useState([])
-  const [showForm, setShowForm] = useState(false)
-  const [editId, setEditId] = useState(null)
-  const [addrForm, setAddrForm] = useState(emptyAddr)
+  const [showForm, setShowForm]   = useState(false)
+  const [editId, setEditId]       = useState(null)
+  const [addrForm, setAddrForm]   = useState(emptyAddr)
   const [addrLoading, setAddrLoading] = useState(false)
-  const [pinLoading, setPinLoading] = useState(false)
+  const [pinLoading, setPinLoading]   = useState(false)
+  const [pinError, setPinError]       = useState('')
 
   useEffect(() => {
     if (user) {
@@ -53,18 +58,20 @@ const Profile = () => {
     try {
       const res = await api.get('/api/auth/me')
       setAddresses(res.data.addresses || [])
-    } catch (e) {
-      console.error('Error fetching addresses:', e)
-    }
+    } catch {}
   }
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault()
+    if (phone && !/^[6-9][0-9]{9}$/.test(phone)) {
+      toast.error('Enter a valid 10-digit mobile number')
+      return
+    }
     setProfLoading(true)
     try {
       const res = await api.put('/api/auth/profile', { name, phone })
       setUser(prev => ({ ...prev, name: res.data.name, phone: res.data.phone }))
-      toast.success('Profile updated successfully')
+      toast.success('Profile updated!')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed')
     } finally {
@@ -72,8 +79,10 @@ const Profile = () => {
     }
   }
 
-  const handlePinLookup = async (pin) => {
-    const cleaned = pin.replace(/\D/g, '').slice(0, 6)
+  // ── PIN lookup with auto-fill ──────────────────────────────────────────────
+  const handlePinChange = async (val) => {
+    const cleaned = val.replace(/\D/g, '').slice(0, 6)
+    setPinError('')
     setAddrForm(p => ({ ...p, zipCode: cleaned }))
     if (cleaned.length === 6) {
       setPinLoading(true)
@@ -82,15 +91,19 @@ const Profile = () => {
         const data = await res.json()
         if (data[0]?.Status === 'Success' && data[0].PostOffice?.length) {
           const po = data[0].PostOffice[0]
-          setAddrForm(p => ({ 
-            ...p, 
-            state: po.State, 
-            district: po.District, 
-            city: po.Division || po.District 
+          setAddrForm(p => ({
+            ...p,
+            zipCode: cleaned,
+            state:    po.State,
+            district: po.District,
+            city:     po.Division || po.District,
           }))
+          toast.success(`PIN found: ${po.District}, ${po.State}`)
+        } else {
+          setPinError('PIN code not found. Please fill details manually.')
         }
-      } catch (e) {
-        console.error('PIN lookup error:', e)
+      } catch {
+        setPinError('Could not fetch PIN data. Please fill manually.')
       } finally {
         setPinLoading(false)
       }
@@ -99,6 +112,14 @@ const Profile = () => {
 
   const handleAddrSubmit = async (e) => {
     e.preventDefault()
+    if (!/^[6-9][0-9]{9}$/.test(addrForm.phone)) {
+      toast.error('Enter a valid 10-digit mobile number')
+      return
+    }
+    if (!/^[0-9]{6}$/.test(addrForm.zipCode)) {
+      toast.error('Enter a valid 6-digit PIN code')
+      return
+    }
     setAddrLoading(true)
     try {
       const res = editId
@@ -108,9 +129,9 @@ const Profile = () => {
       setShowForm(false)
       setEditId(null)
       setAddrForm(emptyAddr)
-      toast.success(editId ? 'Address updated' : 'Address added')
+      toast.success(editId ? 'Address updated!' : 'Address saved!')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save address')
+      toast.error(err.response?.data?.message || 'Could not save address')
     } finally {
       setAddrLoading(false)
     }
@@ -122,8 +143,8 @@ const Profile = () => {
       const res = await api.delete(`/api/auth/addresses/${id}`)
       setAddresses(res.data.addresses)
       toast.success('Address removed')
-    } catch (e) {
-      toast.error('Failed to delete address')
+    } catch {
+      toast.error('Could not delete address')
     }
   }
 
@@ -132,304 +153,409 @@ const Profile = () => {
       const res = await api.patch(`/api/auth/addresses/${id}/default`)
       setAddresses(res.data.addresses)
       toast.success('Default address updated')
-    } catch (e) {
+    } catch {
       toast.error('Failed to set default')
     }
+  }
+
+  const openEdit = (addr) => {
+    setAddrForm(addr)
+    setEditId(addr._id)
+    setShowForm(true)
+    setPinError('')
+  }
+
+  const openNew = () => {
+    setAddrForm(emptyAddr)
+    setEditId(null)
+    setShowForm(true)
+    setPinError('')
   }
 
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg)] pb-32">
-      
-      {/* ── Page Header ── */}
-      <div className="bg-white border-b border-[var(--color-border)] pt-12 pb-8 sm:pt-16 sm:pb-12 shadow-sm relative z-10">
-        <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center text-center">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 border border-orange-200 mb-4">
-              <FiUser size={14} className="text-orange-600" />
-              <span className="text-[10px] uppercase tracking-widest font-black text-orange-600">Personal Management</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-black text-gray-900 mb-4 font-head tracking-tight">Account Settings</h1>
-            <p className="text-gray-500 font-medium max-w-lg">Manage your identity, security preferences, and delivery coordinates.</p>
-          </div>
+    <div className="min-h-screen bg-gray-50 pb-16">
+
+      {/* ── Page header ── */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+          <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Manage your profile and delivery addresses</p>
         </div>
       </div>
 
-      <div className="max-w-[1000px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid lg:grid-cols-3 gap-12">
-          
-          {/* ── Left Column: Identity Card ── */}
-          <div className="lg:col-span-1 space-y-8">
-            <div className="bg-white rounded-[40px] border border-gray-100 shadow-xl shadow-gray-200/50 p-10 text-center relative overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-32 bg-orange-600/5" />
-              
-              <div className="relative z-10">
-                <div className="relative inline-block mb-6">
-                  <div className="w-24 h-24 rounded-[32px] bg-gray-900 flex items-center justify-center text-3xl font-black text-white font-head shadow-2xl">
-                    {user.name?.[0].toUpperCase()}
-                  </div>
-                  <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-orange-600 text-white rounded-2xl border-4 border-white flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
-                    <FiCamera size={16} />
-                  </button>
-                </div>
-                
-                <h3 className="text-xl font-black text-gray-900 mb-1 font-head">{user.name}</h3>
-                <p className="text-sm font-bold text-gray-400 mb-6">{user.email}</p>
-                
-                <div className="flex flex-col gap-2">
-                  <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest inline-block ${
-                    user.role === 'admin' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-green-50 text-green-600 border border-green-100'
-                  }`}>
-                    {user.role === 'admin' ? 'System Admin' : 'Verified Customer'}
-                  </span>
-                  <div className="h-0.5 w-12 bg-gray-100 mx-auto my-2" />
-                  <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Member since {new Date(user.createdAt).getFullYear()}</p>
-                </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
+        <div className="grid lg:grid-cols-3 gap-6">
+
+          {/* ── Left sidebar ── */}
+          <div className="space-y-4">
+
+            {/* Avatar card */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center">
+              <div className="w-16 h-16 rounded-xl bg-gray-900 flex items-center justify-center text-xl font-bold text-white mx-auto mb-3">
+                {user.name?.[0]?.toUpperCase()}
               </div>
+              <p className="font-semibold text-gray-900">{user.name}</p>
+              <p className="text-sm text-gray-400">{user.email}</p>
+              <span className={`inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full ${
+                user.role === 'admin' || user.role === 'superadmin'
+                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  : 'bg-green-50 text-green-600 border border-green-100'
+              }`}>
+                {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Customer'}
+              </span>
             </div>
 
-            {/* Account Quick Links */}
-            <div className="bg-white rounded-[32px] border border-gray-100 p-4 space-y-1">
-               {[
-                { label: 'My Orders', icon: FiPackage, link: '/orders' },
-                { label: 'Wishlist', icon: FiStar, link: '/wishlist' },
-                { label: 'Logout', icon: FiX, action: () => { localStorage.clear(); window.location.href = '/' }, danger: true }
-              ].map((item, idx) => (
-                <button 
-                  key={idx}
-                  onClick={item.action || (() => window.location.href = item.link)}
-                  className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all group ${
-                    item.danger ? 'hover:bg-red-50 text-red-600' : 'hover:bg-gray-50 text-gray-700'
+            {/* Nav links */}
+            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+              {[
+                { label: 'My Orders', icon: FiPackage, to: '/orders' },
+                { label: 'Sign Out', icon: FiLogOut, danger: true, action: () => { logout(); navigate('/') } },
+              ].map((item, i) => (
+                <button
+                  key={i}
+                  onClick={item.action || (() => navigate(item.to))}
+                  className={`w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${
+                    item.danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon className={item.danger ? 'text-red-500' : 'text-orange-500'} />
-                    <span className="text-sm font-black">{item.label}</span>
+                    <item.icon size={15} className={item.danger ? 'text-red-400' : 'text-gray-400'} />
+                    {item.label}
                   </div>
-                  <FiChevronRight className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <FiChevronRight size={14} className="text-gray-300" />
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Right Column: Configuration ── */}
-          <div className="lg:col-span-2 space-y-12">
-            
-            {/* Profile Form */}
-            <section className="bg-white rounded-[40px] border border-gray-100 p-8 sm:p-12 shadow-sm">
-              <div className="flex items-center gap-4 mb-10">
-                <div className="w-12 h-12 bg-gray-900 rounded-2xl flex items-center justify-center text-white">
-                  <FiEdit2 size={20} />
-                </div>
-                <div>
-                  <h3 className="text-xl font-black text-gray-900 font-head">Identity Info</h3>
-                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Personal Details</p>
-                </div>
-              </div>
+          {/* ── Right main content ── */}
+          <div className="lg:col-span-2 space-y-6">
 
-              <form onSubmit={handleProfileSubmit} className="space-y-8">
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
-                    <input 
+            {/* ── Profile form ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
+                <FiUser size={16} className="text-orange-500" /> Personal Details
+              </h2>
+              <form onSubmit={handleProfileSubmit} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={lbl}>Full Name</label>
+                    <input
                       type="text"
                       required
                       value={name}
                       onChange={e => setName(e.target.value)}
-                      className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none text-sm font-bold transition-all"
+                      placeholder="Your full name"
+                      className={inp}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Phone Number</label>
-                    <input 
+                  <div>
+                    <label className={lbl}>Phone Number</label>
+                    <input
                       type="tel"
                       value={phone}
-                      onChange={e => setPhone(e.target.value)}
-                      className="w-full px-5 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 outline-none text-sm font-bold transition-all"
+                      maxLength={10}
+                      onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                      placeholder="10-digit mobile number"
+                      inputMode="numeric"
+                      className={inp}
                     />
+                    {phone && !/^[6-9][0-9]{9}$/.test(phone) && phone.length === 10 && (
+                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                        <FiAlertCircle size={11} /> Enter a valid Indian mobile number
+                      </p>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex justify-end pt-4">
-                  <button 
+                <div>
+                  <label className={lbl}>Email</label>
+                  <input type="email" disabled value={user.email} className={`${inp} bg-gray-50 cursor-not-allowed text-gray-400`} />
+                  <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+                </div>
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
                     disabled={profLoading}
-                    className="px-10 py-4 bg-gray-900 text-white font-black rounded-2xl shadow-xl shadow-gray-200 hover:bg-orange-600 transition-all disabled:opacity-50"
+                    className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-orange-500 transition-all disabled:opacity-50"
                   >
-                    {profLoading ? 'Processing...' : 'Save Profile Changes'}
+                    {profLoading ? 'Saving...' : 'Save Changes'}
                   </button>
                 </div>
               </form>
-            </section>
+            </div>
 
-            {/* Address Management */}
-            <section className="bg-white rounded-[40px] border border-gray-100 p-8 sm:p-12 shadow-sm">
-              <div className="flex items-center justify-between mb-10">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-orange-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-orange-200">
-                    <FiMapPin size={20} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-gray-900 font-head">Delivery Vault</h3>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Saved Addresses</p>
-                  </div>
-                </div>
+            {/* ── Addresses ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                  <FiMapPin size={16} className="text-orange-500" /> Saved Addresses
+                </h2>
                 {!showForm && (
-                  <button 
-                    onClick={() => { setShowForm(true); setEditId(null); setAddrForm(emptyAddr) }}
-                    className="flex items-center gap-2 px-5 py-3 bg-orange-50 text-orange-600 rounded-xl text-xs font-black hover:bg-orange-600 hover:text-white transition-all"
+                  <button
+                    onClick={openNew}
+                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white rounded-lg transition-all border border-orange-100 hover:border-orange-500"
                   >
-                    <FiPlus size={14} /> New Address
+                    <FiPlus size={14} /> Add Address
                   </button>
                 )}
               </div>
 
               <AnimatePresence mode="wait">
-                {showForm ? (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
+
+                {/* ── Address Form ── */}
+                {showForm && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="bg-gray-50 rounded-[32px] p-8 border border-gray-100"
+                    exit={{ opacity: 0, y: -8 }}
+                    className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4"
                   >
-                    <form onSubmit={handleAddrSubmit} className="space-y-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-sm font-black text-gray-900 uppercase tracking-widest">{editId ? 'Modify Locale' : 'Add Locale'}</h4>
-                        <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-900 transition-colors"><FiX size={20} /></button>
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-semibold text-gray-900">{editId ? 'Edit Address' : 'New Address'}</h3>
+                      <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} className="text-gray-400 hover:text-gray-700 transition-colors">
+                        <FiX size={18} />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleAddrSubmit} className="space-y-4">
+
+                      {/* Label selector */}
+                      <div>
+                        <label className={lbl}>Address Type</label>
+                        <div className="flex gap-2">
+                          {['Home', 'Work', 'Other'].map(l => (
+                            <button
+                              key={l}
+                              type="button"
+                              onClick={() => setAddrForm(p => ({ ...p, label: l }))}
+                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
+                                addrForm.label === l
+                                  ? 'bg-gray-900 text-white border-gray-900'
+                                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
+                              }`}
+                            >
+                              {l}
+                            </button>
+                          ))}
+                        </div>
                       </div>
 
                       <div className="grid sm:grid-cols-2 gap-4">
-                        {/* Label Selector */}
-                        <div className="sm:col-span-2 flex gap-2">
-                           {['Home', 'Work', 'Other'].map(l => (
-                             <button
-                               key={l}
-                               type="button"
-                               onClick={() => setAddrForm(p => ({ ...p, label: l }))}
-                               className={`flex-1 py-3 rounded-xl text-xs font-black transition-all border-2 ${
-                                 addrForm.label === l ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-white text-gray-400 hover:border-gray-200'
-                               }`}
-                             >
-                               {l}
-                             </button>
-                           ))}
+                        <div>
+                          <label className={lbl}>Full Name</label>
+                          <input
+                            type="text"
+                            required
+                            value={addrForm.name}
+                            onChange={e => setAddrForm(p => ({ ...p, name: e.target.value }))}
+                            placeholder="Recipient name"
+                            className={inp}
+                          />
                         </div>
+                        <div>
+                          <label className={lbl}>Phone Number</label>
+                          <input
+                            type="tel"
+                            required
+                            maxLength={10}
+                            inputMode="numeric"
+                            value={addrForm.phone}
+                            onChange={e => setAddrForm(p => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))}
+                            placeholder="10-digit mobile number"
+                            className={inp}
+                          />
+                          {addrForm.phone && !/^[6-9][0-9]{9}$/.test(addrForm.phone) && addrForm.phone.length === 10 && (
+                            <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                              <FiAlertCircle size={11} /> Invalid number
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Recipient Name</label>
-                          <input type="text" required value={addrForm.name} onChange={e => setAddrForm(p => ({ ...p, name: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none text-sm font-bold focus:border-orange-500 transition-all" />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Contact Phone</label>
-                          <input type="tel" required value={addrForm.phone} onChange={e => setAddrForm(p => ({ ...p, phone: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none text-sm font-bold focus:border-orange-500 transition-all" />
-                        </div>
-                        
-                        <div className="sm:col-span-2 space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Street Address</label>
-                          <input type="text" required value={addrForm.street} onChange={e => setAddrForm(p => ({ ...p, street: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none text-sm font-bold focus:border-orange-500 transition-all" />
-                        </div>
+                      <div>
+                        <label className={lbl}>Street Address</label>
+                        <input
+                          type="text"
+                          required
+                          value={addrForm.street}
+                          onChange={e => setAddrForm(p => ({ ...p, street: e.target.value }))}
+                          placeholder="House no., street, area, landmark"
+                          className={inp}
+                        />
+                      </div>
 
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">PIN Code</label>
+                      {/* PIN code with auto-fill */}
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className={lbl}>PIN Code</label>
                           <div className="relative">
-                            <FiSearch className={`absolute left-4 top-1/2 -translate-y-1/2 ${pinLoading ? 'animate-pulse text-orange-500' : 'text-gray-300'}`} />
-                            <input 
-                              type="text" 
-                              required 
+                            <input
+                              type="text"
+                              required
                               maxLength={6}
-                              value={addrForm.zipCode} 
-                              onChange={e => handlePinLookup(e.target.value)} 
-                              className="w-full pl-10 pr-4 py-3 rounded-xl bg-white border border-gray-100 outline-none text-sm font-bold focus:border-orange-500 transition-all" 
+                              inputMode="numeric"
+                              value={addrForm.zipCode}
+                              onChange={e => handlePinChange(e.target.value)}
+                              placeholder="6-digit PIN code"
+                              className={`${inp} pr-10`}
                             />
+                            {pinLoading && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-orange-400/30 border-t-orange-500 rounded-full animate-spin" />
+                            )}
+                            {!pinLoading && addrForm.zipCode.length === 6 && !pinError && addrForm.city && (
+                              <FiCheck className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" size={15} />
+                            )}
                           </div>
+                          {pinError && (
+                            <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                              <FiAlertCircle size={11} /> {pinError}
+                            </p>
+                          )}
+                          {!pinError && addrForm.city && addrForm.zipCode.length === 6 && (
+                            <p className="text-xs text-green-600 mt-1">✓ Auto-filled from PIN</p>
+                          )}
                         </div>
+                        <div>
+                          <label className={lbl}>City</label>
+                          <input
+                            type="text"
+                            required
+                            value={addrForm.city}
+                            onChange={e => setAddrForm(p => ({ ...p, city: e.target.value }))}
+                            placeholder="City"
+                            className={inp}
+                          />
+                        </div>
+                      </div>
 
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">State / UT</label>
-                          <select required value={addrForm.state} onChange={e => setAddrForm(p => ({ ...p, state: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none text-sm font-bold focus:border-orange-500 transition-all appearance-none cursor-pointer">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className={lbl}>District</label>
+                          <input
+                            type="text"
+                            value={addrForm.district}
+                            onChange={e => setAddrForm(p => ({ ...p, district: e.target.value }))}
+                            placeholder="District (auto-filled)"
+                            className={inp}
+                          />
+                        </div>
+                        <div>
+                          <label className={lbl}>State</label>
+                          <select
+                            required
+                            value={addrForm.state}
+                            onChange={e => setAddrForm(p => ({ ...p, state: e.target.value }))}
+                            className={inp}
+                          >
                             <option value="">Select State</option>
                             {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
                         </div>
-
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">City / Hub</label>
-                          <input type="text" required value={addrForm.city} onChange={e => setAddrForm(p => ({ ...p, city: e.target.value }))} className="w-full px-4 py-3 rounded-xl bg-white border border-gray-100 outline-none text-sm font-bold focus:border-orange-500 transition-all" />
-                        </div>
-
-                        <div className="flex items-center gap-3 p-4 bg-white rounded-xl border border-gray-100 mt-2">
-                           <input 
-                            type="checkbox" 
-                            id="def"
-                            checked={addrForm.isDefault} 
-                            onChange={e => setAddrForm(p => ({ ...p, isDefault: e.target.checked }))}
-                            className="w-4 h-4 accent-orange-600 rounded cursor-pointer"
-                           />
-                           <label htmlFor="def" className="text-xs font-black text-gray-700 cursor-pointer">Mark as Primary Address</label>
-                        </div>
                       </div>
 
-                      <div className="flex gap-3 mt-4">
-                        <button 
+                      <label className="flex items-center gap-2.5 cursor-pointer p-3 bg-white rounded-lg border border-gray-100">
+                        <input
+                          type="checkbox"
+                          checked={addrForm.isDefault}
+                          onChange={e => setAddrForm(p => ({ ...p, isDefault: e.target.checked }))}
+                          className="w-4 h-4 accent-orange-500 rounded cursor-pointer"
+                        />
+                        <span className="text-sm text-gray-700">Set as my default address</span>
+                      </label>
+
+                      <div className="flex gap-3 pt-1">
+                        <button
+                          type="submit"
                           disabled={addrLoading}
-                          className="flex-1 py-4 bg-gray-900 text-white font-black rounded-2xl shadow-xl shadow-gray-200 transition-all hover:bg-orange-600"
+                          className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-orange-500 transition-all disabled:opacity-50"
                         >
-                          {addrLoading ? 'Processing...' : editId ? 'Verify & Update' : 'Secure & Save'}
+                          {addrLoading ? 'Saving...' : editId ? 'Update Address' : 'Save Address'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowForm(false); setEditId(null) }}
+                          className="px-4 py-3 text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg transition-colors"
+                        >
+                          Cancel
                         </button>
                       </div>
                     </form>
                   </motion.div>
-                ) : addresses.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {addresses.map((addr) => (
-                      <motion.div 
-                        key={addr._id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className={`p-6 rounded-[32px] border-2 transition-all flex flex-col sm:flex-row justify-between items-start gap-4 ${
-                          addr.isDefault 
-                            ? 'bg-orange-50/30 border-orange-200' 
-                            : 'bg-white border-gray-50 hover:border-gray-100'
-                        }`}
-                      >
-                         <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                               <div className={`p-2 rounded-xl ${addr.label === 'Home' ? 'bg-blue-50 text-blue-600' : addr.label === 'Work' ? 'bg-purple-50 text-purple-600' : 'bg-pink-50 text-pink-600'}`}>
-                                  {addr.label === 'Home' ? <FiHome size={14}/> : addr.label === 'Work' ? <FiBriefcase size={14}/> : <FiMapPin size={14}/>}
-                               </div>
-                               <span className="text-sm font-black text-gray-900 font-head">{addr.name}</span>
-                               {addr.isDefault && <span className="bg-orange-600 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-widest">Primary</span>}
-                            </div>
-                            <div className="text-xs font-bold text-gray-400 leading-relaxed uppercase tracking-tighter">
-                               {addr.street}<br/>
-                               {addr.city}, {addr.state} — {addr.zipCode}
-                            </div>
-                         </div>
+                )}
 
-                         <div className="flex items-center gap-2 self-end sm:self-center">
+                {/* ── Address list ── */}
+                {!showForm && (
+                  addresses.length > 0 ? (
+                    <div className="space-y-3">
+                      {addresses.map(addr => (
+                        <motion.div
+                          key={addr._id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start gap-3 transition-all ${
+                            addr.isDefault ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-100 hover:border-gray-200'
+                          }`}
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <div className={`p-1.5 rounded-md ${addr.label === 'Home' ? 'bg-blue-100 text-blue-600' : addr.label === 'Work' ? 'bg-purple-100 text-purple-600' : 'bg-pink-100 text-pink-600'}`}>
+                                {addr.label === 'Home' ? <FiHome size={12} /> : addr.label === 'Work' ? <FiBriefcase size={12} /> : <FiMapPin size={12} />}
+                              </div>
+                              <span className="text-sm font-semibold text-gray-900">{addr.name}</span>
+                              {addr.isDefault && (
+                                <span className="text-[10px] font-semibold bg-orange-500 text-white px-2 py-0.5 rounded-full">Default</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-500 leading-relaxed">
+                              {addr.street}<br />
+                              {addr.city}{addr.district && `, ${addr.district}`} – {addr.zipCode}<br />
+                              {addr.state} · {addr.phone}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                             {!addr.isDefault && (
-                              <button onClick={() => handleSetDefault(addr._id)} className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-orange-600 hover:border-orange-100 transition-all shadow-sm" title="Set Default">
-                                <FiStar size={16} />
+                              <button
+                                onClick={() => handleSetDefault(addr._id)}
+                                title="Set as default"
+                                className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-orange-500 hover:border-orange-200 transition-all text-xs"
+                              >
+                                <FiStar size={14} />
                               </button>
                             )}
-                            <button onClick={() => { setAddrForm(addr); setEditId(addr._id); setShowForm(true) }} className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-100 transition-all shadow-sm" title="Edit Locale">
-                               <FiEdit2 size={16} />
+                            <button
+                              onClick={() => openEdit(addr)}
+                              title="Edit"
+                              className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-200 transition-all"
+                            >
+                              <FiEdit2 size={14} />
                             </button>
-                            <button onClick={() => handleDeleteAddress(addr._id)} className="p-3 bg-white border border-gray-100 rounded-xl text-gray-400 hover:text-red-600 hover:border-red-100 transition-all shadow-sm" title="Expunge">
-                               <FiTrash2 size={16} />
+                            <button
+                              onClick={() => handleDeleteAddress(addr._id)}
+                              title="Delete"
+                              className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200 transition-all"
+                            >
+                              <FiTrash2 size={14} />
                             </button>
-                         </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 bg-gray-50 rounded-[32px] border border-dashed border-gray-200 flex flex-col items-center text-center p-8">
-                     <div className="text-4xl mb-4 grayscale opacity-20">📍</div>
-                     <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No Locales Saved</p>
-                  </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center border-2 border-dashed border-gray-100 rounded-xl">
+                      <FiMapPin size={28} className="text-gray-200 mx-auto mb-2" />
+                      <p className="text-sm text-gray-400">No addresses saved yet</p>
+                      <button onClick={openNew} className="mt-3 text-sm text-orange-500 hover:text-orange-600 font-medium">
+                        + Add your first address
+                      </button>
+                    </div>
+                  )
                 )}
               </AnimatePresence>
-            </section>
+            </div>
+
           </div>
         </div>
       </div>

@@ -180,13 +180,13 @@ export default function AdminSupport() {
               <FiLifeBuoy size={24}/>
             </div>
             <div>
-              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}>Distress Feed</h1>
-              <p style={{ margin: 0, fontSize: 12, color: T.textDim, fontWeight: 600 }}>Active Support Requests</p>
+              <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}>Support Tickets</h1>
+              <p style={{ margin: 0, fontSize: 12, color: T.textDim, fontWeight: 600 }}>Customer support messages</p>
             </div>
           </div>
           <div style={{ position: 'relative' }}>
             <FiSearch size={16} color={T.textDim} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }} />
-            <input type="text" placeholder="Search signals…" value={search} onChange={e => setSearch(e.target.value)}
+            <input type="text" placeholder="Search tickets…" value={search} onChange={e => setSearch(e.target.value)}
               style={{ width: '100%', padding: '12px 14px 12px 42px', background: T.bg, border: `1.5px solid ${T.border}`, borderRadius: 12, outline: 'none', fontSize: 14, fontWeight: 500 }} />
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function AdminSupport() {
           {filtered.length === 0 ? (
             <div style={{ padding: 60, textAlign: 'center', color: T.textDim }}>
               <FiMessageSquare size={48} style={{ opacity: 0.1, marginBottom: 16 }} />
-              <div style={{ fontSize: 14, fontWeight: 700 }}>Silence in the feed.</div>
+              <div style={{ fontSize: 14, fontWeight: 700 }}>No tickets found.</div>
             </div>
           ) : filtered.map(t => {
             const active = selectedTicket?._id === t._id;
@@ -228,7 +228,7 @@ export default function AdminSupport() {
                 </div>
                 <div style={{ fontWeight: 800, fontSize: 14, color: active ? T.accent : T.text, marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.subject}</div>
                 <div style={{ fontSize: 13, color: T.textMid, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                   <FiUser size={12}/> {t.user?.name || 'Anonymous Node'}
+                   <FiUser size={12}/> {t.user?.name || 'Customer'}
                 </div>
                 {lastMsg && (
                   <div style={{ fontSize: 12, color: T.textDim, background: T.surfaceHigh, padding: '8px 12px', borderRadius: 8, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
@@ -247,8 +247,8 @@ export default function AdminSupport() {
           {!selectedTicket ? (
             <motion.div key="none" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: T.textDim }}>
                <FiMessageSquare size={60} style={{ opacity: 0.1, marginBottom: 24 }}/>
-               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Signal Monitor Standby</h2>
-               <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Select a distress signal to begin communication.</p>
+               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>No ticket selected</h2>
+               <p style={{ margin: 0, fontSize: 14, fontWeight: 500 }}>Select a ticket from the list to view and reply.</p>
             </motion.div>
           ) : (
             <motion.div key="selected" initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -261,7 +261,7 @@ export default function AdminSupport() {
                           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 900, letterSpacing: '-0.01em' }}>{selectedTicket.subject}</h2>
                           <StatusMarker status={selectedTicket.status} />
                        </div>
-                       <div style={{ fontSize: 12, color: T.textMid, fontWeight: 600 }}>Protocol ID: {selectedTicket._id.toUpperCase()} • Sector: {selectedTicket.category || 'General'}</div>
+                       <div style={{ fontSize: 12, color: T.textMid, fontWeight: 600 }}>Ticket #{selectedTicket._id.slice(-8).toUpperCase()} • {selectedTicket.category || 'General'}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -286,7 +286,7 @@ export default function AdminSupport() {
                <div style={{ flex: 1, overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: 24, background: '#fcfcfd' }}>
                   {/* Internal Log: Ticket Creation */}
                   <div style={{ textAlign: 'center' }}>
-                     <span style={{ fontSize: 11, fontWeight: 800, color: T.textDim, background: T.surfaceHigh, padding: '4px 16px', borderRadius: 20 }}>DISTRESS SIGNAL INITIATED • {new Date(selectedTicket.createdAt).toLocaleString()}</span>
+                     <span style={{ fontSize: 11, fontWeight: 800, color: T.textDim, background: T.surfaceHigh, padding: '4px 16px', borderRadius: 20 }}>Ticket opened • {new Date(selectedTicket.createdAt).toLocaleString()}</span>
                   </div>
 
                   {(selectedTicket.messages || []).map((m, idx) => {
@@ -309,7 +309,7 @@ export default function AdminSupport() {
                               {m.message}
                             </div>
                             <div style={{ marginTop: 6, fontSize: 11, color: T.textDim, fontWeight: 600, textAlign: isUser ? 'left' : 'right' }}>
-                              {isAdmin ? 'MISSION CONTROL' : isUser ? 'CLIENT NODE' : 'SYSTEM'} • {formatTime(m.timestamp)}
+                              {isAdmin ? 'Support Team' : isUser ? 'Customer' : 'System'} • {formatTime(m.timestamp)}
                             </div>
                          </div>
                          {!isUser && <div style={{ width: 32, height: 32, borderRadius: 10, background: isAdmin ? T.accent : T.surfaceHigh, display: 'flex', alignItems: 'center', justifyContent: 'center', color: isAdmin ? '#fff' : T.textDim, fontWeight: 900, fontSize: 12, mt: 4 }}>{isAdmin ? 'A' : 'S'}</div>}
@@ -324,7 +324,7 @@ export default function AdminSupport() {
                  <div style={{ padding: '24px 32px', borderTop: `2px solid ${T.border}`, background: T.white }}>
                     <form onSubmit={sendReply} style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
                        <div style={{ flex: 1, position: 'relative' }}>
-                          <textarea placeholder="Transmit response protocol…" value={replyText} onChange={e => setReplyText(e.target.value)}
+                          <textarea placeholder="Write your reply…" value={replyText} onChange={e => setReplyText(e.target.value)}
                             onKeyDown={e => { if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendReply(); } }}
                             style={{ 
                                width: '100%', minHeight: 60, maxHeight: 200, padding: '16px 20px', borderRadius: 16, 
@@ -342,16 +342,16 @@ export default function AdminSupport() {
                        </button>
                     </form>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-                       <span style={{ fontSize: 11, color: T.textDim, fontWeight: 700 }}>OPERATOR: {user?.name.toUpperCase()} (MISSION CONTROL)</span>
+                       <span style={{ fontSize: 11, color: T.textDim, fontWeight: 700 }}>Replying as: {user?.name}</span>
                        <div style={{ display: 'flex', gap: 12 }}>
-                         <button style={{ background: 'none', border: 'none', color: T.textDim, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}><FiPaperclip/> Attach Signal</button>
-                         <button onClick={() => updateStatus('RESOLVED')} style={{ background: 'none', border: 'none', color: T.success, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800 }}><FiCheckCircle/> Resolve Ticket</button>
+                         <button style={{ background: 'none', border: 'none', color: T.textDim, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 700 }}><FiPaperclip/> Attach File</button>
+                         <button onClick={() => updateStatus('RESOLVED')} style={{ background: 'none', border: 'none', color: T.success, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800 }}><FiCheckCircle/> Mark Resolved</button>
                        </div>
                     </div>
                  </div>
                ) : (
-                 <div style={{ padding: '32px', textAlign: 'center', background: T.surfaceHigh, color: T.textDim, fontWeight: 800, textTransform: 'uppercase', fontSize: 13, borderTop: `2px solid ${T.border}` }}>
-                   PROTOCOL TERMINATED: Distress Signal Resolved and Secured.
+                 <div style={{ padding: '32px', textAlign: 'center', background: T.surfaceHigh, color: T.textDim, fontWeight: 600, fontSize: 13, borderTop: `2px solid ${T.border}` }}>
+                   This ticket has been closed.
                  </div>
                )}
             </motion.div>

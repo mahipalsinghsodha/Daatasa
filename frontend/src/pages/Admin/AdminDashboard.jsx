@@ -1,48 +1,68 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import {
-  FiPlus, FiPackage, FiShoppingBag, FiAlertCircle, FiTag, FiUsers, FiShield, FiActivity, FiBarChart2
+  FiPlus, FiPackage, FiShoppingBag, FiAlertCircle, FiTag,
+  FiUsers, FiShield, FiActivity, FiBarChart2, FiTrendingUp,
+  FiArrowRight, FiBox
 } from 'react-icons/fi'
 import api from '../../api/axios'
 
-/* ── Counter animation hook ─────────────────────────────────────────────── */
-const useCountUp = (end, duration = 600) => {
+const useCountUp = (end, duration = 800) => {
   const [count, setCount] = useState(0)
   useEffect(() => {
+    if (!end) { setCount(0); return }
     let start = 0
     const increment = end / (duration / 16)
     const timer = setInterval(() => {
       start += increment
       if (start >= end) { setCount(end); clearInterval(timer) }
-      else { setCount(Math.floor(start)) }
+      else setCount(Math.floor(start))
     }, 16)
     return () => clearInterval(timer)
   }, [end, duration])
   return count
 }
 
-const T = {
-  bg: '#f8fafc',
-  surface: '#ffffff',
-  border: '#e2e8f0',
-  accent: '#e8621a',
-  text: '#0f172a',
-  textMid: '#64748b',
-  textL: '#94a3b8',
-  success: '#10b981',
-  danger: '#ef4444',
-  font: '"Inter", "DM Sans", sans-serif',
+const StatCard = ({ title, value, icon: Icon, colorCls = 'bg-gray-100 text-gray-500' }) => {
+  const animated = useCountUp(value)
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 flex items-center justify-between">
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">{title}</p>
+        <p className="text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{animated}</p>
+      </div>
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${colorCls}`}>
+        <Icon size={20} />
+      </div>
+    </div>
+  )
 }
 
-/* ── Main component ─────────────────────────────────────────────────────── */
+const QuickCard = ({ title, desc, icon: Icon, to, accent }) => (
+  <Link
+    to={to}
+    className={`flex items-center gap-4 p-5 rounded-xl border transition-all group ${
+      accent ? 'bg-orange-50 border-orange-200 hover:bg-orange-100' : 'bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm'
+    }`}
+  >
+    <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${accent ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600 group-hover:bg-gray-900 group-hover:text-white transition-all'}`}>
+      <Icon size={18} />
+    </div>
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{title}</p>
+      {desc && <p className="text-xs text-gray-400 mt-0.5">{desc}</p>}
+    </div>
+    <FiArrowRight size={15} className={`shrink-0 transition-colors ${accent ? 'text-orange-400' : 'text-gray-300 group-hover:text-gray-600'}`} />
+  </Link>
+)
+
 const AdminDashboard = () => {
   const { user, hasPermission } = useAuth()
-  const navigate   = useNavigate()
-
-  const [stats,   setStats]   = useState({ totalProducts: 0, totalOrders: 0, pendingOrders: 0, totalCoupons: 0, activeCoupons: 0, totalUsers: 0, blockedUsers: 0 })
+  const navigate = useNavigate()
+  const [stats, setStats] = useState({ totalProducts: 0, totalOrders: 0, pendingOrders: 0, activeCoupons: 0, totalUsers: 0, blockedUsers: 0 })
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState('')
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (user?.role === 'admin' || user?.role === 'superadmin') fetchStats()
@@ -52,43 +72,27 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     try {
       setLoading(true)
-      
       const promises = []
       const indexMap = {}
-
-      if (hasPermission('products')) {
-        indexMap.products = promises.length
-        promises.push(api.get('/api/products').catch(() => ({ data: [] })))
-      }
-      if (hasPermission('orders')) {
-        indexMap.orders = promises.length
-        promises.push(api.get('/api/orders').catch(() => ({ data: { orders: [] } })))
-      }
-      if (hasPermission('coupons')) {
-        indexMap.coupons = promises.length
-        promises.push(api.get('/api/coupons').catch(() => ({ data: [] })))
-      }
-      if (hasPermission('users')) {
-        indexMap.users = promises.length
-        promises.push(api.get('/api/auth/users').catch(() => ({ data: [] })))
-      }
+      if (hasPermission('products')) { indexMap.products = promises.length; promises.push(api.get('/api/products').catch(() => ({ data: [] }))) }
+      if (hasPermission('orders')) { indexMap.orders = promises.length; promises.push(api.get('/api/orders').catch(() => ({ data: { orders: [] } }))) }
+      if (hasPermission('coupons')) { indexMap.coupons = promises.length; promises.push(api.get('/api/coupons').catch(() => ({ data: [] }))) }
+      if (hasPermission('users')) { indexMap.users = promises.length; promises.push(api.get('/api/auth/users').catch(() => ({ data: [] }))) }
 
       const results = await Promise.all(promises)
-      
       const products = indexMap.products !== undefined ? results[indexMap.products]?.data || [] : []
       const orders   = indexMap.orders !== undefined ? results[indexMap.orders]?.data?.orders || [] : []
       const coupons  = indexMap.coupons !== undefined ? results[indexMap.coupons]?.data || [] : []
       const users    = indexMap.users !== undefined ? results[indexMap.users]?.data || [] : []
-      const now      = new Date()
+      const now = new Date()
 
       setStats({
-        totalProducts:  products.length,
-        totalOrders:    orders.length,
-        pendingOrders:  orders.filter(o => !o.isPaid || !o.isDelivered).length,
-        totalCoupons:   coupons.length,
-        activeCoupons:  coupons.filter(c => c.isActive && new Date(c.validUntil) > now).length,
-        totalUsers:     users.length,
-        blockedUsers:   users.filter(u => u.isBlocked).length
+        totalProducts: products.length,
+        totalOrders: orders.length,
+        pendingOrders: orders.filter(o => !o.isPaid || !o.isDelivered).length,
+        activeCoupons: coupons.filter(c => c.isActive && new Date(c.validUntil) > now).length,
+        totalUsers: users.length,
+        blockedUsers: users.filter(u => u.isBlocked).length,
       })
     } catch (err) {
       console.error(err)
@@ -98,166 +102,111 @@ const AdminDashboard = () => {
     }
   }
 
-  /* ── Guards ─────────────────────────────────────────────────────────── */
-  if (!user) return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 p-6 rounded-xl max-w-md w-full">
-        <h2 className="font-bold text-lg mb-2">Please Login</h2>
-        <p>You must be logged in to access the admin panel.</p>
-      </div>
-    </div>
-  )
-
+  if (!user) return <Navigate to="/login" />
   if (user.role !== 'admin' && user.role !== 'superadmin') return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-red-100 border border-red-400 text-red-700 p-6 rounded-xl max-w-lg w-full">
-        <h2 className="font-bold text-lg mb-2">Access Denied</h2>
-        <p>You must be an admin to access this page.</p>
-        <div className="mt-4 text-sm">
-          <p>Your role: <strong>{user.role}</strong></p>
-          <p>Email: <strong>{user.email}</strong></p>
-        </div>
+    <div className="min-h-[60vh] flex items-center justify-center p-4">
+      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl max-w-md w-full">
+        <h2 className="font-bold text-base mb-1">Access Denied</h2>
+        <p className="text-sm">You must be an admin to access this page.</p>
       </div>
     </div>
   )
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, fontFamily: T.font }}>
-      <p style={{ fontSize: 16, fontWeight: 600, color: T.textMid, animation: 'pulse 1.5s infinite' }}>Synchronizing Dashboard...</p>
-      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}`}</style>
+    <div className="min-h-[60vh] flex items-center justify-center" style={{ background: '#f8f9fa' }}>
+      <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
     </div>
   )
 
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-red-50 border border-red-300 text-red-700 p-6 rounded-xl max-w-md w-full flex items-center gap-3">
-        <FiAlertCircle className="text-2xl" />
-        <span>{error}</span>
+    <div className="min-h-[60vh] flex items-center justify-center p-4">
+      <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl max-w-md w-full flex items-center gap-3">
+        <FiAlertCircle size={20} /> {error}
       </div>
     </div>
   )
 
-  /* ── Dashboard ──────────────────────────────────────────────────────── */
+  const isSuperAdmin = user.role === 'superadmin'
+
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: T.font, color: T.text, padding: '32px 24px' }}>
-      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+    <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20, marginBottom: 40, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 28, fontWeight: 800, color: T.text, letterSpacing: '-0.02em' }}>
-            {user.role === 'superadmin' ? 'Super Admin Overview' : 'Admin Overview'}
-          </h1>
-          <p style={{ margin: '4px 0 0', color: T.textMid, fontSize: 14 }}>
-            Control center for <span style={{ fontWeight: 600, color: T.text }}>DhaniFresh</span> operations.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {hasPermission('users') && (
-            <button onClick={() => navigate('/admin/users')}
-              style={{ padding: '10px 18px', background: '#fff', border: `1px solid ${T.border}`, borderRadius: 12, color: T.textMid, fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}>
-              <FiUsers size={16} /> Users
-            </button>
-          )}
-          {hasPermission('products') && (
-            <button onClick={() => navigate('/admin/add-product')}
-              style={{ padding: '10px 18px', background: T.accent, border: 'none', borderRadius: 12, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(232,98,26,0.2)' }}>
-              <FiPlus size={16} /> New Product
-            </button>
-          )}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full border mb-3 ${isSuperAdmin ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-orange-100 text-orange-700 border-orange-200'}`}>
+                {isSuperAdmin ? 'Super Admin' : 'Admin Panel'}
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>
+                {isSuperAdmin ? 'Super Admin Dashboard' : 'Admin Dashboard'}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">Welcome back, <span className="font-semibold text-gray-800">{user.name}</span></p>
+            </div>
+            <div className="flex items-center gap-2">
+              {hasPermission('products') && (
+                <button onClick={() => navigate('/admin/add-product')} className="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-all">
+                  <FiPlus size={15} /> Add Product
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 24, marginBottom: 48 }}>
-        {hasPermission('products') && <StatCard title="Total Products" value={stats.totalProducts} icon={<FiPackage />} />}
-        {hasPermission('users') && (
-          <>
-            <StatCard title="Total Users" value={stats.totalUsers} icon={<FiUsers />} color="blue" />
-            <StatCard title="Blocked Accounts" value={stats.blockedUsers} icon={<FiAlertCircle />} color="red" />
-          </>
-        )}
-        {hasPermission('orders') && (
-          <>
-            <StatCard title="Pending Orders" value={stats.pendingOrders} icon={<FiAlertCircle />} color="orange" />
-            <StatCard title="Total Volume" value={stats.totalOrders} icon={<FiShoppingBag />} />
-          </>
-        )}
-        {hasPermission('coupons') && <StatCard title="Active Promotions" value={stats.activeCoupons} icon={<FiTag />} color="green" />}
-      </div>
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-      {/* Quick Actions */}
-      <div style={{ marginBottom: 48 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 20, color: T.textMid, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Administrative Modules</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
-          {hasPermission('products') && (
-            <QuickCard title="Products" icon={<FiPackage />} onClick={() => navigate('/admin/products')} />
-          )}
-          {hasPermission('orders') && (
-            <QuickCard title="Orders" icon={<FiShoppingBag />} onClick={() => navigate('/admin/orders')} />
-          )}
-          {hasPermission('users') && (
-            <QuickCard title="User Base" icon={<FiUsers />} onClick={() => navigate('/admin/users')} />
-          )}
-          {hasPermission('coupons') && (
-            <QuickCard title="Promotions" icon={<FiTag />} onClick={() => navigate('/admin/coupons')} />
-          )}
-          {hasPermission('categories') && (
-            <QuickCard title="Categories" icon={<FiPackage />} onClick={() => navigate('/admin/categories')} />
-          )}
-          <QuickCard title="Analytics" icon={<FiBarChart2 />} onClick={() => navigate('/admin/analytics')} accent />
-          {user.role === 'superadmin' && (
-            <>
-              <QuickCard title="Access Control" icon={<FiShield />} onClick={() => navigate('/admin/manage-admins')} accent />
-              <QuickCard title="System Audit" icon={<FiActivity />} onClick={() => navigate('/admin/audit-logs')} accent />
-            </>
-          )}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+          {hasPermission('products') && <StatCard title="Products" value={stats.totalProducts} icon={FiBox} colorCls="bg-blue-50 text-blue-500" />}
+          {hasPermission('orders') && <>
+            <StatCard title="Total Orders" value={stats.totalOrders} icon={FiShoppingBag} colorCls="bg-green-50 text-green-500" />
+            <StatCard title="Pending Orders" value={stats.pendingOrders} icon={FiAlertCircle} colorCls="bg-amber-50 text-amber-500" />
+          </>}
+          {hasPermission('coupons') && <StatCard title="Active Coupons" value={stats.activeCoupons} icon={FiTag} colorCls="bg-purple-50 text-purple-500" />}
+          {hasPermission('users') && <>
+            <StatCard title="Total Users" value={stats.totalUsers} icon={FiUsers} colorCls="bg-indigo-50 text-indigo-500" />
+            <StatCard title="Blocked Users" value={stats.blockedUsers} icon={FiAlertCircle} colorCls="bg-red-50 text-red-500" />
+          </>}
         </div>
-      </div>
-    </div>
-    </div>
-  )
-}
 
-/* ── Stat card ──────────────────────────────────────────────────────────── */
-const StatCard = ({ title, value, icon, color }) => {
-  const animatedValue = useCountUp(value)
-  const colors = {
-    blue: { soft: '#eff6ff', deep: '#3b82f6' },
-    red: { soft: '#fef2f2', deep: '#ef4444' },
-    orange: { soft: '#fff7ed', deep: '#f97316' },
-    green: { soft: '#f0fdf4', deep: '#22c55e' },
-    default: { soft: '#f8fafc', deep: '#64748b' }
-  }
-  const c = colors[color] || colors.default
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Management */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-50">
+              <h2 className="text-sm font-bold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Management</h2>
+            </div>
+            <div className="p-4 space-y-2">
+              {hasPermission('products') && <QuickCard title="Manage Products" desc="Add, edit, or remove products" icon={FiPackage} to="/admin/products" />}
+              {hasPermission('orders') && <QuickCard title="Manage Orders" desc="View and update order status" icon={FiShoppingBag} to="/admin/orders" />}
+              {hasPermission('users') && <QuickCard title="Manage Users" desc="View users, block/unblock accounts" icon={FiUsers} to="/admin/users" />}
+              {hasPermission('coupons') && <QuickCard title="Manage Coupons" desc="Create and manage discount codes" icon={FiTag} to="/admin/coupons" />}
+              {hasPermission('categories') && <QuickCard title="Manage Categories" desc="Organize product categories" icon={FiBox} to="/admin/categories" />}
+            </div>
+          </div>
 
-  return (
-    <div style={{ background: T.surface, padding: 24, borderRadius: 20, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-      <div>
-        <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: T.textMid }}>{title}</p>
-        <p style={{ margin: 0, fontSize: 32, fontWeight: 800, color: T.text }}>{animatedValue}</p>
-      </div>
-      <div style={{ width: 52, height: 52, background: c.soft, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.deep }}>
-        {icon}
+          {/* Analytics & Admin tools */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-50">
+              <h2 className="text-sm font-bold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Analytics & Tools</h2>
+            </div>
+            <div className="p-4 space-y-2">
+              <QuickCard title="Analytics" desc="Sales reports and insights" icon={FiBarChart2} to="/admin/analytics" accent />
+              <QuickCard title="Support Tickets" desc="Customer support messages" icon={FiActivity} to="/admin/support" />
+              {isSuperAdmin && (
+                <>
+                  <QuickCard title="Admin Management" desc="Manage admin accounts and permissions" icon={FiShield} to="/admin/manage-admins" accent />
+                  <QuickCard title="Audit Logs" desc="System activity and security logs" icon={FiTrendingUp} to="/admin/audit-logs" />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
 }
-
-/* ── Quick action card ──────────────────────────────────────────────────── */
-const QuickCard = ({ title, icon, onClick, accent }) => (
-  <button onClick={onClick}
-    style={{
-      padding: 20, borderRadius: 16, background: accent ? 'rgba(232,98,26,0.05)' : T.surface,
-      border: `1px solid ${accent ? 'rgba(232,98,26,0.15)' : T.border}`, textAlign: 'left',
-      cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 16
-    }}
-  >
-    <div style={{ width: 40, height: 40, background: accent ? T.accent : T.bg, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: accent ? '#fff' : T.textMid }}>
-      {icon}
-    </div>
-    <span style={{ fontWeight: 700, fontSize: 15, color: T.text }}>{title}</span>
-  </button>
-)
 
 export default AdminDashboard
