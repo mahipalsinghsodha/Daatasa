@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiPackage, FiPrinter, FiChevronDown, FiMapPin, FiCalendar,
   FiCreditCard, FiCheckCircle, FiTruck, FiClock, FiShoppingBag,
-  FiX, FiAlertCircle, FiRefreshCw, FiArrowRight, FiStar
+  FiX, FiAlertCircle, FiRefreshCw, FiArrowRight, FiStar, FiHelpCircle
 } from 'react-icons/fi'
 import api from '../api/axios'
 
@@ -534,6 +534,12 @@ const Orders = () => {
 
                           {/* Actions */}
                           <div className="mt-5 flex flex-wrap gap-3 justify-end pt-4 border-t border-gray-100">
+                            <Link
+                              to={`/support?orderId=${o._id}`}
+                              className="px-5 py-2.5 bg-orange-50 text-orange-600 border border-orange-100 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all"
+                            >
+                              <FiHelpCircle size={15} /> Need Help?
+                            </Link>
                             <button
                               onClick={() => printInvoice(o)}
                               disabled={printing === o._id}

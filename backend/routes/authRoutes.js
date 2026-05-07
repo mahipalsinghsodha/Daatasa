@@ -10,7 +10,7 @@ const express     = require('express');
 const router      = express.Router();
 const jwt         = require('jsonwebtoken');
 const crypto      = require('crypto');
-const transporter = require('../utils/sendEmail');
+const { sendPasswordResetEmail } = require('../services/emailService');
 const User        = require('../models/User');
 const auth     = require('../middleware/auth');
 const dbCheck  = require('../middleware/dbCheck');
@@ -156,78 +156,10 @@ router.post('/forgot-password', dbCheck, async (req, res) => {
 
     const resetUrl = `${CLIENT_URL}/reset-password/${resetToken}`;
 
-    await transporter.sendMail({
-      from:    `"Ghee Store Support" <${process.env.SMTP_USER}>`,
-      to:      `${user.name} <${user.email}>`,
-      subject: 'Reset your Ghee Store password 🔐',
-      replyTo: process.env.SMTP_USER,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8"/>
-          <meta name="viewport" content="width=device-width, initial-scale=1"/>
-          <style>
-            * { margin:0; padding:0; box-sizing:border-box; }
-            body { font-family:'Segoe UI',Arial,sans-serif; background:#f2f4f6; color:#1a1a2e; }
-            .wrapper { max-width:600px; margin:24px auto; border-radius:16px; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.12); }
-            .header { background:linear-gradient(135deg,#1a1a2e,#2d1810); padding:40px 32px 32px; text-align:center; }
-            .logo { font-size:28px; font-weight:900; color:#e8621a; }
-            .logo-sub { font-size:12px; color:rgba(255,255,255,0.5); margin-top:4px; }
-            .emoji { font-size:52px; margin:16px 0 8px; display:block; }
-            .title { font-size:22px; font-weight:800; color:#fff; margin:0; }
-            .subtitle { font-size:14px; color:rgba(255,255,255,0.6); margin-top:8px; }
-            .body { background:#fff; padding:32px; }
-            .para { font-size:14px; color:#555566; line-height:1.8; margin-bottom:14px; }
-            .btn-wrap { text-align:center; margin:28px 0; }
-            .btn { display:inline-block; padding:14px 36px; background:#e8621a; color:#fff; text-decoration:none; border-radius:10px; font-weight:700; font-size:15px; }
-            .timer-box { background:#fef3c7; border:1.5px solid #fde68a; border-radius:10px; padding:14px 18px; font-size:13px; color:#92400e; margin-bottom:16px; text-align:center; font-weight:600; }
-            .security-box { background:#f0fdf4; border:1.5px solid #bbf7d0; border-radius:10px; padding:14px 18px; font-size:13px; color:#166534; margin-bottom:16px; }
-            .security-box ul { margin-top:6px; padding-left:16px; }
-            .security-box li { margin-bottom:4px; }
-            .warning { background:#fff4ee; border:1.5px solid #fddcca; border-radius:10px; padding:14px 18px; font-size:13px; color:#8899aa; margin-top:8px; }
-            .footer { background:#f8f9fb; padding:20px 32px; text-align:center; border-top:1.5px solid #e4e9f0; }
-            .footer-text { font-size:12px; color:#8899aa; line-height:1.6; }
-          </style>
-        </head>
-        <body>
-          <div class="wrapper">
-            <div class="header">
-              <div class="logo">🧈 Ghee Store</div>
-              <div class="logo-sub">Pure &amp; Natural A1 Ghee</div>
-              <span class="emoji">🔐</span>
-              <h1 class="title">Password Reset Request</h1>
-              <p class="subtitle">Requested on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })} IST</p>
-            </div>
-            <div class="body">
-              <p class="para">Hi <strong>${user.name}</strong>,</p>
-              <p class="para">We received a request to reset your Ghee Store password. Use the button below — it is only valid for <strong>2 minutes</strong> and can only be used <strong>once</strong>.</p>
-              <div class="timer-box">⏱ This link expires in <strong>2 minutes</strong></div>
-              <div class="btn-wrap">
-                <a href="${resetUrl}" class="btn">Reset My Password →</a>
-              </div>
-              <div class="security-box">
-                <strong>🔒 Security Notice</strong>
-                <ul>
-                  <li>This link works <strong>only on the device &amp; browser</strong> you used to request it</li>
-                  <li>It will expire immediately once you reset your password</li>
-                  <li>Copying this link to another device will not work</li>
-                </ul>
-              </div>
-              <div class="warning">
-                <strong>Didn't request this?</strong> Ignore this email — your password stays unchanged and this link will expire in 2 minutes.
-              </div>
-            </div>
-            <div class="footer">
-              <p class="footer-text">
-                🧈 <strong>Ghee Store</strong> — Pure &amp; Natural A1 Ghee<br/>
-                <a href="mailto:${process.env.SMTP_USER}" style="color:#e8621a;">${process.env.SMTP_USER}</a>
-              </p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
+    await sendPasswordResetEmail({
+      to: user.email,
+      userName: user.name,
+      resetUrl,
     });
 
     res.json({ message: 'Reset link sent successfully.' });
@@ -373,8 +305,6 @@ router.patch('/addresses/:addrId/default', auth, async (req, res) => {
   }
 });
 
-// Add to authRoutes.js
-
 // Admin: Get all users with total orders and spent amount
 router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
   try {
@@ -456,8 +386,5 @@ router.put('/users/:id/block', auth, auth.admin, auth.hasPermission('users'), as
     res.status(500).json({ message: error.message });
   }
 });
-
-// Also update all order routes that do .populate('user', 'name email')
-// Change to: .populate('user', 'name email isBlocked')
 
 module.exports = router;

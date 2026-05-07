@@ -77,9 +77,9 @@ const ResetPassword = () => {
     e.preventDefault()
     setError('')
     setErrorType('')
-    if (password.length < 6) return setError('Security Protocol: Minimum 6 characters required.')
-    if (password !== confirm) return setError('Sync Error: Key mismatch detected.')
-    if (isExpiredLocally) return setError('Session Expired: Dispatch a new recovery link.')
+    if (password.length < 6) return setError('Password must be at least 6 characters.')
+    if (password !== confirm) return setError('Passwords do not match.')
+    if (isExpiredLocally) return setError('This link has expired. Please request a new one.')
     
     setLoading(true)
     try {
@@ -87,9 +87,9 @@ const ResetPassword = () => {
       clearInterval(timerRef.current)
       localStorage.removeItem(LS_KEY)
       setSuccess(true)
-      toast.success('Key rotation completed successfully.')
+      toast.success('Password updated successfully!')
     } catch (err) {
-      const msg = err.response?.data?.message || 'Access Update Failed.'
+      const msg = err.response?.data?.message || 'Failed to reset password.'
       const status = err.response?.status
       if (status === 403) setErrorType('device')
       else if (msg.toLowerCase().includes('expired') || msg.toLowerCase().includes('invalid')) setErrorType('expired')
@@ -106,19 +106,19 @@ const ResetPassword = () => {
     <div className="min-h-screen bg-[var(--color-bg)] flex items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute top-0 -left-1/4 w-1/2 h-1/2 bg-orange-600/5 rounded-full blur-[120px]" />
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md relative z-10">
-        <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl p-10 text-center">
-          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-[32px] flex items-center justify-center mx-auto mb-8 shadow-lg shadow-green-50">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl p-10 text-center">
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-2xl flex items-center justify-center mx-auto mb-8">
              <FiCheckCircle size={32} />
           </div>
-          <h1 className="text-3xl font-black text-gray-900 font-head tracking-tight mb-4">Key Rotation Complete</h1>
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-relaxed mb-10">
-            Nuestra internal vault has been updated with your new credentials. Existing recovery links are now terminated.
+          <h1 className="text-2xl font-extrabold text-gray-900 mb-3" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Password Updated!</h1>
+          <p className="text-sm text-gray-500 leading-relaxed mb-8">
+            Your password has been changed successfully. You can now login with your new password.
           </p>
           <button 
             onClick={() => navigate('/login')}
-            className="w-full py-5 bg-gray-900 text-white font-black rounded-3xl shadow-xl hover:bg-orange-600 transition-all text-xs uppercase tracking-widest flex items-center justify-center gap-3"
+            className="w-full py-3.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-orange-500 transition-all text-sm flex items-center justify-center gap-2"
           >
-            Authenticate Identity <FiArrowRight />
+            Go to Login <FiArrowRight />
           </button>
         </div>
       </motion.div>
@@ -134,24 +134,23 @@ const ResetPassword = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="bg-white rounded-[40px] border border-gray-100 shadow-2xl shadow-gray-200/50 overflow-hidden">
-          <div className="p-10 sm:p-12">
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden">
+          <div className="p-8 sm:p-10">
             
-            <div className="mb-10 text-center">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-100 border border-orange-200 mb-6">
-                <FiLock size={14} className="text-orange-600" />
-                <span className="text-[10px] uppercase tracking-widest font-black text-orange-600">Key Rotation Protocol</span>
+            <div className="mb-8 text-center">
+              <div className="w-14 h-14 bg-orange-100 text-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-5">
+                <FiLock size={24} />
               </div>
-              <h1 className="text-4xl font-black text-gray-900 font-head tracking-tight mb-2">New Access Key</h1>
-              <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Re-establish Security</p>
+              <h1 className="text-2xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Create New Password</h1>
+              <p className="text-sm text-gray-500">Enter your new password below</p>
             </div>
 
-            {/* Session Expiry Matrix */}
+            {/* Timer */}
             {!isExpiredLocally ? (
-               <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Protocol Remaining</p>
-                    <span className={`text-base font-black tabular-nums transition-colors ${secondsLeft < 30 ? 'text-red-600 animate-pulse' : 'text-gray-900'}`}>{mm}:{ss}</span>
+               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-medium text-gray-500">Time remaining</p>
+                    <span className={`text-base font-bold tabular-nums transition-colors ${secondsLeft < 30 ? 'text-red-600 animate-pulse' : 'text-gray-900'}`}>{mm}:{ss}</span>
                   </div>
                   <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
                     <motion.div 
@@ -163,77 +162,76 @@ const ResetPassword = () => {
                   </div>
                </div>
             ) : (
-                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-red-50 border border-red-100 rounded-3xl p-6 mb-8 text-center">
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-red-50 border border-red-100 rounded-xl p-5 mb-6 text-center">
                   <FiClock size={24} className="text-red-600 mx-auto mb-3" />
-                  <p className="text-xs font-black text-red-600 uppercase tracking-widest mb-2">Link Neutralized</p>
-                  <p className="text-[11px] font-bold text-red-900/60 leading-relaxed mb-4">Security timeframe bypassed. The recovery link is no longer valid.</p>
-                  <Link to="/forgot-password" className="text-[10px] font-black text-red-600 uppercase tracking-[0.2em] hover:text-red-900 transition-colors">Dispatch New Link</Link>
+                  <p className="text-sm font-semibold text-red-700 mb-1">Link Expired</p>
+                  <p className="text-xs text-red-600 leading-relaxed mb-4">This reset link has expired. Please request a new one.</p>
+                  <Link to="/forgot-password" className="text-xs font-semibold text-red-600 underline hover:text-red-800 transition-colors">Request New Link</Link>
                 </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-               <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">New Key</label>
-                    <div className="relative group">
-                      <input 
-                        type={showPass ? 'text' : 'password'}
-                        required
-                        disabled={isExpiredLocally}
-                        value={password}
-                        onChange={e => setPass(e.target.value)}
-                        placeholder="••••"
-                        className="w-full pl-6 pr-12 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-orange-500 outline-none text-sm font-bold transition-all disabled:opacity-30"
-                      />
-                      <button type="button" onClick={() => setShowP(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 transition-colors">
-                        {showPass ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Confirm Key</label>
-                    <div className="relative group">
-                      <input 
-                        type={showConf ? 'text' : 'password'}
-                        required
-                        disabled={isExpiredLocally}
-                        value={confirm}
-                        onChange={e => setConfirm(e.target.value)}
-                        placeholder="••••"
-                        className="w-full pl-6 pr-12 py-4 rounded-2xl bg-gray-50 border border-gray-100 focus:bg-white focus:border-orange-500 outline-none text-sm font-bold transition-all disabled:opacity-30"
-                      />
-                      <button type="button" onClick={() => setShowC(!showConf)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-900 transition-colors">
-                        {showConf ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                      </button>
-                    </div>
-                  </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1.5">New Password</label>
+                 <div className="relative">
+                   <input 
+                     type={showPass ? 'text' : 'password'}
+                     required
+                     disabled={isExpiredLocally}
+                     value={password}
+                     onChange={e => setPass(e.target.value)}
+                     placeholder="Enter new password"
+                     className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none text-sm transition-all disabled:opacity-40"
+                   />
+                   <button type="button" onClick={() => setShowP(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors">
+                     {showPass ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                   </button>
+                 </div>
+               </div>
+
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm Password</label>
+                 <div className="relative">
+                   <input 
+                     type={showConf ? 'text' : 'password'}
+                     required
+                     disabled={isExpiredLocally}
+                     value={confirm}
+                     onChange={e => setConfirm(e.target.value)}
+                     placeholder="Confirm new password"
+                     className="w-full pl-4 pr-12 py-3.5 rounded-xl bg-gray-50 border border-gray-200 focus:bg-white focus:border-orange-500 focus:ring-2 focus:ring-orange-100 outline-none text-sm transition-all disabled:opacity-40"
+                   />
+                   <button type="button" onClick={() => setShowC(!showConf)} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 transition-colors">
+                     {showConf ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                   </button>
+                 </div>
                </div>
 
                {password && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="pt-2">
-                    <div className="flex gap-1.5 justify-between mb-2">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                    <div className="flex gap-1.5 mb-2">
                       {[1,2,3,4,5].map(i => (
                         <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-500 ${strengthColor(i)}`} />
                       ))}
                     </div>
-                    <div className="flex justify-between items-center px-1">
-                       <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest">Strength Metric</p>
-                       <p className={`text-[9px] font-black uppercase tracking-widest ${
+                    <div className="flex justify-between items-center">
+                       <p className="text-xs text-gray-400">Password strength</p>
+                       <p className={`text-xs font-semibold ${
                          strength <= 2 ? 'text-red-400' : strength <= 4 ? 'text-orange-400' : 'text-green-500'
                        }`}>
-                         {['INVALID', 'VULNERABLE', 'FAIR', 'ROBUST', 'SECURE', 'ELITE'][strength]}
+                         {['', 'Weak', 'Fair', 'Good', 'Strong', 'Excellent'][strength]}
                        </p>
                     </div>
                   </motion.div>
                )}
 
                {error && (
-                 <div className="bg-red-50 border border-red-100 p-4 rounded-2xl text-[11px] font-bold text-red-600 flex items-center gap-2">
+                 <div className="bg-red-50 border border-red-100 p-3 rounded-xl text-xs text-red-600 flex items-center gap-2">
                     <FiAlertCircle className="shrink-0" /> 
                     <div>
                       {error}
                       {(errorType === 'expired' || errorType === 'device') && (
-                        <Link to="/forgot-password" className="block text-[9px] uppercase tracking-widest mt-1 underline">Retry Protocol</Link>
+                        <Link to="/forgot-password" className="block text-xs mt-1 underline font-medium">Request new link</Link>
                       )}
                     </div>
                  </div>
@@ -242,16 +240,16 @@ const ResetPassword = () => {
                <button 
                 type="submit"
                 disabled={loading || isExpiredLocally}
-                className="w-full py-5 bg-gray-900 text-white font-black rounded-3xl shadow-xl shadow-gray-100 hover:bg-orange-600 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full py-3.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-orange-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
                >
                  {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <FiArrowRight />}
-                 {loading ? 'Committing...' : 'Commit New Key'}
+                 {loading ? 'Updating...' : 'Update Password'}
                </button>
             </form>
 
-            <div className="mt-10 text-center">
-              <Link to="/login" className="inline-flex items-center gap-2 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] hover:text-gray-900 transition-colors">
-                <FiArrowLeft /> Return to Vault
+            <div className="mt-8 text-center">
+              <Link to="/login" className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors font-medium">
+                <FiArrowLeft size={14} /> Back to Login
               </Link>
             </div>
 

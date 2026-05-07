@@ -78,6 +78,7 @@ const ProductDetail = () => {
       ])
       const prod = prodRes.data
       setProduct(prod)
+      document.title = `${prod.name} – DhaniFresh`
 
       // Check if current user already reviewed
       if (user && prod.reviews?.length) {
@@ -104,13 +105,22 @@ const ProductDetail = () => {
     }
   }
 
-  const handleAddToCart = async () => {
-    if (!user) { navigate('/login', { state: { from: location.pathname } }); return }
+  const handleAddToCart = async ({ redirectTo } = {}) => {
+    if (!user) {
+      // Save the pending item so it gets added after login
+      sessionStorage.setItem('pendingCartItem', JSON.stringify({ productId: product._id, quantity }))
+      navigate('/login', { state: { from: redirectTo || location.pathname } })
+      return
+    }
     setAdding(true)
     try {
       await api.post('/api/cart/items', { productId: product._id, quantity })
       fetchCartCount()
-      toast.success('Added to cart!')
+      if (redirectTo) {
+        navigate(redirectTo)
+      } else {
+        toast.success('Added to cart!')
+      }
     } catch {
       toast.error('Failed to add to cart')
     } finally {
@@ -175,16 +185,6 @@ const ProductDetail = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
 
-      {/* ── Breadcrumb ── */}
-      <div className="bg-white border-b border-gray-100 sticky top-[64px] z-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-2 text-sm text-gray-500">
-          <button onClick={() => navigate('/products')} className="flex items-center gap-1 hover:text-orange-500 transition-colors font-medium">
-            <ChevronLeft size={16} /> Products
-          </button>
-          <span className="text-gray-300">/</span>
-          <span className="text-gray-900 font-medium truncate max-w-[200px]">{product.name}</span>
-        </div>
-      </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
 
@@ -346,7 +346,7 @@ const ProductDetail = () => {
 
                   {/* Add to cart button */}
                   <button
-                    onClick={handleAddToCart}
+                    onClick={() => handleAddToCart()}
                     disabled={adding}
                     className="w-full py-3.5 bg-gray-900 text-white font-semibold rounded-xl hover:bg-orange-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2.5 text-sm shadow-lg shadow-gray-900/10 active:scale-[0.99]"
                     style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
@@ -358,9 +358,9 @@ const ProductDetail = () => {
                     {adding ? 'Adding to Cart...' : `Add to Cart — ₹${(product.price * quantity).toLocaleString('en-IN')}`}
                   </button>
 
-                  {/* Go to checkout */}
+                  {/* Buy Now */}
                   <button
-                    onClick={async () => { await handleAddToCart(); navigate('/checkout') }}
+                    onClick={() => handleAddToCart({ redirectTo: '/checkout' })}
                     disabled={adding}
                     className="w-full py-3.5 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                   >

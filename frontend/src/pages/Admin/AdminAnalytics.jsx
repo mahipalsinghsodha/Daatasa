@@ -1,406 +1,391 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Customized
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Customized
 } from 'recharts'
 import {
   FiTrendingUp, FiShoppingBag, FiUsers, FiPackage,
   FiDollarSign, FiAlertCircle, FiRefreshCw, FiClock,
-  FiCheckCircle, FiTruck, FiBarChart2, FiCalendar
+  FiCheckCircle, FiBarChart2, FiCalendar, FiArrowUp, FiArrowDown
 } from 'react-icons/fi'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 
-// ── Design Tokens ──────────────────────────────────────────────────────────────
-const T = {
-  bg: '#f8fafc',
-  surface: '#ffffff',
-  surfaceHigh: '#f1f5f9',
-  border: '#e2e8f0',
-  accent: '#e8621a',
-  accentDim: '#fff4ee',
-  success: '#10b981',
-  successDim: '#f0fdf4',
-  danger: '#ef4444',
-  dangerDim: '#fef2f2',
-  info: '#3b82f6',
-  infoDim: '#eff6ff',
-  warning: '#f59e0b',
-  warningDim: '#fffbeb',
-  purple: '#a78bfa',
-  purpleDim: '#f5f3ff',
-  text: '#0f172a',
-  textMid: '#475569',
-  textDim: '#94a3b8',
-  font: '"Inter", "DM Sans", sans-serif',
+const fmtINR = n => `₹${Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0})}`
+const fmt    = n => Number(n||0).toLocaleString('en-IN')
+
+// Date ranges
+const RANGES = [
+  { label: 'Today',     days: 0  },
+  { label: 'Yesterday', days: 1  },
+  { label: '2 Days',    days: 2  },
+  { label: '3 Days',    days: 3  },
+  { label: '4 Days',    days: 4  },
+  { label: '7 Days',    days: 7  },
+  { label: '14 Days',   days: 14 },
+  { label: '3 Weeks',   days: 21 },
+  { label: '1 Month',   days: 30 },
+  { label: '4 Months',  days: 120 },
+  { label: '6 Months',  days: 180 },
+  { label: '1 Year',    days: 365 },
+  { label: 'All Time',  days: -1 },
+]
+
+const orderStatus = o => {
+  if (o.isDelivered)                     return { label:'Delivered',  dot:'bg-emerald-500', text:'text-emerald-700', bg:'bg-emerald-50' }
+  if (o.paymentStatus==='CANCELLED')     return { label:'Cancelled',  dot:'bg-red-500',     text:'text-red-700',     bg:'bg-red-50'     }
+  if (o.isPaid)                          return { label:'Processing', dot:'bg-blue-500',    text:'text-blue-700',    bg:'bg-blue-50'    }
+  if (o.paymentStatus==='COD_CONFIRMED') return { label:'COD',        dot:'bg-amber-500',   text:'text-amber-700',   bg:'bg-amber-50'   }
+  return                                        { label:'Pending',    dot:'bg-purple-500',  text:'text-purple-700',  bg:'bg-purple-50'  }
 }
 
-const fmt = (n) => Number(n || 0).toLocaleString('en-IN')
-const fmtINR = (n) => `₹${Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`
-
-// ── KPI Card ──────────────────────────────────────────────────────────────────
-const KpiCard = ({ icon: Icon, label, value, sub, color, bg, prefix = '' }) => (
-  <div style={{
-    background: T.surface, border: `1.5px solid ${T.border}`, borderRadius: 20,
-    padding: '24px 28px', display: 'flex', alignItems: 'center', gap: 20,
-    boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'all 0.2s',
-  }}>
-    <div style={{ width: 52, height: 52, borderRadius: 16, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color, flexShrink: 0 }}>
-      <Icon size={22} />
-    </div>
-    <div style={{ minWidth: 0 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: T.textDim, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 900, color: T.text, letterSpacing: '-0.03em', lineHeight: 1 }}>{prefix}{value}</div>
-      {sub && <div style={{ fontSize: 11, color: T.textDim, fontWeight: 600, marginTop: 4 }}>{sub}</div>}
-    </div>
-  </div>
-)
-
-// ── Section Header ─────────────────────────────────────────────────────────────
-const SectionHead = ({ icon: Icon, title, sub }) => (
-  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-    <div style={{ width: 36, height: 36, borderRadius: 10, background: T.accentDim, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.accent }}>
-      <Icon size={18} />
-    </div>
-    <div>
-      <div style={{ fontSize: 16, fontWeight: 800, color: T.text }}>{title}</div>
-      {sub && <div style={{ fontSize: 12, color: T.textDim, fontWeight: 500 }}>{sub}</div>}
-    </div>
-  </div>
-)
-
-// ── Card Container ─────────────────────────────────────────────────────────────
-const Card = ({ children, style = {} }) => (
-  <div style={{ background: T.surface, border: `1.5px solid ${T.border}`, borderRadius: 20, padding: 28, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', ...style }}>
-    {children}
-  </div>
-)
-
-// ── Custom Tooltip for charts ──────────────────────────────────────────────────
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: T.text, color: '#fff', padding: '10px 16px', borderRadius: 12, fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-      <div style={{ color: T.textDim, fontSize: 11, marginBottom: 4 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color || '#fff' }}>
-          {p.name}: {p.name === 'revenue' || p.name === 'Revenue' ? fmtINR(p.value) : p.value}
-        </div>
+    <div className="bg-gray-900 text-white text-xs rounded-xl px-4 py-3 shadow-2xl">
+      <p className="text-gray-400 mb-1.5 font-medium">{label}</p>
+      {payload.map((p,i) => (
+        <p key={i} style={{ color: p.color }}>
+          {p.name}: {p.name==='Revenue' ? fmtINR(p.value) : p.value}
+        </p>
       ))}
     </div>
   )
 }
 
-// ── Donut label ────────────────────────────────────────────────────────────────
 const DonutLabel = ({ cx, cy, total, label }) => {
-  if (isNaN(cx) || isNaN(cy)) return null
+  if (isNaN(cx)||isNaN(cy)) return null
   return (
     <>
-      <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 22, fontWeight: 900, fill: T.text }}>{total}</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: 11, fontWeight: 700, fill: T.textDim }}>{label}</text>
+      <text x={cx} y={cy-8} textAnchor="middle" dominantBaseline="middle" className="font-black" style={{fontSize:22,fontWeight:900,fill:'#0f172a'}}>{total}</text>
+      <text x={cx} y={cy+12} textAnchor="middle" dominantBaseline="middle" style={{fontSize:11,fontWeight:700,fill:'#94a3b8'}}>{label}</text>
     </>
   )
 }
 
-// ── Status Pill ────────────────────────────────────────────────────────────────
-const orderStatus = (o) => {
-  if (o.isDelivered)                    return { label: 'Delivered',  bg: T.successDim, color: T.success }
-  if (o.paymentStatus === 'CANCELLED')  return { label: 'Cancelled',  bg: T.dangerDim,  color: T.danger }
-  if (o.isPaid)                         return { label: 'Paid',       bg: T.infoDim,    color: T.info }
-  if (o.paymentStatus === 'COD_CONFIRMED') return { label: 'COD',     bg: T.warningDim, color: T.warning }
-  return                                       { label: 'Pending',    bg: T.purpleDim,  color: T.purple }
-}
-
-// ══════════════════════════════════════════════════════════════════════════════
-// MAIN PAGE
-// ══════════════════════════════════════════════════════════════════════════════
-const AdminAnalytics = () => {
+export default function AdminAnalytics() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [data, setData] = useState(null)
+  const [data,    setData]    = useState(null)
   const [loading, setLoading] = useState(true)
   const [syncing, setSyncing] = useState(false)
-  const [range, setRange] = useState('30') // '7' | '30'
+  const [range,   setRange]   = useState(30)
 
-  const fetchAnalytics = useCallback(async (showLoad = true) => {
+  const fetchAnalytics = useCallback(async (showLoad=true) => {
     showLoad ? setLoading(true) : setSyncing(true)
     try {
       const res = await api.get('/api/admin/analytics')
       setData(res.data)
-    } catch (e) {
-      console.error('Analytics fetch error', e)
-    } finally {
-      setLoading(false)
-      setSyncing(false)
-    }
+    } catch(e) { console.error(e) }
+    finally { setLoading(false); setSyncing(false) }
   }, [])
 
   useEffect(() => { fetchAnalytics() }, [fetchAnalytics])
 
+  // Filter chart data by selected range
+  const chartData = useMemo(() => {
+    if (!data?.revenueTrend) return []
+    if (range === -1) return data.revenueTrend
+    return data.revenueTrend.slice(-Math.max(range,1))
+  }, [data, range])
+
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, fontFamily: T.font }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 48, height: 48, border: `3px solid ${T.accent}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} />
-        <p style={{ color: T.textMid, marginTop: 16, fontWeight: 700, fontSize: 15 }}>Loading Analytics…</p>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="w-10 h-10 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin mx-auto" />
+        <p className="text-gray-400 mt-4 text-sm font-medium">Loading Analytics...</p>
       </div>
     </div>
   )
 
   if (!data) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.bg, fontFamily: T.font }}>
-      <div style={{ textAlign: 'center', color: T.textDim }}>
-        <FiAlertCircle size={48} style={{ opacity: 0.3, marginBottom: 16 }} />
-        <div style={{ fontWeight: 700, fontSize: 18 }}>Could not load analytics</div>
-        <button onClick={() => fetchAnalytics()} style={{ marginTop: 16, padding: '10px 24px', background: T.accent, color: '#fff', border: 'none', borderRadius: 12, fontWeight: 700, cursor: 'pointer' }}>Retry</button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <FiAlertCircle size={40} className="text-gray-300 mx-auto mb-4" />
+        <p className="text-gray-600 font-semibold mb-4">Could not load analytics</p>
+        <button onClick={() => fetchAnalytics()} className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-sm font-semibold">Retry</button>
       </div>
     </div>
   )
 
   const { kpi, revenueTrend, statusBreakdown, paymentSplit, topProducts, weeklyOrders, recentOrders, lowStock } = data
-  const chartData = range === '7' ? revenueTrend.slice(-7) : revenueTrend
 
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: T.font, color: T.text }}>
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 10px; }
-      `}</style>
+    <div className="min-h-screen pb-12" style={{ background: '#f8fafc' }}>
 
-      {/* ── Sticky Header ── */}
-      <div style={{ background: T.surface, borderBottom: `1.5px solid ${T.border}`, padding: '20px 0', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: 1380, margin: '0 auto', padding: '0 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <FiBarChart2 color={T.accent} /> Analytics
-            </h1>
-            <p style={{ margin: '3px 0 0', color: T.textMid, fontSize: 13, fontWeight: 500 }}>
-              Live business intelligence — {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
+      {/* ── Header ── */}
+      <div className="bg-white border-b border-gray-100 px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+            <FiBarChart2 size={19} className="text-orange-500" />
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            {/* Range Switcher */}
-            <div style={{ display: 'flex', background: T.surfaceHigh, padding: 4, borderRadius: 10, gap: 4 }}>
-              {[['7', '7 Days'], ['30', '30 Days']].map(([v, l]) => (
-                <button key={v} onClick={() => setRange(v)} style={{
-                  padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 800, transition: 'all 0.2s',
-                  background: range === v ? T.surface : 'transparent',
-                  color: range === v ? T.accent : T.textMid,
-                  boxShadow: range === v ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
-                }}>{l}</button>
-              ))}
-            </div>
-            <button onClick={() => fetchAnalytics(false)} disabled={syncing} style={{ padding: '9px 16px', background: T.surface, border: `1.5px solid ${T.border}`, borderRadius: 12, color: T.textMid, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700 }}>
-              <FiRefreshCw size={14} style={{ animation: syncing ? 'spin 1s linear infinite' : 'none' }} />
-              {syncing ? 'Syncing…' : 'Refresh'}
-            </button>
+          <div>
+            <h1 className="text-lg font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Analytics</h1>
+            <p className="text-xs text-gray-400">{new Date().toLocaleDateString('en-IN', { weekday:'long', day:'numeric', month:'long', year:'numeric' })}</p>
           </div>
         </div>
+        <button onClick={() => fetchAnalytics(false)} disabled={syncing}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all">
+          <FiRefreshCw size={14} className={syncing ? 'animate-spin' : ''} />
+          {syncing ? 'Syncing...' : 'Refresh'}
+        </button>
       </div>
 
-      <div style={{ maxWidth: 1380, margin: '0 auto', padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: 28 }}>
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
 
-        {/* ── KPI Grid ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 16 }}>
-          <KpiCard icon={FiDollarSign}    label="Today's Revenue"   value={fmtINR(kpi.todayRevenue)}     sub={`${kpi.todayOrders} order${kpi.todayOrders !== 1 ? 's' : ''} today`}  color={T.accent}   bg={T.accentDim}  />
-          <KpiCard icon={FiTrendingUp}    label="Total Revenue"     value={fmtINR(kpi.totalRevenue)}     sub={`${kpi.activeOrders} active orders`}                                    color={T.success}  bg={T.successDim} />
-          <KpiCard icon={FiShoppingBag}   label="Avg Order Value"   value={fmtINR(kpi.avgOrderValue)}    sub="per active order"                                                       color={T.info}     bg={T.infoDim}    />
-          <KpiCard icon={FiClock}         label="Pending Orders"    value={fmt(kpi.pendingOrders)}       sub="awaiting delivery"                                                      color={T.warning}  bg={T.warningDim} />
-          <KpiCard icon={FiPackage}       label="Total Products"    value={fmt(kpi.totalProducts)}       sub="in catalogue"                                                           color={T.purple}   bg={T.purpleDim}  />
-          <KpiCard icon={FiUsers}         label="Customers"         value={fmt(kpi.totalUsers)}          sub="registered users"                                                       color={T.text}     bg={T.surfaceHigh}/>
-        </div>
-
-        {/* ── Revenue Trend (line chart) ── */}
-        <Card>
-          <SectionHead icon={FiTrendingUp} title="Revenue Trend" sub={`Last ${range} days`} />
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-              <defs>
-                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={T.accent} stopOpacity={0.15} />
-                  <stop offset="100%" stopColor={T.accent} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke={T.border} strokeDasharray="4 4" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 11, fill: T.textDim, fontWeight: 600 }} tickLine={false} axisLine={false} interval={range === '30' ? 4 : 0} />
-              <YAxis tick={{ fontSize: 11, fill: T.textDim, fontWeight: 600 }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} />
-              <Tooltip content={<CustomTooltip />} />
-              <Line type="monotone" dataKey="revenue" name="Revenue" stroke={T.accent} strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: T.accent }} />
-              <Line type="monotone" dataKey="orders" name="Orders" stroke={T.info} strokeWidth={2} dot={false} strokeDasharray="5 3" activeDot={{ r: 4, fill: T.info }} />
-            </LineChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 8 }}>
-            {[{ color: T.accent, label: 'Revenue (₹)' }, { color: T.info, label: 'Orders' }].map(l => (
-              <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, color: T.textMid }}>
-                <div style={{ width: 20, height: 2, background: l.color, borderRadius: 2 }} />{l.label}
-              </div>
+        {/* ── Date Range Filter ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-3">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 shrink-0 px-2">
+              <FiCalendar size={12} /> Filter:
+            </span>
+            {RANGES.map(r => (
+              <button key={r.days} onClick={() => setRange(r.days)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
+                  range === r.days
+                    ? 'bg-gray-900 text-white'
+                    : 'text-gray-500 hover:bg-gray-100'
+                }`}>
+                {r.label}
+              </button>
             ))}
           </div>
-        </Card>
-
-        {/* ── Row: Weekly Bar + Status Donut + Payment Donut ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: 20 }}>
-
-          {/* Weekly Bar */}
-          <Card>
-            <SectionHead icon={FiCalendar} title="This Week" sub="Orders & revenue by day" />
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={weeklyOrders} margin={{ top: 5, right: 5, left: 0, bottom: 5 }} barSize={28}>
-                <CartesianGrid stroke={T.border} strokeDasharray="4 4" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 12, fill: T.textDim, fontWeight: 700 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: T.textDim }} tickLine={false} axisLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="orders" name="Orders" fill={T.accent} radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Status Donut */}
-          <Card style={{ display: 'flex', flexDirection: 'column' }}>
-            <SectionHead icon={FiCheckCircle} title="Order Status" sub="All time breakdown" />
-            {statusBreakdown.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie data={statusBreakdown} dataKey="value" cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3}>
-                      {statusBreakdown.map((s, i) => <Cell key={i} fill={s.color} />)}
-                    </Pie>
-                    <Customized component={({ width, height }) => (
-                      <DonutLabel cx={width / 2} cy={height / 2} total={kpi.totalOrders} label="Total" />
-                    )} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-                  {statusBreakdown.map(s => (
-                    <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: T.textMid }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.color }} />{s.name}
-                      </div>
-                      <span style={{ fontWeight: 800, color: T.text }}>{s.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textDim, fontSize: 13 }}>No orders yet</div>}
-          </Card>
-
-          {/* Payment Donut */}
-          <Card style={{ display: 'flex', flexDirection: 'column' }}>
-            <SectionHead icon={FiDollarSign} title="Payment Methods" sub="Active orders only" />
-            {paymentSplit.length > 0 ? (
-              <>
-                <ResponsiveContainer width="100%" height={180}>
-                  <PieChart>
-                    <Pie data={paymentSplit} dataKey="value" cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={3}>
-                      {paymentSplit.map((p, i) => <Cell key={i} fill={p.color} />)}
-                    </Pie>
-                    <Customized component={({ width, height }) => (
-                      <DonutLabel cx={width / 2} cy={height / 2} total={kpi.activeOrders} label="Active" />
-                    )} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                  {paymentSplit.map(p => (
-                    <div key={p.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: T.textMid }}>
-                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color }} />{p.name}
-                      </div>
-                      <span style={{ fontWeight: 800, color: T.text }}>{p.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.textDim, fontSize: 13 }}>No orders yet</div>}
-          </Card>
         </div>
 
-        {/* ── Top Products Horizontal Bar ── */}
-        {topProducts.length > 0 && (
-          <Card>
-            <SectionHead icon={FiPackage} title="Top Products" sub="By revenue generated" />
-            <ResponsiveContainer width="100%" height={Math.max(220, topProducts.length * 52)}>
-              <BarChart data={topProducts} layout="vertical" margin={{ top: 0, right: 40, left: 0, bottom: 0 }} barSize={20}>
-                <CartesianGrid stroke={T.border} strokeDasharray="4 4" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11, fill: T.textDim }} tickLine={false} axisLine={false} tickFormatter={v => `₹${v >= 1000 ? (v/1000).toFixed(0)+'k' : v}`} />
-                <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 12, fill: T.textMid, fontWeight: 600 }} tickLine={false} axisLine={false} />
+        {/* ── KPI Cards ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+          {[
+            { icon: FiDollarSign,  label: "Today's Revenue", value: fmtINR(kpi.todayRevenue),  sub: `${kpi.todayOrders} orders today`,     color: 'text-orange-500', bg: 'bg-orange-50',  border: 'border-orange-100' },
+            { icon: FiTrendingUp,  label: 'Total Revenue',   value: fmtINR(kpi.totalRevenue),  sub: `${kpi.activeOrders} active orders`,   color: 'text-emerald-600',bg: 'bg-emerald-50', border: 'border-emerald-100' },
+            { icon: FiShoppingBag, label: 'Avg Order Value',  value: fmtINR(kpi.avgOrderValue), sub: 'per active order',                     color: 'text-blue-600',   bg: 'bg-blue-50',    border: 'border-blue-100' },
+            { icon: FiClock,       label: 'Pending Orders',   value: fmt(kpi.pendingOrders),    sub: 'awaiting delivery',                    color: 'text-amber-600',  bg: 'bg-amber-50',   border: 'border-amber-100' },
+            { icon: FiPackage,     label: 'Total Products',   value: fmt(kpi.totalProducts),    sub: 'in catalogue',                         color: 'text-purple-600', bg: 'bg-purple-50',  border: 'border-purple-100' },
+            { icon: FiUsers,       label: 'Total Customers',  value: fmt(kpi.totalUsers),       sub: 'registered users',                     color: 'text-gray-700',   bg: 'bg-gray-100',   border: 'border-gray-200' },
+          ].map((c, i) => (
+            <div key={i} className={`bg-white rounded-2xl border ${c.border} p-4 shadow-sm`}>
+              <div className={`w-9 h-9 ${c.bg} rounded-xl flex items-center justify-center mb-3`}>
+                <c.icon size={17} className={c.color} />
+              </div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">{c.label}</p>
+              <p className="text-xl font-extrabold text-gray-900 leading-none mb-1" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{c.value}</p>
+              <p className="text-[11px] text-gray-400 font-medium">{c.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Revenue Trend ── */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center">
+                <FiTrendingUp size={16} className="text-orange-500" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">Revenue Trend</p>
+                <p className="text-xs text-gray-400">{RANGES.find(r=>r.days===range)?.label || 'All Time'}</p>
+              </div>
+            </div>
+            <div className="flex gap-4">
+              {[{color:'#f97316',label:'Revenue'},{color:'#3b82f6',label:'Orders'}].map(l => (
+                <div key={l.label} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500">
+                  <div className="w-4 h-0.5 rounded" style={{ background: l.color }} />{l.label}
+                </div>
+              ))}
+            </div>
+          </div>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={chartData} margin={{ top:5, right:10, left:10, bottom:5 }}>
+              <CartesianGrid stroke="#f1f5f9" strokeDasharray="4 4" vertical={false} />
+              <XAxis dataKey="date" tick={{ fontSize:11, fill:'#94a3b8', fontWeight:600 }} tickLine={false} axisLine={false}
+                interval={chartData.length > 30 ? Math.floor(chartData.length/10) : 0} />
+              <YAxis tick={{ fontSize:11, fill:'#94a3b8' }} tickLine={false} axisLine={false}
+                tickFormatter={v => `₹${v>=1000?(v/1000).toFixed(0)+'k':v}`} />
+              <Tooltip content={<CustomTooltip />} />
+              <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#f97316" strokeWidth={2.5} dot={false} activeDot={{ r:5, fill:'#f97316' }} />
+              <Line type="monotone" dataKey="orders"  name="Orders"  stroke="#3b82f6" strokeWidth={2} dot={false} strokeDasharray="5 3" activeDot={{ r:4, fill:'#3b82f6' }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* ── Row: Weekly Bar + Status Donut + Payment Donut ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center"><FiCalendar size={15} className="text-orange-500" /></div>
+              <div><p className="text-sm font-bold text-gray-900">This Week</p><p className="text-xs text-gray-400">Orders by day</p></div>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={weeklyOrders} margin={{ top:5, right:5, left:0, bottom:5 }} barSize={24}>
+                <CartesianGrid stroke="#f1f5f9" strokeDasharray="4 4" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize:12, fill:'#94a3b8', fontWeight:700 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize:11, fill:'#94a3b8' }} tickLine={false} axisLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="revenue" name="Revenue" radius={[0, 8, 8, 0]}>
-                  {topProducts.map((_, i) => (
-                    <Cell key={i} fill={i === 0 ? T.accent : i === 1 ? T.info : i === 2 ? T.success : T.purple} />
+                <Bar dataKey="orders" name="Orders" fill="#f97316" radius={[6,6,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center"><FiCheckCircle size={15} className="text-orange-500" /></div>
+              <div><p className="text-sm font-bold text-gray-900">Order Status</p><p className="text-xs text-gray-400">All time breakdown</p></div>
+            </div>
+            {statusBreakdown.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie data={statusBreakdown} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3}>
+                      {statusBreakdown.map((s,i) => <Cell key={i} fill={s.color} />)}
+                    </Pie>
+                    <Customized component={({ width, height }) => (
+                      <DonutLabel cx={width/2} cy={height/2} total={kpi.totalOrders} label="Total" />
+                    )} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 mt-3">
+                  {statusBreakdown.map(s => (
+                    <div key={s.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 font-semibold text-gray-500">
+                        <div className="w-2 h-2 rounded-full" style={{ background: s.color }} />{s.name}
+                      </div>
+                      <span className="font-bold text-gray-900">{s.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : <div className="flex-1 flex items-center justify-center text-gray-400 text-sm py-10">No orders yet</div>}
+          </div>
+
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center"><FiDollarSign size={15} className="text-orange-500" /></div>
+              <div><p className="text-sm font-bold text-gray-900">Payment Methods</p><p className="text-xs text-gray-400">Active orders only</p></div>
+            </div>
+            {paymentSplit.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={160}>
+                  <PieChart>
+                    <Pie data={paymentSplit} dataKey="value" cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={3}>
+                      {paymentSplit.map((p,i) => <Cell key={i} fill={p.color} />)}
+                    </Pie>
+                    <Customized component={({ width, height }) => (
+                      <DonutLabel cx={width/2} cy={height/2} total={kpi.activeOrders} label="Active" />
+                    )} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 mt-3">
+                  {paymentSplit.map(p => (
+                    <div key={p.name} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2 font-semibold text-gray-500">
+                        <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />{p.name}
+                      </div>
+                      <span className="font-bold text-gray-900">{p.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : <div className="flex-1 flex items-center justify-center text-gray-400 text-sm py-10">No orders yet</div>}
+          </div>
+        </div>
+
+        {/* ── Top Products ── */}
+        {topProducts.length > 0 && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-5">
+              <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center"><FiPackage size={15} className="text-orange-500" /></div>
+              <div><p className="text-sm font-bold text-gray-900">Top Products</p><p className="text-xs text-gray-400">By revenue generated</p></div>
+            </div>
+            <ResponsiveContainer width="100%" height={Math.max(200, topProducts.length * 50)}>
+              <BarChart data={topProducts} layout="vertical" margin={{ top:0, right:50, left:0, bottom:0 }} barSize={18}>
+                <CartesianGrid stroke="#f1f5f9" strokeDasharray="4 4" horizontal={false} />
+                <XAxis type="number" tick={{ fontSize:11, fill:'#94a3b8' }} tickLine={false} axisLine={false}
+                  tickFormatter={v => `₹${v>=1000?(v/1000).toFixed(0)+'k':v}`} />
+                <YAxis type="category" dataKey="name" width={150} tick={{ fontSize:12, fill:'#64748b', fontWeight:600 }} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="revenue" name="Revenue" radius={[0,8,8,0]}>
+                  {topProducts.map((_,i) => (
+                    <Cell key={i} fill={['#f97316','#3b82f6','#10b981','#a78bfa','#f59e0b'][i % 5]} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </Card>
+          </div>
         )}
 
-        {/* ── Bottom Row: Recent Orders + Low Stock ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 20 }}>
+        {/* ── Recent Orders + Low Stock ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-          {/* Recent Orders Table */}
-          <Card>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <SectionHead icon={FiShoppingBag} title="Recent Orders" sub="Last 5 transactions" />
-              <button onClick={() => navigate('/admin/orders')} style={{ fontSize: 12, fontWeight: 700, color: T.accent, cursor: 'pointer', padding: '6px 12px', borderRadius: 8, background: T.accentDim, border: 'none' }}>
+          {/* Recent Orders */}
+          <div className="lg:col-span-3 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-orange-50 rounded-xl flex items-center justify-center"><FiShoppingBag size={15} className="text-orange-500" /></div>
+                <div><p className="text-sm font-bold text-gray-900">Recent Orders</p><p className="text-xs text-gray-400">Latest transactions</p></div>
+              </div>
+              <button onClick={() => navigate('/admin/orders')}
+                className="text-xs font-bold text-orange-500 hover:text-orange-600 bg-orange-50 px-3 py-1.5 rounded-lg transition-colors">
                 View All →
               </button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {recentOrders.length === 0 ? (
-                <div style={{ padding: 40, textAlign: 'center', color: T.textDim, fontSize: 14 }}>No orders yet</div>
-              ) : recentOrders.map(o => {
-                const s = orderStatus(o)
-                return (
-                  <div key={o._id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px 16px', background: T.bg, borderRadius: 14, border: `1px solid ${T.border}` }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 2 }}>#{o._id.slice(-8).toUpperCase()}</div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim }}>{o.user?.name || 'Customer'}</div>
+            <div className="space-y-2">
+              {recentOrders.length === 0
+                ? <div className="py-10 text-center text-gray-400 text-sm">No orders yet</div>
+                : recentOrders.map(o => {
+                  const s = orderStatus(o)
+                  return (
+                    <div key={o._id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-orange-50/30 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-gray-900">#{o._id.slice(-8).toUpperCase()}</p>
+                        <p className="text-[11px] text-gray-400 font-medium truncate">{o.user?.name || 'Customer'} · {o.user?.email || ''}</p>
+                      </div>
+                      <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full ${s.bg} ${s.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />{s.label}
+                      </span>
+                      <p className="text-sm font-extrabold text-gray-900 shrink-0">{fmtINR(o.totalPrice)}</p>
                     </div>
-                    <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: s.bg, color: s.color, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{s.label}</span>
-                    <div style={{ fontSize: 14, fontWeight: 900, color: T.text, minWidth: 70, textAlign: 'right' }}>{fmtINR(o.totalPrice)}</div>
-                  </div>
-                )
-              })}
+                  )
+                })}
             </div>
-          </Card>
+          </div>
 
-          {/* Low Stock Alerts */}
-          <Card>
-            <SectionHead icon={FiAlertCircle} title="Low Stock Alert" sub="Products with ≤ 10 units" />
+          {/* Low Stock */}
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-8 h-8 bg-red-50 rounded-xl flex items-center justify-center"><FiAlertCircle size={15} className="text-red-500" /></div>
+              <div><p className="text-sm font-bold text-gray-900">Low Stock Alert</p><p className="text-xs text-gray-400">≤ 10 units remaining</p></div>
+            </div>
             {lowStock.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: T.success }}>
-                <FiCheckCircle size={32} style={{ marginBottom: 8, opacity: 0.5 }} />
-                <div style={{ fontWeight: 700, fontSize: 14 }}>All products well stocked!</div>
+              <div className="py-10 text-center">
+                <FiCheckCircle size={28} className="text-emerald-400 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-emerald-600">All products well stocked!</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="space-y-2">
                 {lowStock.map(p => (
-                  <div key={p._id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: p.stock === 0 ? T.dangerDim : T.warningDim, borderRadius: 14, border: `1px solid ${p.stock === 0 ? T.danger : T.warning}20` }}>
-                    {p.image && <img src={p.image} alt={p.name} style={{ width: 38, height: 38, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 800, color: T.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: T.textDim }}>{fmtINR(p.price)}</div>
+                  <div key={p._id} className={`flex items-center gap-3 p-3 rounded-xl border ${p.stock === 0 ? 'bg-red-50 border-red-100' : 'bg-amber-50 border-amber-100'}`}>
+                    {p.image && <img src={p.image} alt={p.name} className="w-9 h-9 rounded-lg object-cover shrink-0" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-gray-900 truncate">{p.name}</p>
+                      <p className="text-[11px] text-gray-400">{fmtINR(p.price)}</p>
                     </div>
-                    <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                      <div style={{ fontSize: 18, fontWeight: 900, color: p.stock === 0 ? T.danger : T.warning, lineHeight: 1 }}>{p.stock}</div>
-                      <div style={{ fontSize: 9, fontWeight: 700, color: T.textDim, textTransform: 'uppercase' }}>left</div>
+                    <div className="text-center shrink-0">
+                      <p className={`text-lg font-extrabold leading-none ${p.stock === 0 ? 'text-red-600' : 'text-amber-600'}`}>{p.stock}</p>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase">left</p>
                     </div>
                   </div>
                 ))}
-                <button onClick={() => navigate('/admin/products')} style={{ marginTop: 8, padding: '10px', background: T.accent, color: '#fff', border: 'none', borderRadius: 12, fontWeight: 800, fontSize: 13, cursor: 'pointer', width: '100%' }}>
+                <button onClick={() => navigate('/admin/products')}
+                  className="w-full mt-2 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-orange-500 transition-colors">
                   Manage Inventory →
                 </button>
               </div>
             )}
-          </Card>
+          </div>
         </div>
 
       </div>
     </div>
   )
 }
-
-export default AdminAnalytics

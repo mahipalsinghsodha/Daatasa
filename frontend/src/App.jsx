@@ -2,13 +2,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { lazy, Suspense, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Navbar from './components/Navbar'
+import Breadcrumb from './components/Breadcrumb'
 import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import './App.css'
+
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
 const Home            = lazy(() => import('./pages/Home'))
@@ -173,6 +174,7 @@ function App() {
             />
             <ScrollToTop />
             <Navbar />
+            <Breadcrumb />
             <AnimatedRoutes />
             <Footer />
           </div>

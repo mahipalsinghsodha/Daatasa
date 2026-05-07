@@ -104,11 +104,23 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // After login/register, flush any pending cart item (saved by guest Buy Now)
+  const flushPendingCartItem = async () => {
+    const pending = sessionStorage.getItem('pendingCartItem')
+    if (!pending) return
+    try {
+      const { productId, quantity } = JSON.parse(pending)
+      await api.post('/api/cart/items', { productId, quantity })
+    } catch {} // non-fatal
+    finally { sessionStorage.removeItem('pendingCartItem') }
+  }
+
   const login = async (email, password) => {
     const res = await api.post('/api/auth/login', { email, password })
     localStorage.setItem('token', res.data.token)
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`
     setUser(res.data.user)
+    await flushPendingCartItem()
     return res.data
   }
 
@@ -117,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', res.data.token)
     api.defaults.headers.common['Authorization'] = `Bearer ${res.data.token}`
     setUser(res.data.user)
+    await flushPendingCartItem()
     return res.data
   }
 
