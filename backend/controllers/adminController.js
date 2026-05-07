@@ -100,11 +100,20 @@ exports.deleteAdmin = async (req, res) => {
  */
 exports.getAnalytics = async (req, res) => {
   try {
+    const { days } = req.query;
+    let daysNum = parseInt(days);
+    if (isNaN(daysNum)) daysNum = 30; // default 30 days
+    
     const now = new Date();
     const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
     const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
-    const last30Start = new Date(now); last30Start.setDate(now.getDate() - 29); last30Start.setHours(0,0,0,0);
-    const last7Start  = new Date(now); last7Start.setDate(now.getDate() - 6);  last7Start.setHours(0,0,0,0);
+    
+    let startDate = new Date(0); // Epoch for all time
+    if (daysNum !== -1) {
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - (daysNum === 0 ? 0 : daysNum - 1));
+      startDate.setHours(0,0,0,0);
+    }
 
     // ── 1. KPI CARDS ────────────────────────────────────────────────────────
     const [
@@ -114,7 +123,7 @@ exports.getAnalytics = async (req, res) => {
       totalUsers,
     ] = await Promise.all([
       Order.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
-      Order.find(),
+      Order.find({ createdAt: { $gte: startDate, $lte: now } }), // Filtered by date range!
       Product.countDocuments(),
       User.countDocuments({ role: 'user' }),
     ]);
@@ -126,9 +135,12 @@ exports.getAnalytics = async (req, res) => {
     const avgOrderValue      = activeOrders.length ? totalRevenue / activeOrders.length : 0;
     const pendingOrders      = activeOrders.filter(o => !o.isDelivered).length;
 
-    // ── 2. REVENUE TREND — last 30 days ─────────────────────────────────────
+    // ── 2. REVENUE TREND ─────────────────────────────────────
     const revenueTrend = [];
-    for (let i = 29; i >= 0; i--) {
+    const trendDays = daysNum === -1 ? 30 : (daysNum === 0 ? 1 : daysNum); // Cap trend to 30 days if all time to avoid overload
+    const limitDays = Math.min(trendDays, 90); // max 90 days of daily data
+    
+    for (let i = limitDays - 1; i >= 0; i--) {
       const d = new Date(now); d.setDate(now.getDate() - i); d.setHours(0,0,0,0);
       const dEnd = new Date(d); dEnd.setHours(23,59,59,999);
       const dayOrders = allOrders.filter(o => {
@@ -172,17 +184,21 @@ exports.getAnalytics = async (req, res) => {
       .slice(0, 6)
       .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
 
-    // ── 6. WEEKLY ORDERS (last 7 days) ──────────────────────────────────────
+    // ── 6. WEEKLY ORDERS (last 7 days, independent of filter for consistency) ──────────────────────────────────────
     const weeklyOrders = [];
-    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const daysArr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    // We must query DB directly to guarantee last 7 days exist even if filter is 1 day
+    const last7Orders = await Order.find({ createdAt: { $gte: new Date(now.setDate(now.getDate() - 7)) } });
+    now.setDate(now.getDate() + 7); // restore now
+    
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now); d.setDate(now.getDate() - i); d.setHours(0,0,0,0);
       const dEnd = new Date(d); dEnd.setHours(23,59,59,999);
-      const dayOrders = allOrders.filter(o => {
+      const dayOrders = last7Orders.filter(o => {
         const c = new Date(o.createdAt); return c >= d && c <= dEnd;
       });
       weeklyOrders.push({
-        day: days[d.getDay()],
+        day: daysArr[d.getDay()],
         orders: dayOrders.length,
         revenue: Math.round(dayOrders.filter(o => !['CANCELLED','FAILED'].includes(o.paymentStatus)).reduce((s,o) => s+(o.totalPrice||0), 0)),
       });
