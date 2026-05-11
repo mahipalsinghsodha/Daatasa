@@ -8,9 +8,24 @@ const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
 const rateLimit = require("express-rate-limit");
 const startOrderCleanup = require('./services/orderCleanup');
+const MongoStore = require('connect-mongo');
+const dbCheck = require('./middleware/dbCheck');
 
 
 dotenv.config();
+
+// Enforce required env variables
+const requiredEnvVars = [
+  'MONGODB_URI', 'JWT_SECRET', 'SESSION_SECRET', 'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET',
+  'GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS',
+  'CLIENT_URL', 'CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'
+];
+for (const envVar of requiredEnvVars) {
+  if (!process.env[envVar]) {
+    console.error(`FATAL ERROR: Missing required environment variable ${envVar}`);
+    process.exit(1);
+  }
+}
 
 const app = express();
 
@@ -20,12 +35,16 @@ MIDDLEWARE
 =====================
 */
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || /^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
       callback(null, true);
     } else {
-      callback(null, origin); // Reflect for other origins in dev
+      callback(new Error(`CORS blocked: ${origin}`));
     }
   },
   credentials: true,
@@ -41,9 +60,9 @@ app.use(helmet());
 
 // Limit requests from same API
 const limiter = rateLimit({
-  max: 1000,
-  windowMs: 60 * 60 * 1000, // 1 hour
-  message: 'Too many requests from this IP, please try again in an hour!'
+  max: 300,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  message: 'Too many requests from this IP, please try again in 15 minutes!'
 });
 app.use('/api', limiter);
 
@@ -62,9 +81,15 @@ require("./config/passport")();
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret",
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({ mongoUrl: process.env.MONGODB_URI }),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+    }
   })
 );
 
@@ -93,6 +118,8 @@ app.get("/api/health", (req, res) => {
 ROUTES
 =====================
 */
+
+app.use('/api', dbCheck); // DB check for all API routes
 
 app.use("/api/products", require("./routes/productRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
@@ -153,22 +180,27 @@ DATABASE
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(
-      process.env.MONGODB_URI
-    );
+    await mongoose.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
 
-    console.log(
-      "MongoDB Connected Successfully"
-    );
+    console.log("MongoDB Connected Successfully");
   } catch (error) {
-    console.error(
-      "MongoDB Connection Error:",
-      error.message
-    );
-
+    console.error("MongoDB Connection Error:", error.message);
     process.exit(1);
   }
 };
+
+mongoose.connection.on('disconnected', () => {
+  console.error('MongoDB disconnected. Attempting reconnect...');
+  setTimeout(connectDB, 5000);
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB error:', err);
+});
 
 /*
 =====================
@@ -185,11 +217,24 @@ const startServer = async () => {
   const PORT =
     process.env.PORT || 5000;
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(
       `Server running on port ${PORT}`
     );
   });
+
+  const shutdown = async (signal) => {
+    console.log(`${signal} received. Shutting down gracefully...`);
+    server.close(async () => {
+      await mongoose.connection.close();
+      console.log('Server and DB connections closed.');
+      process.exit(0);
+    });
+    setTimeout(() => process.exit(1), 10000); // Force exit after 10s
+  };
+
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT',  () => shutdown('SIGINT'));
 };
 
 startServer();

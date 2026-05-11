@@ -118,6 +118,13 @@ exports.verifyPayment = async (req, res) => {
     order.isPaid = true;
     order.paidAt = Date.now();
     order.paymentStatus = 'PAID';
+    
+    // Generate invoice number
+    if (!order.invoiceNumber) {
+      const orderCount = await Order.countDocuments();
+      order.invoiceNumber = `INV-${new Date().getFullYear()}-${String(orderCount).padStart(6, '0')}`;
+    }
+
     order.paymentInfo = {
       razorpay_order_id,
       razorpay_payment_id,

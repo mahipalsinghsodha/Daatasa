@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { FiStar, FiShoppingCart } from 'react-icons/fi'
+import { FiStar, FiShoppingCart, FiHeart } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
 import { toast } from 'react-toastify'
@@ -14,6 +14,22 @@ const ProductCard = ({ product, categories = [] }) => {
   const catName = catObj ? catObj.name : product.category
 
   const showCart = !user || (user.role !== 'admin' && user.role !== 'superadmin')
+  const isWishlisted = user?.wishlist?.includes(product._id)
+
+  const handleWishlist = async (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!user) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+    try {
+      const added = await user.toggleWishlist(product._id)
+      toast.success(added ? 'Added to wishlist' : 'Removed from wishlist')
+    } catch {
+      toast.error('Failed to update wishlist')
+    }
+  }
 
   const handleQuickAdd = async (e) => {
     e.preventDefault()
@@ -52,13 +68,21 @@ const ProductCard = ({ product, categories = [] }) => {
             {catName}
           </span>
         </div>
-        {product.featured && (
-          <div className="absolute top-3 right-3">
+        <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+          {product.featured && (
             <span className="px-2.5 py-1 bg-orange-500 text-white text-[10px] font-semibold rounded-full uppercase tracking-wide shadow-sm">
               Featured
             </span>
-          </div>
-        )}
+          )}
+          {showCart && (
+            <button
+              onClick={handleWishlist}
+              className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm border border-white flex items-center justify-center text-gray-400 hover:text-red-500 hover:scale-110 transition-all shadow-sm"
+            >
+              <FiHeart size={14} className={isWishlisted ? 'fill-red-500 text-red-500' : ''} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Content */}

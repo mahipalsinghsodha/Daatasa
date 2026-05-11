@@ -68,6 +68,11 @@ const productSchema = new mongoose.Schema({
   timestamps: true
 });
 
+productSchema.index({ category: 1, isActive: 1 });
+productSchema.index({ featured: 1, isActive: 1 });
+productSchema.index({ name: 'text', description: 'text' }); // For search
+productSchema.index({ price: 1 });
+
 const Product = mongoose.model('Product', productSchema);
 
 module.exports = Product;

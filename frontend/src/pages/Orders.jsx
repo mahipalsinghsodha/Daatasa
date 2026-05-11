@@ -242,6 +242,72 @@ const CancelModal = ({ order, onClose, onConfirm, loading }) => {
   )
 }
 
+const ReturnModal = ({ order, onClose, onConfirm, loading }) => {
+  const [reason, setReason] = useState('')
+  const REASONS = ['Defective/Damaged product', 'Quality not as expected', 'Received wrong item', 'Item arrived too late', 'Other']
+
+  return (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+      >
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                <FiRefreshCw size={18} className="text-orange-600" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Request Return</h2>
+                <p className="text-xs text-gray-400">#{order._id.slice(-8).toUpperCase()}</p>
+              </div>
+            </div>
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400">
+              <FiX size={18} />
+            </button>
+          </div>
+
+          <div className="mb-4 p-3.5 bg-orange-50 border border-orange-100 rounded-xl flex items-start gap-2.5">
+            <FiAlertCircle size={14} className="text-orange-600 shrink-0 mt-0.5" />
+            <p className="text-xs text-orange-800">Return requests must be submitted within 7 days of delivery. Once approved, our delivery executive will pick up the item.</p>
+          </div>
+
+          <div className="space-y-2 mb-5">
+            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Reason for Return</label>
+            {REASONS.map(r => (
+              <button
+                key={r}
+                onClick={() => setReason(r)}
+                className={`w-full p-3 rounded-lg text-left text-sm font-medium transition-all border ${
+                  reason === r ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={onClose} className="py-3 rounded-lg text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button
+              disabled={loading || !reason}
+              onClick={() => onConfirm(reason)}
+              className="py-3 rounded-lg text-sm font-semibold text-white bg-gray-900 hover:bg-orange-500 disabled:opacity-50 transition-all"
+            >
+              {loading ? 'Submitting...' : 'Submit Request'}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
 const buildInvoiceHTML = (inv, order) => {
   const items = (inv.items || order.orderItems || []).map(i =>
     `<tr><td style="padding:10px">${i.name}</td><td style="padding:10px;text-align:center">${i.quantity}</td>
@@ -281,6 +347,8 @@ const Orders = () => {
   const [filter,        setFilter]        = useState('all')
   const [cancelModal,   setCancelModal]   = useState(null)
   const [cancelLoading, setCancelLoading] = useState(false)
+  const [returnModal,   setReturnModal]   = useState(null)
+  const [returnLoading, setReturnLoading] = useState(false)
   // Review modal state
   const [reviewModal,   setReviewModal]   = useState(null)  // { product, name, image }
   // Track which productIds have already been reviewed (per session)
@@ -321,7 +389,19 @@ const Orders = () => {
     finally { setCancelLoading(false) }
   }
 
+  const handleReturnRequest = async (reason) => {
+    setReturnLoading(true)
+    try {
+      await api.post(`/api/orders/${returnModal._id}/return-request`, { reason })
+      toast.success('Return request submitted')
+      setReturnModal(null)
+      fetchOrders()
+    } catch (error) { toast.error(error.response?.data?.message || 'Failed to submit return request') }
+    finally { setReturnLoading(false) }
+  }
+
   const canCancel = (o) => !o.isDelivered && !['CANCELLED', 'FAILED'].includes(o.paymentStatus)
+  const canReturn = (o) => o.isDelivered && !o.returnRequest && (Date.now() - new Date(o.deliveredAt).getTime()) / (1000 * 60 * 60 * 24) <= 7
 
   const visible = orders.filter(o => {
     if (filter === 'all') return true
@@ -500,6 +580,46 @@ const Orders = () => {
 
                             {/* Details */}
                             <div className="space-y-4">
+                              {/* Tracking Timeline */}
+                              <div className="bg-white p-4 rounded-xl border border-gray-100">
+                                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-4 flex items-center gap-2"><FiTruck size={13} className="text-orange-500" /> Order Status</h4>
+                                <div className="relative border-l-2 border-gray-100 ml-3 space-y-6 pb-2">
+                                  <div className="relative pl-6">
+                                    <div className="absolute w-4 h-4 bg-orange-500 rounded-full border-4 border-white -left-[9px] top-0 shadow-sm" />
+                                    <p className="text-sm font-bold text-gray-900">Order Placed</p>
+                                    <p className="text-xs text-gray-400">{new Date(o.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                  </div>
+                                  {(o.isPaid || o.paymentStatus === 'COD_CONFIRMED') && !['CANCELLED', 'FAILED'].includes(o.paymentStatus) && (
+                                    <div className="relative pl-6">
+                                      <div className="absolute w-4 h-4 bg-orange-500 rounded-full border-4 border-white -left-[9px] top-0 shadow-sm" />
+                                      <p className="text-sm font-bold text-gray-900">{o.isPaid ? 'Payment Received' : 'Order Confirmed'}</p>
+                                      <p className="text-xs text-gray-400">{o.isPaid ? new Date(o.paidAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Processing order'}</p>
+                                    </div>
+                                  )}
+                                  {o.isDelivered && (
+                                    <div className="relative pl-6">
+                                      <div className="absolute w-4 h-4 bg-green-500 rounded-full border-4 border-white -left-[9px] top-0 shadow-sm" />
+                                      <p className="text-sm font-bold text-green-600">Delivered</p>
+                                      <p className="text-xs text-gray-400">{new Date(o.deliveredAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                    </div>
+                                  )}
+                                  {['CANCELLED', 'FAILED'].includes(o.paymentStatus) && (
+                                    <div className="relative pl-6">
+                                      <div className="absolute w-4 h-4 bg-red-500 rounded-full border-4 border-white -left-[9px] top-0 shadow-sm" />
+                                      <p className="text-sm font-bold text-red-600">Cancelled / Failed</p>
+                                      <p className="text-xs text-gray-400">{o.cancelReason || 'Order cancelled'}</p>
+                                    </div>
+                                  )}
+                                  {o.returnRequest && (
+                                    <div className="relative pl-6">
+                                      <div className="absolute w-4 h-4 bg-purple-500 rounded-full border-4 border-white -left-[9px] top-0 shadow-sm" />
+                                      <p className="text-sm font-bold text-purple-600">Return {o.returnRequest.status}</p>
+                                      <p className="text-xs text-gray-400">{o.returnRequest.reason}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
                               {/* Delivery Address */}
                               <div className="bg-white p-4 rounded-xl border border-gray-100">
                                 <div className="flex items-center gap-2 mb-3">
@@ -540,13 +660,23 @@ const Orders = () => {
                             >
                               <FiHelpCircle size={15} /> Need Help?
                             </Link>
-                            <button
-                              onClick={() => printInvoice(o)}
-                              disabled={printing === o._id}
-                              className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center gap-2 hover:bg-gray-50 transition-colors"
-                            >
-                              <FiPrinter size={15} /> {printing === o._id ? 'Preparing...' : 'Download Invoice'}
-                            </button>
+                            {(!['PENDING', 'CANCELLED', 'FAILED'].includes(o.paymentStatus)) && (
+                              <button
+                                onClick={() => printInvoice(o)}
+                                disabled={printing === o._id}
+                                className="px-5 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center gap-2 hover:bg-gray-50 transition-colors"
+                              >
+                                <FiPrinter size={15} /> {printing === o._id ? 'Preparing...' : 'Download Invoice'}
+                              </button>
+                            )}
+                            {canReturn(o) && (
+                              <button
+                                onClick={() => setReturnModal(o)}
+                                className="px-5 py-2.5 bg-white text-orange-600 border border-orange-200 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-orange-50 transition-all"
+                              >
+                                <FiRefreshCw size={15} /> Request Return
+                              </button>
+                            )}
                             {canCancel(o) && (
                               <button
                                 onClick={() => setCancelModal(o)}
@@ -574,6 +704,17 @@ const Orders = () => {
             onClose={() => setCancelModal(null)}
             onConfirm={handleCancelOrder}
             loading={cancelLoading}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {returnModal && (
+          <ReturnModal
+            order={returnModal}
+            onClose={() => setReturnModal(null)}
+            onConfirm={handleReturnRequest}
+            loading={returnLoading}
           />
         )}
       </AnimatePresence>

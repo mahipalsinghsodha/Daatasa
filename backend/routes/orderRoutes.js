@@ -135,50 +135,74 @@ router.post('/', auth, async (req, res) => {
     const shippingPrice = (itemsPrice - discount) > 500 ? 0 : 50;
     const totalPrice = itemsPrice - discount + taxPrice + shippingPrice;
 
-    // 5️⃣ CREATE ORDER DATA
-    const orderData = {
-      user: req.user._id,
-      orderItems,
-      shippingAddress: req.body.shippingAddress || req.user.address,
-      paymentMethod,
-      itemsPrice,
-      taxPrice,
-      shippingPrice,
-      totalPrice,
-      discount,
-      coupon: appliedCoupon,
-      isPaid: false,
-      paymentStatus: 'PENDING'
-    };
+    const mongoose = require('mongoose');
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    // 6️⃣ CREATE ORDER
-    const order = await Order.create(orderData);
+    let order;
+    try {
+      // 5️⃣ CREATE ORDER DATA
+      const orderData = {
+        user: req.user._id,
+        orderItems,
+        shippingAddress: req.body.shippingAddress || req.user.address,
+        paymentMethod,
+        itemsPrice,
+        taxPrice,
+        shippingPrice,
+        totalPrice,
+        discount,
+        coupon: appliedCoupon,
+        isPaid: false,
+        paymentStatus: 'PENDING'
+      };
 
-    // 7️⃣ REDUCE STOCK (RESERVE INVENTORY)
-    for (const item of cart.items) {
-      await Product.findByIdAndUpdate(
-        item.product._id,
-        { $inc: { stock: -item.quantity } },
-        { new: true }
-      );
-    }
+      // 6️⃣ CREATE ORDER
+      order = new Order(orderData);
+      await order.save({ session });
 
-    // 8️⃣ FOR COD - CONFIRM IMMEDIATELY
-    if (paymentMethod === 'COD') {
-      order.paymentStatus = 'COD_CONFIRMED';
-      await order.save();
-
-      // Clear cart
-      cart.items = [];
-      await cart.save();
-
-      // Increment coupon usage
-      if (appliedCoupon) {
-        await Coupon.findOneAndUpdate(
-          { code: appliedCoupon.code },
-          { $inc: { usedCount: 1 } }
+      // 7️⃣ REDUCE STOCK (ATOMIC)
+      for (const item of cart.items) {
+        const updated = await Product.findOneAndUpdate(
+          { _id: item.product._id, stock: { $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } },
+          { new: true, session }
         );
+        if (!updated) {
+          throw new Error(`Insufficient stock for ${item.product.name}.`);
+        }
       }
+
+      // 8️⃣ FOR COD - CONFIRM IMMEDIATELY
+      if (paymentMethod === 'COD') {
+        order.paymentStatus = 'COD_CONFIRMED';
+        
+        // Generate invoice number
+        const orderCount = await Order.countDocuments();
+        order.invoiceNumber = `INV-${new Date().getFullYear()}-${String(orderCount).padStart(6, '0')}`;
+        
+        await order.save({ session });
+
+        // Clear cart
+        cart.items = [];
+        await cart.save({ session });
+
+        // Increment coupon usage
+        if (appliedCoupon) {
+          await Coupon.findOneAndUpdate(
+            { code: appliedCoupon.code },
+            { $inc: { usedCount: 1 } },
+            { session }
+          );
+        }
+      }
+
+      await session.commitTransaction();
+    } catch (transactionError) {
+      await session.abortTransaction();
+      throw transactionError;
+    } finally {
+      session.endSession();
     }
     // FOR ONLINE - Keep cart until payment succeeds
 
@@ -656,6 +680,36 @@ router.post('/:id/cancel', auth, async (req, res) => {
 
   } catch (error) {
     console.error('CANCEL ORDER ERROR:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ========================================================================
+// RETURN REQUEST
+// ========================================================================
+router.post('/:id/return-request', auth, async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    
+    if (!order.isDelivered) {
+      return res.status(400).json({ message: 'Can only request return for delivered orders' });
+    }
+    
+    const daysSinceDelivery = (Date.now() - new Date(order.deliveredAt).getTime()) / (1000 * 60 * 60 * 24);
+    if (daysSinceDelivery > 7) {
+      return res.status(400).json({ message: 'Return window (7 days) has expired' });
+    }
+
+    order.returnRequest = {
+      reason,
+      requestedAt: new Date(),
+      status: 'PENDING'
+    };
+    await order.save();
+    res.json({ message: 'Return request submitted successfully', order });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });

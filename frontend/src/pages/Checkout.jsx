@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiMapPin, FiCreditCard, FiShield, FiTruck,
   FiCheckCircle, FiArrowRight, FiPlus,
-  FiHome, FiBriefcase, FiCheck, FiTag, FiX, FiAlertCircle, FiEdit2, FiLock, FiDollarSign
+  FiHome, FiBriefcase, FiCheck, FiTag, FiX, FiAlertCircle, FiEdit2, FiLock, FiBox
 } from 'react-icons/fi'
 
 const STATES = [
@@ -317,7 +317,7 @@ const Checkout = () => {
 
               <div className="p-6 grid sm:grid-cols-2 gap-3">
                 {[
-                  { id: 'COD', label: 'Cash on Delivery', icon: <FiDollarSign size={18} />, desc: 'Pay when you receive' },
+                  { id: 'COD', label: 'Cash on Delivery', icon: <FiBox size={18} />, desc: 'Pay when you receive' },
                   { id: 'Online', label: 'Pay Online', icon: <FiShield size={18} />, desc: 'Secure via Razorpay' },
                 ].map((opt) => (
                   <div

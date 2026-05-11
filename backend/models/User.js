@@ -35,6 +35,9 @@ isBlocked: { type: Boolean, default: false },
   resetPasswordExpire:      { type: Date,   select: false }, // 2-minute window
   resetPasswordFingerprint: { type: String, select: false }, // SHA-256 hash of IP + User-Agent
 
+  tokenVersion: { type: Number, default: 0 },
+  wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
+
 }, { timestamps: true });
 
 /* ── Ensure only one default address ────────────────────────────── */

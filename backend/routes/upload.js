@@ -23,7 +23,19 @@ const storage = new CloudinaryStorage({
     },
 });
 
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } }); // 5 MB limit
+const fileFilter = (req, file, cb) => {
+    if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed'), false);
+    }
+};
+
+const upload = multer({ 
+    storage, 
+    fileFilter,
+    limits: { fileSize: 5 * 1024 * 1024 } // 5 MB limit
+});
 
 // POST /api/upload
 router.post('/', auth, auth.admin, upload.single('image'), async (req, res) => {

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   ShoppingCart, Minus, Plus, ChevronLeft, ChevronRight,
   Star, Truck, Shield, RefreshCw, MapPin, Package,
-  CheckCircle, AlertCircle, Tag, User, Send, BadgeCheck
+  CheckCircle, AlertCircle, Tag, User, Send, BadgeCheck, Heart
 } from 'lucide-react'
 
 // ── Star selector component ────────────────────────────────────────────────
@@ -48,7 +48,7 @@ const ProductDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, toggleWishlist } = useAuth()
   const { fetchCartCount } = useCart()
 
   const [product,    setProduct]    = useState(null)
@@ -107,7 +107,6 @@ const ProductDetail = () => {
 
   const handleAddToCart = async ({ redirectTo } = {}) => {
     if (!user) {
-      // Save the pending item so it gets added after login
       sessionStorage.setItem('pendingCartItem', JSON.stringify({ productId: product._id, quantity }))
       navigate('/login', { state: { from: redirectTo || location.pathname } })
       return
@@ -145,6 +144,19 @@ const ProductDetail = () => {
       toast.error(err.response?.data?.message || 'Could not submit review')
     } finally {
       setSubmittingReview(false)
+    }
+  }
+
+  const handleWishlist = async () => {
+    if (!user) {
+      navigate('/login', { state: { from: location.pathname } })
+      return
+    }
+    try {
+      const added = await toggleWishlist(product._id)
+      toast.success(added ? 'Added to wishlist' : 'Removed from wishlist')
+    } catch {
+      toast.error('Failed to update wishlist')
     }
   }
 
@@ -246,10 +258,20 @@ const ProductDetail = () => {
               </span>
             </div>
 
-            {/* Name */}
-            <h1 className="text-3xl font-bold text-gray-900 leading-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-              {product.name}
-            </h1>
+            {/* Name and Wishlist */}
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-3xl font-bold text-gray-900 leading-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                {product.name}
+              </h1>
+              {isCustomer && (
+                <button
+                  onClick={handleWishlist}
+                  className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-colors"
+                >
+                  <Heart size={18} className={user?.wishlist?.includes(product._id) ? 'fill-current' : ''} />
+                </button>
+              )}
+            </div>
 
             {/* Rating row */}
             <div className="flex items-center gap-3 flex-wrap">
