@@ -6,6 +6,18 @@ const darkBg = '#1a1a2e';
 const CLIENT_URL = () => process.env.CLIENT_URL || 'http://localhost:3000';
 const FROM = () => `"DhaniFresh" <${process.env.SMTP_USER}>`;
 
+const sendWithRetry = async (mailOptions, retries = 3) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await transporter.sendMail(mailOptions);
+    } catch (error) {
+      console.error(`Email send failed (attempt ${i + 1}/${retries}):`, error.message);
+      if (i === retries - 1) throw error;
+      await new Promise(r => setTimeout(r, 1000 * (i + 1))); // Simple backoff
+    }
+  }
+};
+
 const wrap = (body) => `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f2f4f6;font-family:'Segoe UI',Arial,sans-serif">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px">
@@ -30,7 +42,7 @@ const row = (label, value, vc = darkBg) =>
   `<div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:#8899aa">${label}</span><span style="font-size:13px;font-weight:700;color:${vc}">${value}</span></div>`;
 
 // ── 1. ORDER CONFIRMED ────────────────────────────────────────────────────────
-const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items, paymentMethod }) => {
+const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items, paymentMethod, invoiceNumber }) => {
   const sid = orderId.slice(-8).toUpperCase();
   const itemsHtml = items.map(i => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9">
@@ -55,7 +67,31 @@ const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items,
     ${btn('Track My Order →', `${CLIENT_URL()}/orders`)}
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to, subject: `Order Confirmed: #${sid} | DhaniFresh`, html: wrap(body) });
+  const invoiceHtmlContent = `
+    <!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;padding:20px;">
+      <h2>Invoice: ${invoiceNumber || sid}</h2>
+      <p>Customer: ${userName}</p>
+      <p>Payment Method: ${paymentMethod}</p>
+      <hr/>
+      ${itemsHtml}
+      <hr/>
+      <h3>Total: ₹${Number(totalPrice).toFixed(2)}</h3>
+    </body></html>
+  `;
+
+  await sendWithRetry({ 
+    from: FROM(), 
+    to, 
+    subject: `Order Confirmed: #${sid} | DhaniFresh`, 
+    html: wrap(body),
+    attachments: [
+      {
+        filename: `invoice_${invoiceNumber || sid}.html`,
+        content: invoiceHtmlContent,
+        contentType: 'text/html'
+      }
+    ]
+  });
 };
 
 // ── 2. PAYMENT FAILED ─────────────────────────────────────────────────────────
@@ -74,7 +110,7 @@ const sendOrderFailureEmail = async ({ to, userName, orderId, totalPrice, reason
     ${btn('Return to Cart', `${CLIENT_URL()}/cart`, darkBg)}
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to, subject: `Payment Failed – Order #${sid} | DhaniFresh`, html: wrap(body) });
+  await sendWithRetry({ from: FROM(), to, subject: `Payment Failed – Order #${sid} | DhaniFresh`, html: wrap(body) });
 };
 
 // ── 3. ORDER CANCELLED / REFUND ───────────────────────────────────────────────
@@ -94,7 +130,7 @@ const sendCancelEmail = async ({ to, userName, orderId, totalPrice, reason, isRe
     ${btn('View My Orders →', `${CLIENT_URL()}/orders`)}
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to, subject: isRefund ? `Refund Initiated – #${sid} | DhaniFresh` : `Order Cancelled – #${sid} | DhaniFresh`, html: wrap(body) });
+  await sendWithRetry({ from: FROM(), to, subject: isRefund ? `Refund Initiated – #${sid} | DhaniFresh` : `Order Cancelled – #${sid} | DhaniFresh`, html: wrap(body) });
 };
 
 // ── 4. ACCOUNT BLOCKED / UNBLOCKED ────────────────────────────────────────────
@@ -111,7 +147,7 @@ const sendBlockEmail = async ({ to, userName, isBlocked, reason }) => {
     <p style="font-size:13px;color:#8899aa;line-height:1.7">If you believe this is an error, please contact our support team.</p>
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to, subject: isBlocked ? 'Your DhaniFresh account has been suspended' : 'Your DhaniFresh account has been reinstated', html: wrap(body) });
+  await sendWithRetry({ from: FROM(), to, subject: isBlocked ? 'Your DhaniFresh account has been suspended' : 'Your DhaniFresh account has been reinstated', html: wrap(body) });
 };
 
 // ── 5. PASSWORD RESET ─────────────────────────────────────────────────────────
@@ -135,7 +171,7 @@ const sendPasswordResetEmail = async ({ to, userName, resetUrl }) => {
     ${box(`<strong>Didn't request this?</strong> Ignore this email — your password stays unchanged.`, '#fff4ee', '#fddcca')}
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to: `${userName} <${to}>`, subject: 'Reset your DhaniFresh password 🔐', replyTo: process.env.SMTP_USER, html: wrap(body) });
+  await sendWithRetry({ from: FROM(), to: `${userName} <${to}>`, subject: 'Reset your DhaniFresh password 🔐', replyTo: process.env.SMTP_USER, html: wrap(body) });
 };
 
 // ── 6. CONTACT FORM — Admin notification ──────────────────────────────────────
@@ -150,7 +186,7 @@ const sendContactAdminEmail = async ({ name, email, phone, subject, message }) =
     <p style="font-size:13px;color:#8899aa;text-align:center">Received on ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'long', timeStyle: 'short' })} IST</p>
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to: process.env.CONTACT_RECEIVER || process.env.SMTP_USER, subject: `📩 New Contact: ${subject} — from ${name}`, replyTo: `${name} <${email}>`, html: wrap(body) });
+  await sendWithRetry({ from: FROM(), to: process.env.CONTACT_RECEIVER || process.env.SMTP_USER, subject: `📩 New Contact: ${subject} — from ${name}`, replyTo: `${name} <${email}>`, html: wrap(body) });
 };
 
 // ── 7. CONTACT FORM — Auto-reply to customer ─────────────────────────────────
@@ -169,7 +205,7 @@ const sendContactAutoReply = async ({ name, email, phone, subject, message }) =>
     ${btn('Browse Our Products →', `${CLIENT_URL()}/products`)}
   </div>`;
 
-  await transporter.sendMail({ from: FROM(), to: `${name} <${email}>`, subject: `We received your message — DhaniFresh 🧈`, html: wrap(body) });
+  await sendWithRetry({ from: FROM(), to: `${name} <${email}>`, subject: `We received your message — DhaniFresh 🧈`, html: wrap(body) });
 };
 
 module.exports = {

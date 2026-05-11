@@ -21,19 +21,27 @@ const startOrderCleanup = () => {
 
       console.log(`Found ${expiredOrders.length} expired orders. Restoring stock...`);
 
+      const bulkOps = [];
       for (const order of expiredOrders) {
-        // Restore stock
         for (const item of order.orderItems) {
-          await Product.findByIdAndUpdate(item.product, {
-            $inc: { stock: item.quantity }
+          bulkOps.push({
+            updateOne: {
+              filter: { _id: item.product },
+              update: { $inc: { stock: item.quantity } }
+            }
           });
         }
-
-        // Mark as EXPIRED instead of deleting to keep record
-        order.paymentStatus = 'EXPIRED';
-        await order.save();
-        console.log(`Order ${order._id} marked as EXPIRED and stock restored.`);
       }
+
+      if (bulkOps.length > 0) {
+        await Product.bulkWrite(bulkOps);
+      }
+
+      await Order.updateMany(
+        { _id: { $in: expiredOrders.map(o => o._id) } },
+        { $set: { paymentStatus: 'EXPIRED' } }
+      );
+      console.log(`Marked ${expiredOrders.length} orders as EXPIRED and stock restored.`);
 
       console.log('--- ORDER CLEANUP COMPLETED ---');
     } catch (error) {

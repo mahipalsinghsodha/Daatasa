@@ -145,8 +145,20 @@ export const AuthProvider = ({ children }) => {
     return user.role === 'admin' && user.permissions?.includes(permission);
   };
 
+  const toggleWishlist = async (productId) => {
+    if (!user) return false;
+    try {
+      const res = await api.post('/api/auth/wishlist', { productId });
+      setUser(prev => ({ ...prev, wishlist: res.data.wishlist }));
+      return res.data.added;
+    } catch (error) {
+      console.error('Wishlist toggle error', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading, fetchUser, hasPermission }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, fetchUser, hasPermission, toggleWishlist }}>
       {children}
     </AuthContext.Provider>
   );

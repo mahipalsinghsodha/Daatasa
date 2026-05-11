@@ -13,13 +13,14 @@ const auth = async (req, res, next) => {
 
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production'
+      process.env.JWT_SECRET
     );
 
     const user = await User.findById(decoded.id).select('-password');
 
     if (!user) return res.status(401).json({ message: 'User not found' });
     if (user.isBlocked) return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    if (decoded.version !== user.tokenVersion) return res.status(401).json({ message: 'Token is revoked' });
 
     req.user = user;
     next();

@@ -110,7 +110,16 @@ refundInfo: {
     default: false
   },
 
-  deliveredAt: Date
+  deliveredAt: Date,
+
+  invoiceNumber: { type: String, unique: true, sparse: true },
+  trackingNumber: String,
+  shippingProvider: String,
+  returnRequest: {
+    reason: String,
+    requestedAt: Date,
+    status: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'] }
+  }
 }, {
   timestamps: true
 });
@@ -119,6 +128,8 @@ refundInfo: {
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ 'paymentInfo.razorpay_order_id': 1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ 'coupon.code': 1 });
 
 const Order = mongoose.model('Order', orderSchema);
 

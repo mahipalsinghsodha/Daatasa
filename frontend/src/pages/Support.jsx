@@ -6,18 +6,18 @@ import { toast } from 'react-toastify'
 import { useSearchParams } from 'react-router-dom'
 
 const CATS = [
-  { value: "ORDER_ISSUE",    label: "Order Issue",      icon: "📦" },
-  { value: "PAYMENT_ISSUE",  label: "Payment Problem",  icon: "💳" },
-  { value: "RETURN_REQUEST", label: "Return / Refund",  icon: "↩️" },
-  { value: "PRODUCT_ISSUE",  label: "Product Quality",  icon: "⚠️" },
-  { value: "OTHER",          label: "General Question", icon: "💬" },
+  { value: "ORDER_ISSUE", label: "Order Issue", icon: "📦" },
+  { value: "PAYMENT_ISSUE", label: "Payment Problem", icon: "💳" },
+  { value: "RETURN_REQUEST", label: "Return / Refund", icon: "↩️" },
+  { value: "PRODUCT_ISSUE", label: "Product Quality", icon: "⚠️" },
+  { value: "OTHER", label: "General Question", icon: "💬" },
 ];
 
 const STATUS = {
-  OPEN:        { label: "Open",        dot: "bg-red-500",     bg: "bg-red-50",     text: "text-red-600",    border: "border-red-100" },
-  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400",   bg: "bg-amber-50",   text: "text-amber-600",  border: "border-amber-100" },
-  RESOLVED:    { label: "Resolved",    dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-600",border: "border-emerald-100" },
-  CLOSED:      { label: "Closed",      dot: "bg-gray-300",    bg: "bg-gray-50",    text: "text-gray-400",   border: "border-gray-100" },
+  OPEN: { label: "Open", dot: "bg-red-500", bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
+  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
+  RESOLVED: { label: "Resolved", dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
+  CLOSED: { label: "Closed", dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-400", border: "border-gray-100" },
 };
 
 const timeAgo = (date) => {
@@ -32,20 +32,20 @@ const timeAgo = (date) => {
 
 export default function Support() {
   const [searchParams] = useSearchParams();
-  const [tickets,    setTickets]    = useState([]);
-  const [orders,     setOrders]     = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [tab,        setTab]        = useState("help");  // 'help' | 'tickets'
-  const [step,       setStep]       = useState(1);       // 1=select order, 2=form
-  const [selOrder,   setSelOrder]   = useState(null);
-  const [selected,   setSelected]   = useState(null);    // ticket in chat
-  const [search,     setSearch]     = useState("");
-  const [filter,     setFilter]     = useState("ALL");
-  const [form,       setForm]       = useState({ subject: "", category: "", message: "" });
-  const [reply,      setReply]      = useState("");
+  const [tickets, setTickets] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("help");  // 'help' | 'tickets'
+  const [step, setStep] = useState(1);       // 1=select order, 2=form
+  const [selOrder, setSelOrder] = useState(null);
+  const [selected, setSelected] = useState(null);    // ticket in chat
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("ALL");
+  const [form, setForm] = useState({ subject: "", category: "", message: "" });
+  const [reply, setReply] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [sending,    setSending]    = useState(false);
-  const [isMobile,   setIsMobile]   = useState(window.innerWidth < 768);
+  const [sending, setSending] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function Support() {
       ]);
       setTickets(tRes.data || []);
       setOrders(oRes.data || []);
-    } catch {}
+    } catch { }
     finally { setLoading(false); }
   };
 
@@ -89,7 +89,7 @@ export default function Support() {
         const up = data.find(t => t._id === selected._id);
         if (up) setSelected(up);
       }
-    } catch {}
+    } catch { }
   };
 
   const handleCreate = async (e) => {
@@ -102,7 +102,7 @@ export default function Support() {
       await api.post("/api/support", payload);
       setForm({ subject: "", category: "", message: "" });
       setSelOrder(null); setStep(1); setTab("tickets");
-      toast.success('Ticket submitted! We'll get back to you soon.');
+      toast.success("Ticket submitted! We'll get back to you soon.");
       fetchTickets();
     } catch { toast.error('Could not submit. Try again.'); }
     finally { setSubmitting(false); }
@@ -132,7 +132,7 @@ export default function Support() {
   };
 
   // On mobile, when a ticket is selected, show only chat
-  const showLeft  = !isMobile || (!selected || tab === 'help');
+  const showLeft = !isMobile || (!selected || tab === 'help');
   const showRight = !isMobile || !!selected || tab === 'help';
 
   if (loading) return (
@@ -165,9 +165,9 @@ export default function Support() {
             <button onClick={() => { setTab('tickets'); }}
               className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${tab === 'tickets' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
               My Tickets
-              {tickets.filter(t => ['OPEN','IN_PROGRESS'].includes(t.status)).length > 0 && (
+              {tickets.filter(t => ['OPEN', 'IN_PROGRESS'].includes(t.status)).length > 0 && (
                 <span className={`w-5 h-5 text-[10px] font-bold rounded-full flex items-center justify-center ${tab === 'tickets' ? 'bg-white text-gray-900' : 'bg-orange-500 text-white'}`}>
-                  {tickets.filter(t => ['OPEN','IN_PROGRESS'].includes(t.status)).length}
+                  {tickets.filter(t => ['OPEN', 'IN_PROGRESS'].includes(t.status)).length}
                 </span>
               )}
             </button>
@@ -261,9 +261,8 @@ export default function Support() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {CATS.map(c => (
                         <button type="button" key={c.value} onClick={() => setForm({ ...form, category: c.value })}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${
-                            form.category === c.value ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                          }`}>
+                          className={`p-2.5 rounded-xl border text-left transition-all ${form.category === c.value ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
+                            }`}>
                           <span className="text-base">{c.icon}</span>
                           <p className="text-[11px] font-semibold text-gray-700 mt-1 leading-tight">{c.label}</p>
                         </button>
@@ -307,7 +306,7 @@ export default function Support() {
                       className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none focus:border-orange-400 transition-colors" />
                   </div>
                   <div className="flex gap-1 overflow-x-auto no-scrollbar">
-                    {['ALL','OPEN','IN_PROGRESS','RESOLVED'].map(f => (
+                    {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED'].map(f => (
                       <button key={f} onClick={() => setFilter(f)}
                         className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-colors ${filter === f ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
                         {f === 'ALL' ? 'All' : f === 'IN_PROGRESS' ? 'In Progress' : f.charAt(0) + f.slice(1).toLowerCase()}
@@ -329,9 +328,8 @@ export default function Support() {
                     const active = selected?._id === t._id;
                     return (
                       <button key={t._id} onClick={() => setSelected(t)}
-                        className={`w-full text-left px-3.5 py-3 border-b border-gray-50 flex items-start gap-2.5 transition-colors ${
-                          active ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50 border-l-2 border-l-transparent'
-                        }`}>
+                        className={`w-full text-left px-3.5 py-3 border-b border-gray-50 flex items-start gap-2.5 transition-colors ${active ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50 border-l-2 border-l-transparent'
+                          }`}>
 
                         {/* Status color line */}
                         <div className={`w-1.5 h-1.5 rounded-full ${s.dot} mt-1.5 shrink-0`} />
@@ -402,9 +400,8 @@ export default function Support() {
                         const isMe = msg.sender === 'user';
                         return (
                           <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-                              isMe ? 'bg-gray-900 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm'
-                            }`}>
+                            <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${isMe ? 'bg-gray-900 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm'
+                              }`}>
                               {!isMe && <p className="text-[10px] font-bold text-orange-500 mb-1">DhaniFresh Support</p>}
                               <p>{msg.message}</p>
                               <p className="text-[10px] mt-1.5 opacity-60">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -416,7 +413,7 @@ export default function Support() {
                     </div>
 
                     {/* Reply bar */}
-                    {['CLOSED','RESOLVED'].includes(selected.status) ? (
+                    {['CLOSED', 'RESOLVED'].includes(selected.status) ? (
                       <div className="p-3 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-500">
                         Ticket closed · <button onClick={() => { setTab('help'); setStep(1); setSelected(null); }} className="text-orange-500 font-medium">Raise new query</button>
                       </div>

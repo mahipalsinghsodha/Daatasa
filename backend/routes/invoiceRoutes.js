@@ -23,9 +23,13 @@ router.get('/:orderId', auth, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    if (!order.isPaid && order.paymentStatus !== 'COD_CONFIRMED') {
+      return res.status(400).json({ message: 'Cannot generate invoice for unpaid or unconfirmed orders' });
+    }
+
     // Invoice data
     const invoice = {
-      invoiceNumber: `INV-${order._id.toString().slice(-8).toUpperCase()}`,
+      invoiceNumber: order.invoiceNumber || `INV-${order._id.toString().slice(-8).toUpperCase()}`,
       orderId: order._id,
       date: order.createdAt,
       customer: {
@@ -67,9 +71,9 @@ router.post('/bulk', auth, auth.admin, auth.hasPermission('orders'), async (req,
         .populate('user', 'name email')
         .populate('orderItems.product');
 
-      if (order) {
+      if (order && (order.isPaid || order.paymentStatus === 'COD_CONFIRMED')) {
         invoices.push({
-          invoiceNumber: `INV-${order._id.toString().slice(-8).toUpperCase()}`,
+          invoiceNumber: order.invoiceNumber || `INV-${order._id.toString().slice(-8).toUpperCase()}`,
           orderId: order._id,
           date: order.createdAt,
           customer: {

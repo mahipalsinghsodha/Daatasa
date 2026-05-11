@@ -16,6 +16,7 @@ const auth     = require('../middleware/auth');
 const dbCheck  = require('../middleware/dbCheck');
 const { logAction } = require('../utils/logger');
 const rateLimit = require('express-rate-limit');
+const { body, validationResult } = require('express-validator');
 
 // Rate limiting for auth endpoints
 const authLimiter = rateLimit({
@@ -24,10 +25,10 @@ const authLimiter = rateLimit({
   message: 'Too many attempts from this IP, please try again after 15 minutes'
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_change_in_production';
+const JWT_SECRET = process.env.JWT_SECRET;
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
-const makeToken = (id) => jwt.sign({ id }, JWT_SECRET, { expiresIn: '30d' });
+const makeToken = (user) => jwt.sign({ id: user._id, version: user.tokenVersion }, JWT_SECRET, { expiresIn: '30d' });
 
 const safeUser = (u) => ({
   id:        u._id,
@@ -52,19 +53,24 @@ const makeFingerprint = (req) => {
 /* ─────────────────────────────────────────────────────────────────────────── */
 /*  REGISTER                                                                   */
 /* ─────────────────────────────────────────────────────────────────────────── */
-router.post('/register', authLimiter, dbCheck, async (req, res) => {
+router.post('/register', authLimiter, dbCheck, [
+  body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 50 }),
+  body('email').isEmail().normalizeEmail().withMessage('Invalid email'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
     const { name, email, password } = req.body;
-    if (!name || !email || !password)
-      return res.status(400).json({ message: 'Please provide name, email, and password' });
-    if (password.length < 6)
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
     if (await User.findOne({ email }))
       return res.status(400).json({ message: 'User already exists' });
 
     const user = new User({ name, email, password });
     await user.save();
-    res.status(201).json({ token: makeToken(user._id), user: safeUser(user) });
+    res.status(201).json({ token: makeToken(user), user: safeUser(user) });
   } catch (error) {
     if (error.name === 'ValidationError')
       return res.status(400).json({ message: Object.values(error.errors).map(e => e.message).join(', ') });
@@ -77,17 +83,36 @@ router.post('/register', authLimiter, dbCheck, async (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────────── */
 /*  LOGIN                                                                      */
 /* ─────────────────────────────────────────────────────────────────────────── */
-router.post('/login', authLimiter, dbCheck, async (req, res) => {
+router.post('/login', authLimiter, dbCheck, [
+  body('email').isEmail().normalizeEmail().withMessage('Invalid email'),
+  body('password').notEmpty().withMessage('Password is required'),
+], async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
     const { email, password } = req.body;
-    if (!email || !password)
-      return res.status(400).json({ message: 'Please provide email and password' });
     const user = await User.findOne({ email });
     if (!user || !(await user.comparePassword(password)))
       return res.status(401).json({ message: 'Invalid credentials' });
-    res.json({ token: makeToken(user._id), user: safeUser(user) });
+    res.json({ token: makeToken(user), user: safeUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Login failed' });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  LOGOUT                                                                     */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.post('/logout', auth, async (req, res) => {
+  try {
+    req.user.tokenVersion += 1;
+    await req.user.save();
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Logout failed' });
   }
 });
 
@@ -382,6 +407,36 @@ router.put('/users/:id/block', auth, auth.admin, auth.hasPermission('users'), as
       isBlocked: target.isBlocked,
       userId:    target._id,
     });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Toggle wishlist
+router.post('/wishlist', auth, async (req, res) => {
+  try {
+    const { productId } = req.body;
+    const User = require('../models/User');
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    // Ensure wishlist array exists
+    if (!user.wishlist) {
+      user.wishlist = [];
+    }
+
+    const index = user.wishlist.findIndex(id => id.toString() === productId);
+    let added = false;
+    
+    if (index > -1) {
+      user.wishlist.splice(index, 1);
+    } else {
+      user.wishlist.push(productId);
+      added = true;
+    }
+    
+    await user.save();
+    res.json({ wishlist: user.wishlist, added });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
