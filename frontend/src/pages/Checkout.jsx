@@ -44,7 +44,10 @@ const Checkout = () => {
   const [couponLoading, setCouponLoading] = useState(false)
   const [stockModalItems, setStockModalItems] = useState(null)
   const [pinLoading, setPinLoading] = useState(false)
-  const [pinError,   setPinError]   = useState('')
+  const [pinError, setPinError] = useState('')
+  // Price breakdown from backend — no frontend math
+  const [preview, setPreview] = useState(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login', { state: { from: '/checkout' } }); return }
@@ -56,8 +59,26 @@ const Checkout = () => {
     try {
       const res = await api.get('/api/cart')
       setCart(res.data)
-      if (res.data.items.length === 0) navigate('/cart')
+      if (res.data.items.length === 0) { navigate('/cart'); return }
+      fetchPreview()
     } catch (e) { console.error(e) }
+  }
+
+  const fetchPreview = async (couponDiscount = 0) => {
+    setPreviewLoading(true)
+    try {
+      const res = await api.get('/api/orders/price-preview')
+      const p = res.data
+      // Apply coupon discount on top if one is applied
+      if (couponDiscount > 0) {
+        const afterDiscount = Math.max(0, p.itemsPrice - couponDiscount)
+        const tax = afterDiscount * (p.gstRate / 100)
+        const shipping = afterDiscount > (p.freeShippingThreshold || 500) ? 0 : (p.shippingPrice || 50)
+        setPreview({ ...p, discount: couponDiscount, taxPrice: tax, shippingPrice: shipping, totalPrice: afterDiscount + tax + shipping })
+      } else {
+        setPreview({ ...p, discount: 0 })
+      }
+    } catch (e) { console.error(e) } finally { setPreviewLoading(false) }
   }
 
   const fetchAddresses = async () => {
@@ -88,16 +109,6 @@ const Checkout = () => {
     }
   }
 
-  const calcTotals = () => {
-    if (!cart?.items) return { subtotal: 0, discount: 0, tax: 0, shipping: 0, total: 0 }
-    const subtotal = cart.items.reduce((s, i) => s + (i.product?.price || 0) * i.quantity, 0)
-    const discount = appliedCoupon?.discountAmount || 0
-    const afterDiscount = Math.max(0, subtotal - discount)
-    const tax = afterDiscount * 0.18
-    const shipping = afterDiscount > 500 ? 0 : 50
-    return { subtotal, discount, tax, shipping, total: afterDiscount + tax + shipping }
-  }
-
   const getShippingAddr = () => {
     if (showNewForm || savedAddresses.length === 0) return newAddr
     return savedAddresses.find(a => String(a._id) === selectedAddrId) || newAddr
@@ -107,8 +118,12 @@ const Checkout = () => {
     if (!couponCode.trim()) { toast.error('Enter a coupon code'); return }
     setCouponLoading(true)
     try {
-      const res = await api.post('/api/orders/verify-coupon', { couponCode: couponCode.trim(), orderTotal: calcTotals().subtotal })
-      setAppliedCoupon(res.data.coupon)
+      const res = await api.post('/api/orders/verify-coupon', { couponCode: couponCode.trim() })
+      const coupon = res.data.coupon
+      const bd = res.data.breakdown
+      setAppliedCoupon(coupon)
+      // Update preview with server-computed breakdown
+      setPreview(prev => ({ ...prev, discount: coupon.discountAmount, taxPrice: bd.taxPrice, shippingPrice: bd.shippingPrice, totalPrice: bd.totalPrice }))
       toast.success('Coupon applied!')
     } catch { setAppliedCoupon(null) }
     finally { setCouponLoading(false) }
@@ -145,7 +160,7 @@ const Checkout = () => {
     const { data: order } = await api.post('/api/orders', payload)
     const { data: rzrOrder } = await api.post('/api/payment/create-order', { orderId: order._id })
     const rzp = new window.Razorpay({
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_SfFPdtbqDtnwPd',
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       order_id: rzrOrder.id,
       name: 'Dhani Fresh',
       description: 'Premium Ghee Purchase',
@@ -171,7 +186,6 @@ const Checkout = () => {
   }
 
   if (!cart || cart.items.length === 0) return null
-  const totals = calcTotals()
 
   return (
     <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
@@ -218,9 +232,9 @@ const Checkout = () => {
                       {savedAddresses.map((addr) => (
                         <div
                           key={addr._id}
-                          onClick={() => setSelectedAddrId(addr._id)}
+                          onClick={() => setSelectedAddrId(String(addr._id))}
                           className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                            selectedAddrId === addr._id ? 'border-gray-900 bg-gray-50' : 'border-gray-100 hover:border-gray-200'
+                            selectedAddrId === String(addr._id) ? 'border-gray-900 bg-gray-50' : 'border-gray-100 hover:border-gray-200'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
@@ -404,29 +418,34 @@ const Checkout = () => {
               <div className="space-y-3 mb-4">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
-                  <span className="font-medium text-gray-900">₹{totals.subtotal.toLocaleString('en-IN')}</span>
+                  <span className="font-medium text-gray-900">₹{(preview?.itemsPrice ?? 0).toLocaleString('en-IN')}</span>
                 </div>
-                {totals.discount > 0 && (
+                {(preview?.discount ?? 0) > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-green-600">Discount</span>
-                    <span className="font-medium text-green-600">-₹{totals.discount.toLocaleString('en-IN')}</span>
+                    <span className="font-medium text-green-600">-₹{Math.round(preview.discount).toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+                {preview && preview.gstRate > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">GST ({preview.gstRate}%)</span>
+                    <span className="font-medium text-gray-900">₹{Math.round(preview.taxPrice).toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">GST (18%)</span>
-                  <span className="font-medium text-gray-900">₹{Math.round(totals.tax).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Shipping</span>
-                  <span className={`font-medium ${totals.shipping === 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                    {totals.shipping === 0 ? 'FREE' : `₹${totals.shipping}`}
+                  <span className={`font-medium ${(preview?.shippingPrice ?? 50) === 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                    {(preview?.shippingPrice ?? 50) === 0 ? 'FREE' : `₹${preview?.shippingPrice ?? 50}`}
                   </span>
                 </div>
               </div>
 
               <div className="flex justify-between py-4 border-t border-gray-100 mb-4">
                 <span className="font-bold text-gray-900">Total</span>
-                <span className="text-xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>₹{Math.round(totals.total).toLocaleString('en-IN')}</span>
+                {previewLoading
+                  ? <span className="inline-block w-20 h-6 bg-gray-100 rounded animate-pulse" />
+                  : <span className="text-xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>₹{Math.round(preview?.totalPrice ?? 0).toLocaleString('en-IN')}</span>
+                }
               </div>
 
               <button

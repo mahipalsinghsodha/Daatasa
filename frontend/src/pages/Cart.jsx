@@ -16,6 +16,9 @@ const Cart = () => {
   const [cart, setCart] = useState(null)
   const [loading, setLoading] = useState(true)
   const [updatingId, setUpdatingId] = useState(null)
+  // Price breakdown fetched from backend (includes live GST rate)
+  const [preview, setPreview] = useState(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login', { state: { from: '/cart' } }); return }
@@ -27,6 +30,8 @@ const Cart = () => {
       const res = await api.get('/api/cart')
       setCart(res.data)
       fetchCartCount()
+      // After fetching cart, get live price preview from backend
+      if (res.data?.items?.length > 0) fetchPreview()
     } catch (e) {
       console.error(e)
     } finally {
@@ -34,9 +39,21 @@ const Cart = () => {
     }
   }
 
+  // Fetch live price breakdown (GST, shipping, total) from backend
+  const fetchPreview = async () => {
+    setPreviewLoading(true)
+    try {
+      const res = await api.get('/api/orders/price-preview')
+      setPreview(res.data)
+    } catch (e) {
+      console.error('Price preview error:', e)
+    } finally {
+      setPreviewLoading(false)
+    }
+  }
+
   const updateQty = async (itemId, newQty, stock) => {
     if (newQty < 1) return
-    // Dynamic cap: min(product stock, MAX_CART_QTY)
     const maxAllowed = Math.min(stock || 0, MAX_CART_QTY)
     if (newQty > maxAllowed) {
       toast.error(`Max ${maxAllowed} of this item allowed`)
@@ -60,21 +77,14 @@ const Cart = () => {
     } catch { toast.error('Failed to remove item') }
   }
 
-  const calcTotals = () => {
-    if (!cart?.items) return { subtotal: 0, shipping: 0, total: 0 }
-    const subtotal = cart.items.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0)
-    const shipping = subtotal > 500 ? 0 : 50
-    return { subtotal, shipping, total: subtotal + shipping }
-  }
-
   if (loading) return (
     <div className="min-h-[60vh] flex items-center justify-center" style={{ background: '#f8f9fa' }}>
       <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
     </div>
   )
 
-  const totals = calcTotals()
   const hasItems = cart?.items?.length > 0
+  const subtotal = cart?.items?.reduce((acc, item) => acc + (item.product?.price || 0) * item.quantity, 0) || 0
 
   return (
     <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
@@ -132,7 +142,7 @@ const Cart = () => {
                   >
                     {/* Image */}
                     <Link to={`/products/${item.product?._id}`} className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
-                      <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover" />
+                      <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover" loading="lazy" />
                     </Link>
 
                     {/* Info */}
@@ -141,11 +151,9 @@ const Cart = () => {
                         <div className="min-w-0">
                           <h3 className="text-sm font-bold text-gray-900 truncate" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{item.product?.name}</h3>
                           <p className="text-xs text-gray-400 mt-0.5 capitalize">{item.product?.category} • {item.product?.weight}</p>
-                          {/* Out-of-stock warning inline */}
                           {isOutOfStock && (
                             <p className="text-[11px] font-semibold text-red-500 mt-1">Currently Not Available</p>
                           )}
-                          {/* At max warning */}
                           {!isOutOfStock && atMax && (
                             <p className="text-[11px] text-orange-500 mt-1">Max {maxQty} per order reached</p>
                           )}
@@ -198,27 +206,49 @@ const Cart = () => {
               </Link>
             </div>
 
-            {/* Order Summary */}
+            {/* Order Summary — numbers come from backend */}
             <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-24">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h2 className="text-base font-bold text-gray-900 mb-5 pb-4 border-b border-gray-50" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Order Summary</h2>
 
-                <div className="space-y-3 mb-5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Subtotal</span>
-                    <span className="font-semibold text-gray-900">₹{totals.subtotal.toLocaleString('en-IN')}</span>
+                {previewLoading ? (
+                  <div className="space-y-3 mb-5">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="flex justify-between">
+                        <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Shipping</span>
-                    <span className={`font-semibold ${totals.shipping === 0 ? 'text-green-600' : 'text-gray-900'}`}>
-                      {totals.shipping === 0 ? 'FREE' : `₹${totals.shipping}`}
-                    </span>
+                ) : (
+                  <div className="space-y-3 mb-5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Subtotal</span>
+                      <span className="font-semibold text-gray-900">₹{(preview?.itemsPrice ?? subtotal).toLocaleString('en-IN')}</span>
+                    </div>
+                    {preview && preview.gstRate > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">GST ({preview.gstRate}%)</span>
+                        <span className="font-semibold text-gray-900">₹{Math.round(preview.taxPrice).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Shipping</span>
+                      <span className={`font-semibold ${(preview?.shippingPrice ?? 50) === 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                        {(preview?.shippingPrice ?? 50) === 0 ? 'FREE' : `₹${preview?.shippingPrice ?? 50}`}
+                      </span>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex justify-between py-4 border-t border-gray-100 mb-5">
                   <span className="font-bold text-gray-900">Total</span>
-                  <span className="text-xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>₹{totals.total.toLocaleString('en-IN')}</span>
+                  <span className="text-xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                    {previewLoading
+                      ? <span className="inline-block w-20 h-6 bg-gray-100 rounded animate-pulse" />
+                      : `₹${Math.round(preview?.totalPrice ?? subtotal).toLocaleString('en-IN')}`
+                    }
+                  </span>
                 </div>
 
                 <button
@@ -238,11 +268,11 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* Free shipping notice */}
-              {totals.subtotal <= 500 && (
+              {/* Free shipping notice — uses threshold from backend */}
+              {preview && subtotal <= preview.freeShippingThreshold && (
                 <div className="bg-orange-50 border border-orange-100 rounded-xl p-4">
                   <p className="text-xs text-orange-700 font-medium">
-                    Add <span className="font-bold">₹{(501 - totals.subtotal).toLocaleString('en-IN')}</span> more for free delivery!
+                    Add <span className="font-bold">₹{(preview.freeShippingThreshold - subtotal + 1).toLocaleString('en-IN')}</span> more for free delivery!
                   </p>
                 </div>
               )}

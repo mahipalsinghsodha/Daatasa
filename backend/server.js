@@ -58,6 +58,9 @@ app.options("*", cors(corsOptions));
 // Set security HTTP headers
 app.use(helmet());
 
+// Trust proxy for rate limiter to get accurate IP behind load balancers/proxies
+app.set('trust proxy', 1);
+
 // Limit requests from same API
 const limiter = rateLimit({
   max: 300,
@@ -134,6 +137,12 @@ app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/settings', require('./routes/settingsRoutes'));
+
+// Dynamic sitemap — accessible at GET /sitemap.xml (no /api prefix, for search engines)
+app.use('/sitemap.xml', require('./routes/sitemapRoute'));
+
+
 /*
 =====================
 ERROR HANDLER

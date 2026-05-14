@@ -98,6 +98,12 @@ refundInfo: {
     default: 0
   },
 
+  // GST rate (%) that was applied at the time of order — stored for audit trail
+  gstRate: {
+    type: Number,
+    default: 0
+  },
+
   isPaid: {
     type: Boolean,
     default: false

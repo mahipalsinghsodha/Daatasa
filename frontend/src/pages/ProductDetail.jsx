@@ -91,11 +91,19 @@ const ProductDetail = () => {
         setRelated((relRes.data || []).filter(p => p._id !== prod._id).slice(0, 4))
       } catch {}
 
-      // Fetch saved addresses for delivery info
+      // Fetch saved addresses for delivery info + review eligibility
       if (user) {
         try {
-          const meRes = await api.get('/api/auth/me')
-          setAddresses(meRes.data.addresses || [])
+          // Fetch addresses and review eligibility in parallel
+          const [meRes, eligRes] = await Promise.allSettled([
+            api.get('/api/auth/me'),
+            api.get(`/api/products/${id}/review-eligibility`)
+          ])
+          if (meRes.status === 'fulfilled') setAddresses(meRes.value.data.addresses || [])
+          if (eligRes.status === 'fulfilled') {
+            const { alreadyReviewed } = eligRes.value.data
+            if (alreadyReviewed) setHasReviewed(true)
+          }
         } catch {}
       }
     } catch {
@@ -449,7 +457,7 @@ const ProductDetail = () => {
                   {[
                     { label: 'Weight / Size', value: product.weight },
                     { label: 'Category',      value: product.category },
-                    { label: 'Availability',  value: product.stock > 0 ? `${product.stock} units in stock` : 'Out of Stock' },
+                    { label: 'Availability',  value: product.stock > 0 ? 'In Stock' : 'Out of Stock' },
                   ].map((d, i) => (
                     <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                       <span className="text-sm text-gray-500">{d.label}</span>

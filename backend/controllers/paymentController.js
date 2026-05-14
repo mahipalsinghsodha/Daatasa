@@ -121,8 +121,10 @@ exports.verifyPayment = async (req, res) => {
     
     // Generate invoice number
     if (!order.invoiceNumber) {
-      const orderCount = await Order.countDocuments();
-      order.invoiceNumber = `INV-${new Date().getFullYear()}-${String(orderCount).padStart(6, '0')}`;
+      const year = new Date().getFullYear();
+      const ts = Date.now().toString(36).toUpperCase();
+      const suffix = order._id.toString().slice(-4).toUpperCase();
+      order.invoiceNumber = `INV-${year}-${ts}${suffix}`;
     }
 
     order.paymentInfo = {
@@ -176,5 +178,95 @@ exports.verifyPayment = async (req, res) => {
   } catch (error) {
     console.error('VERIFY PAYMENT ERROR:', error);
     res.status(500).json({ message: 'Payment verification failed' });
+  }
+};
+
+/**
+ * RAZORPAY WEBHOOK
+ * Catch payments even if frontend connection drops
+ */
+exports.razorpayWebhook = async (req, res) => {
+  try {
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
+    
+    // Webhook secret validation
+    const crypto = require('crypto');
+    const shasum = crypto.createHmac('sha256', secret);
+    shasum.update(JSON.stringify(req.body));
+    const digest = shasum.digest('hex');
+
+    if (digest !== req.headers['x-razorpay-signature']) {
+      console.error('WEBHOOK SIGNATURE INVALID');
+      return res.status(400).send('Invalid signature');
+    }
+
+    const event = req.body.event;
+
+    if (event === 'payment.captured' || event === 'payment.authorized') {
+      const paymentInfo = req.body.payload.payment.entity;
+      const orderId = paymentInfo.notes.orderId;
+
+      const order = await Order.findById(orderId);
+      
+      // If already paid (handled by frontend verify endpoint), just return ok
+      if (order && order.paymentStatus === 'PENDING') {
+        order.isPaid = true;
+        order.paidAt = Date.now();
+        order.paymentStatus = 'PAID';
+        
+        // Generate invoice number
+        if (!order.invoiceNumber) {
+          const orderCount = await Order.countDocuments();
+          order.invoiceNumber = `INV-${new Date().getFullYear()}-${String(orderCount).padStart(6, '0')}`;
+        }
+
+        order.paymentInfo = {
+          razorpay_order_id: paymentInfo.order_id,
+          razorpay_payment_id: paymentInfo.id,
+          razorpay_signature: 'WEBHOOK_VERIFIED'
+        };
+
+        await order.save();
+
+        // Clear cart for the user
+        await Cart.findOneAndUpdate(
+          { user: order.user },
+          { items: [] }
+        );
+
+        // Increment coupon usage
+        if (order.coupon && order.coupon.code) {
+          await Coupon.findOneAndUpdate(
+            { code: order.coupon.code },
+            { $inc: { usedCount: 1 } }
+          );
+        }
+
+        // Send email
+        try {
+          const { sendOrderSuccessEmail } = require('../services/emailService');
+          const populatedOrder = await order.populate('user', 'name email');
+          await sendOrderSuccessEmail({
+            to:            populatedOrder.user.email,
+            userName:      populatedOrder.user.name,
+            orderId:       order._id.toString(),
+            totalPrice:    order.totalPrice,
+            paymentMethod: 'Online Payment',
+            items:         order.orderItems.map(i => ({
+              name:     i.name,
+              quantity: i.quantity,
+              price:    i.price
+            }))
+          });
+        } catch (emailErr) {
+          console.error('WEBHOOK EMAIL ERROR:', emailErr);
+        }
+      }
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('WEBHOOK ERROR:', error);
+    res.status(500).send('Server Error');
   }
 };

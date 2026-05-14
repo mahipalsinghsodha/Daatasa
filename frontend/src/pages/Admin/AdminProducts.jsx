@@ -58,6 +58,7 @@ const AdminProducts = () => {
 
   const handleSave = async () => {
     if (!form.name || !form.price || !form.category) return toast.error('Name, price, and category are required')
+    if (!window.confirm(`Save changes to "${form.name}"?`)) return
     setSaving(true)
     try {
       await api.put(`/api/products/${selectedProduct._id}`, form)
@@ -279,7 +280,16 @@ const AdminProducts = () => {
                   </div>
 
                   <label className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-100 transition-colors">
-                    <button type="button" onClick={() => setForm({ ...form, isActive: !form.isActive })} className="flex items-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !form.isActive;
+                        if (window.confirm(`Mark product as ${next ? 'ACTIVE' : 'INACTIVE'}? ${next ? 'Customers will see it.' : 'It will be hidden from the store.'}`)) {
+                          setForm({ ...form, isActive: next })
+                        }
+                      }}
+                      className="flex items-center"
+                    >
                       {form.isActive
                         ? <FiToggleRight size={28} className="text-green-500" />
                         : <FiToggleLeft size={28} className="text-gray-400" />

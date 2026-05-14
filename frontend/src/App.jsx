@@ -5,6 +5,7 @@ import Navbar from './components/Navbar'
 import Breadcrumb from './components/Breadcrumb'
 import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { ToastContainer } from 'react-toastify'
@@ -25,12 +26,14 @@ const Profile         = lazy(() => import('./pages/Profile'))
 const Orders          = lazy(() => import('./pages/Orders'))
 const Checkout        = lazy(() => import('./pages/Checkout'))
 const Support         = lazy(() => import('./pages/Support'))
+const NotFound        = lazy(() => import('./pages/NotFound'))
 
 // Static Pages
 const AboutUs         = lazy(() => import('./pages/AboutUs'))
 const PrivacyPolicy   = lazy(() => import('./pages/PrivacyPolicy'))
 const Terms           = lazy(() => import('./pages/Terms'))
 const RefundPolicy    = lazy(() => import('./pages/RefundPolicy'))
+const ShippingPolicy  = lazy(() => import('./pages/ShippingPolicy'))
 const FAQ             = lazy(() => import('./pages/FAQ'))
 
 // Admin pages
@@ -45,6 +48,7 @@ const AdminProducts   = lazy(() => import('./pages/Admin/AdminProducts'))
 const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement'))
 const AuditLogs       = lazy(() => import('./pages/Admin/AuditLogs'))
 const AdminAnalytics  = lazy(() => import('./pages/Admin/AdminAnalytics'))
+const AdminSettings   = lazy(() => import('./pages/Admin/AdminSettings'))
 
 // ─── Guest-Only Route ─────────────────────────────────────────────────────────
 function GuestRoute({ children }) {
@@ -79,12 +83,6 @@ function PageLoader() {
   )
 }
 
-// ─── Catch-all 404 ───────────────────────────────────────────────────────────
-function CatchAll() {
-  const { user } = useAuth()
-  return <Navigate to={user ? '/' : '/login'} replace />
-}
-
 // ─── Animated page transitions ────────────────────────────────────────────────
 function AnimatedRoutes() {
   const location = useLocation()
@@ -115,6 +113,7 @@ function AnimatedRoutes() {
             <Route path="/privacy-policy"         element={<PrivacyPolicy />} />
             <Route path="/terms"                  element={<Terms />} />
             <Route path="/refund-policy"          element={<RefundPolicy />} />
+            <Route path="/shipping-policy"        element={<ShippingPolicy />} />
             <Route path="/faq"                    element={<FAQ />} />
 
             {/* ── Guest-Only ── */}
@@ -139,13 +138,14 @@ function AnimatedRoutes() {
             <Route path="/admin/coupons"          element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
             <Route path="/admin/users"            element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/analytics"        element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
+            <Route path="/admin/settings"          element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
 
             {/* ── Superadmin ── */}
             <Route path="/admin/manage-admins"    element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminManagement /></ProtectedRoute>} />
             <Route path="/admin/audit-logs"       element={<ProtectedRoute adminOnly permission="superadmin_view"><AuditLogs /></ProtectedRoute>} />
 
             {/* ── 404 ── */}
-            <Route path="*" element={<CatchAll />} />
+            <Route path="*" element={<NotFound />} />
 
           </Routes>
         </Suspense>
@@ -157,30 +157,32 @@ function AnimatedRoutes() {
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
   return (
-    <AuthProvider>
-      <CartProvider>
-        <Router>
-          {/* CRITICAL: flex flex-col min-h-screen ensures footer always stays at bottom */}
-          <div className="flex flex-col min-h-screen" style={{ background: '#f8f9fa' }}>
-            <ToastContainer
-              position="top-right"
-              autoClose={3000}
-              hideProgressBar={false}
-              closeOnClick
-              pauseOnHover
-              draggable
-              theme="light"
-              toastStyle={{ borderRadius: '12px', fontSize: '14px' }}
-            />
-            <ScrollToTop />
-            <Navbar />
-            <Breadcrumb />
-            <AnimatedRoutes />
-            <Footer />
-          </div>
-        </Router>
-      </CartProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CartProvider>
+          <Router>
+            {/* CRITICAL: flex flex-col min-h-screen ensures footer always stays at bottom */}
+            <div className="flex flex-col min-h-screen" style={{ background: '#f8f9fa' }}>
+              <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                closeOnClick
+                pauseOnHover
+                draggable
+                theme="light"
+                toastStyle={{ borderRadius: '12px', fontSize: '14px' }}
+              />
+              <ScrollToTop />
+              <Navbar />
+              <Breadcrumb />
+              <AnimatedRoutes />
+              <Footer />
+            </div>
+          </Router>
+        </CartProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 

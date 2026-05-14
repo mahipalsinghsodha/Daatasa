@@ -4,9 +4,9 @@ const jwt = require("jsonwebtoken");
 
 const router = express.Router();
 
-const makeToken = (id) =>
+const makeToken = (user) =>
   jwt.sign(
-    { id },
+    { id: user._id, version: user.tokenVersion || 0 },
     process.env.JWT_SECRET,
     { expiresIn: "30d" }
   );
@@ -34,7 +34,7 @@ router.get(
   (req, res) => {
 
     const token =
-      makeToken(req.user._id);
+      makeToken(req.user);
 
     res.send(`
       <script>

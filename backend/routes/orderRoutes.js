@@ -3,7 +3,8 @@ const router = express.Router();
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
-const Coupon = require('../models/Coupon'); // We'll create this
+const Coupon = require('../models/Coupon');
+const Settings = require('../models/Settings');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 
@@ -71,7 +72,14 @@ router.post('/', auth, async (req, res) => {
       quantity: item.quantity
     }));
 
-    // 4️⃣ CALCULATE PRICES (BACKEND - SECURE!)
+    // 4️⃣ CALCULATE PRICES (BACKEND - SECURE! Uses DB-configured GST)
+    // Fetch live settings — admin can change GST rate without any code deploy
+    const settings = await Settings.getGlobal();
+    const gstRatePct = settings.gstEnabled ? settings.gstRate : 0;   // e.g. 5
+    const gstMultiplier = gstRatePct / 100;                           // e.g. 0.05
+    const FREE_SHIPPING_THRESHOLD = settings.freeShippingThreshold;   // e.g. 500
+    const SHIPPING_CHARGE = settings.shippingCharge;                  // e.g. 50
+
     const itemsPrice = orderItems.reduce(
       (total, item) => total + item.price * item.quantity,
       0
@@ -131,9 +139,10 @@ router.post('/', auth, async (req, res) => {
       }
     }
 
-    const taxPrice = (itemsPrice - discount) * 0.18;
-    const shippingPrice = (itemsPrice - discount) > 500 ? 0 : 50;
+    const taxPrice = (itemsPrice - discount) * gstMultiplier;
+    const shippingPrice = (itemsPrice - discount) > FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_CHARGE;
     const totalPrice = itemsPrice - discount + taxPrice + shippingPrice;
+
 
     const mongoose = require('mongoose');
     const session = await mongoose.startSession();
@@ -153,9 +162,11 @@ router.post('/', auth, async (req, res) => {
         totalPrice,
         discount,
         coupon: appliedCoupon,
+        gstRate: gstRatePct,           // store the GST rate that was applied
         isPaid: false,
         paymentStatus: 'PENDING'
       };
+
 
       // 6️⃣ CREATE ORDER
       order = new Order(orderData);
@@ -177,9 +188,11 @@ router.post('/', auth, async (req, res) => {
       if (paymentMethod === 'COD') {
         order.paymentStatus = 'COD_CONFIRMED';
         
-        // Generate invoice number
-        const orderCount = await Order.countDocuments();
-        order.invoiceNumber = `INV-${new Date().getFullYear()}-${String(orderCount).padStart(6, '0')}`;
+        // Generate unique invoice number using timestamp + order ID suffix (race-condition safe)
+        const year = new Date().getFullYear();
+        const ts = Date.now().toString(36).toUpperCase();          // base-36 timestamp
+        const suffix = order._id.toString().slice(-4).toUpperCase(); // last 4 chars of order ID
+        order.invoiceNumber = `INV-${year}-${ts}${suffix}`;
         
         await order.save({ session });
 
@@ -235,6 +248,43 @@ router.post('/', auth, async (req, res) => {
   } catch (error) {
     console.error('ORDER CREATION ERROR:', error);
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ========================================================================
+// PRICE PREVIEW — returns full cart breakdown using live DB settings
+// Called by Cart and Checkout pages to display accurate totals
+// ========================================================================
+router.get('/price-preview', auth, async (req, res) => {
+  try {
+    const cart = await Cart.findOne({ user: req.user._id }).populate('items.product');
+    if (!cart || cart.items.length === 0) {
+      return res.json({ itemsPrice: 0, taxPrice: 0, shippingPrice: 0, totalPrice: 0, gstRate: 0, freeShippingThreshold: 500 });
+    }
+
+    const settings = await Settings.getGlobal();
+    const gstRatePct = settings.gstEnabled ? settings.gstRate : 0;
+    const gstMultiplier = gstRatePct / 100;
+
+    const itemsPrice = cart.items.reduce(
+      (total, item) => total + (item.product?.price || 0) * item.quantity,
+      0
+    );
+    const taxPrice      = itemsPrice * gstMultiplier;
+    const shippingPrice = itemsPrice > settings.freeShippingThreshold ? 0 : settings.shippingCharge;
+    const totalPrice    = itemsPrice + taxPrice + shippingPrice;
+
+    res.json({
+      itemsPrice,
+      gstRate: gstRatePct,
+      taxPrice,
+      shippingPrice,
+      freeShippingThreshold: settings.freeShippingThreshold,
+      totalPrice,
+    });
+  } catch (error) {
+    console.error('PRICE PREVIEW ERROR:', error);
+    res.status(500).json({ message: 'Failed to calculate price preview' });
   }
 });
 
@@ -300,7 +350,7 @@ router.post('/fail', auth, async (req, res) => {
 });
 
 // ========================================================================
-// VERIFY COUPON (BEFORE CHECKOUT)
+// VERIFY COUPON (BEFORE CHECKOUT) — returns full price breakdown
 // ========================================================================
 router.post('/verify-coupon', auth, async (req, res) => {
   try {
@@ -316,6 +366,13 @@ router.post('/verify-coupon', auth, async (req, res) => {
       (total, item) => total + (item.product?.price || 0) * item.quantity,
       0
     );
+
+    // Fetch live settings
+    const settings = await Settings.getGlobal();
+    const gstRatePct = settings.gstEnabled ? settings.gstRate : 0;
+    const gstMultiplier = gstRatePct / 100;
+    const FREE_SHIPPING_THRESHOLD = settings.freeShippingThreshold;
+    const SHIPPING_CHARGE = settings.shippingCharge;
 
     const coupon = await Coupon.findOne({
       code: couponCode.toUpperCase(),
@@ -361,6 +418,11 @@ router.post('/verify-coupon', auth, async (req, res) => {
       discount = coupon.discountValue;
     }
 
+    const afterDiscount = Math.max(0, itemsPrice - discount);
+    const taxPrice = afterDiscount * gstMultiplier;
+    const shippingPrice = afterDiscount > FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_CHARGE;
+    const totalPrice = afterDiscount + taxPrice + shippingPrice;
+
     res.json({
       valid: true,
       coupon: {
@@ -369,9 +431,15 @@ router.post('/verify-coupon', auth, async (req, res) => {
         discountValue: coupon.discountValue,
         discountAmount: discount
       },
-      itemsPrice,
-      discount,
-      finalPrice: itemsPrice - discount
+      // Full breakdown — frontend just DISPLAYS these, no math needed
+      breakdown: {
+        itemsPrice,
+        discount,
+        gstRate: gstRatePct,
+        taxPrice,
+        shippingPrice,
+        totalPrice,
+      }
     });
 
   } catch (error) {
@@ -379,6 +447,7 @@ router.post('/verify-coupon', auth, async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
 
 // ========================================================================
 // GET USER ORDERS
@@ -422,16 +491,33 @@ router.get('/:id', auth, async (req, res) => {
 // ========================================================================
 router.get('/', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000; // High limit default for backward compatibility
+    const skip = (page - 1) * limit;
 
+    const totalCount = await Order.countDocuments();
     const orders = await Order.find()
       .populate('user', 'name email')
       .populate('orderItems.product')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const newOrdersCount = orders.filter(
-      order => new Date(order.createdAt) > fiveMinutesAgo && !order.isPaid
-    ).length;
+    const newOrdersCount = await Order.countDocuments({
+      createdAt: { $gt: fiveMinutesAgo },
+      isPaid: false
+    });
+
+    if (req.query.page) {
+      return res.json({ 
+        orders, 
+        newOrdersCount, 
+        total: totalCount, 
+        page, 
+        pages: Math.ceil(totalCount / limit) 
+      });
+    }
 
     res.json({ orders, newOrdersCount });
   } catch (error) {

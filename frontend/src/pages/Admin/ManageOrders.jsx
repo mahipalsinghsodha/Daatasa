@@ -63,11 +63,13 @@ const ManageOrders = () => {
   }
 
   const markPaid = async (id) => {
+    if (!window.confirm('Mark this order as PAID?')) return
     try { await api.put(`/api/orders/${id}/pay`); fetchOrders(); toast.success('Order marked as paid') }
     catch { toast.error('Failed to update') }
   }
 
   const markDelivered = async (id) => {
+    if (!window.confirm('Mark this order as DELIVERED? This cannot be undone.')) return
     try { await api.put(`/api/orders/${id}/deliver`); fetchOrders(); toast.success('Order marked as delivered') }
     catch { toast.error('Failed to update') }
   }

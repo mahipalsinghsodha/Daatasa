@@ -96,7 +96,7 @@ export default function Breadcrumb() {
 
   return (
     <div
-      className="sticky top-0 z-40 border-b border-gray-100"
+      className="sticky top-16 z-40 border-b border-gray-100"
       style={{ background: isAdmin ? '#1a1a2e' : '#fff' }}
     >
       <div className={`${isAdmin ? 'max-w-full px-4 sm:px-6' : 'max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8'} py-2.5`}>

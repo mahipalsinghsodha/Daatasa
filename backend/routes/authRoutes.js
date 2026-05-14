@@ -22,7 +22,14 @@ const { body, validationResult } = require('express-validator');
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // limit each IP to 10 requests per windowMs
-  message: 'Too many attempts from this IP, please try again after 15 minutes'
+  skip: (req, res) => {
+    // Skip rate limiting in local environment
+    const ip = req.ip || req.connection?.remoteAddress;
+    return ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
+  },
+  handler: (req, res) => {
+    res.status(429).json({ message: 'Too many attempts from this IP, please try again after 15 minutes' });
+  }
 });
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -55,7 +62,7 @@ const makeFingerprint = (req) => {
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/register', authLimiter, dbCheck, [
   body('name').trim().notEmpty().withMessage('Name is required').isLength({ max: 50 }),
-  body('email').isEmail().normalizeEmail().withMessage('Invalid email'),
+  body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }).withMessage('Invalid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
 ], async (req, res) => {
   try {
@@ -84,7 +91,7 @@ router.post('/register', authLimiter, dbCheck, [
 /*  LOGIN                                                                      */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/login', authLimiter, dbCheck, [
-  body('email').isEmail().normalizeEmail().withMessage('Invalid email'),
+  body('email').isEmail().normalizeEmail({ gmail_remove_dots: false }).withMessage('Invalid email'),
   body('password').notEmpty().withMessage('Password is required'),
 ], async (req, res) => {
   try {
@@ -95,8 +102,13 @@ router.post('/login', authLimiter, dbCheck, [
 
     const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password)))
-      return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Incorrect password' });
+    }
     res.json({ token: makeToken(user), user: safeUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Login failed' });
@@ -108,10 +120,10 @@ router.post('/login', authLimiter, dbCheck, [
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/logout', auth, async (req, res) => {
   try {
-    req.user.tokenVersion += 1;
-    await req.user.save();
+    await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } });
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({ message: 'Logout failed' });
   }
 });
@@ -333,12 +345,20 @@ router.patch('/addresses/:addrId/default', auth, async (req, res) => {
 // Admin: Get all users with total orders and spent amount
 router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
   try {
-
     const User = require('../models/User');
     const Order = require('../models/Order');
 
-    // 1. Fetch all users
-    const users = await User.find().select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint').lean();
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000; // Default high for backward compatibility
+    const skip = (page - 1) * limit;
+
+    // 1. Fetch total count and users
+    const totalCount = await User.countDocuments();
+    const users = await User.find()
+      .select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint')
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
     // 2. Fetch all orders and aggregate by user
     const orders = await Order.aggregate([
@@ -367,6 +387,16 @@ router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, 
       totalOrders: orderStatsMap[u._id.toString()]?.totalOrders || 0,
       totalSpent: orderStatsMap[u._id.toString()]?.totalSpent || 0
     }));
+
+    // If page parameter was passed, return a paginated response object, else return array for backward compatibility
+    if (req.query.page) {
+      return res.json({
+        users: enrichedUsers,
+        total: totalCount,
+        page,
+        pages: Math.ceil(totalCount / limit)
+      });
+    }
 
     res.json(enrichedUsers);
   } catch (error) {

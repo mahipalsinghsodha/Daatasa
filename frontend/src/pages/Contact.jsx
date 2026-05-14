@@ -32,7 +32,7 @@ const FAQS = [
   },
 ]
 
-const inp = 'w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all'
+const inp = 'w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50/50 text-sm text-gray-800 outline-none focus:bg-white focus:border-orange-400 focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-gray-400'
 
 export default function Contact() {
   const [form,    setForm]    = useState({ name: '', email: '', phone: '', subject: '', message: '' })
@@ -75,67 +75,70 @@ export default function Contact() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
 
       {/* Hero */}
-      <div className="bg-gray-900 pt-16 pb-20 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      <div className="bg-[#0f172a] pt-20 pb-32 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
         <div className="relative z-10 max-w-xl mx-auto px-4">
-          <span className="inline-block px-3 py-1 bg-orange-500/20 text-orange-400 text-xs font-semibold rounded-full border border-orange-500/30 mb-4">
-            Contact Us
+          <span className="inline-block px-3 py-1 bg-orange-500/20 text-orange-400 text-[11px] font-bold tracking-wider uppercase rounded-full border border-orange-500/20 mb-5">
+            Contact Support
           </span>
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-            Get in <span className="text-orange-400">Touch</span>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            Get in <span className="text-orange-500">Touch</span>
           </h1>
-          <p className="text-gray-400 text-sm">
-            Have a question or need help with an order? We are here for you.
+          <p className="text-gray-400 text-sm sm:text-base max-w-md mx-auto">
+            Have a question or need help with an order? We're here for you.
           </p>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-10 relative z-10">
-        <div className="grid lg:grid-cols-3 gap-6 items-start">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
+        <div className="grid lg:grid-cols-3 gap-6 lg:gap-8 items-start">
 
           {/* Left info */}
-          <div className="space-y-4">
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-5">
+          <div className="space-y-4 lg:space-y-6">
+            <div className="bg-white rounded-3xl border border-gray-100 p-8 space-y-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
               {[
                 { icon: FiMail,   title: 'Email',   info: 'support@dhanifresh.com' },
                 { icon: FiPhone,  title: 'Phone',   info: '+91 98765 43210' },
                 { icon: FiMapPin, title: 'Address', info: 'Mumbai, Maharashtra' },
               ].map((item, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500 shrink-0">
-                    <item.icon size={16} />
+                <div key={i} className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-500 shrink-0">
+                    <item.icon size={18} />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{item.title}</p>
-                    <p className="text-sm text-gray-800 mt-0.5">{item.info}</p>
+                    <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{item.title}</p>
+                    <p className="text-sm font-medium text-gray-900">{item.info}</p>
                   </div>
                 </div>
               ))}
-              <div className="pt-4 border-t border-gray-50 flex justify-center gap-3">
+              <div className="pt-6 border-t border-gray-100 flex gap-3">
                 {[FiInstagram, FiFacebook, FiTwitter].map((Icon, i) => (
-                  <a key={i} href="#" className="w-9 h-9 border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all">
-                    <Icon size={15} />
+                  <a key={i} href="#" className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-500 hover:bg-orange-500 hover:text-white transition-all duration-300">
+                    <Icon size={18} />
                   </a>
                 ))}
               </div>
             </div>
 
-            <div className="bg-orange-500 rounded-2xl p-5 text-white flex items-start gap-3">
-              <FiClock size={20} className="shrink-0 mt-0.5" />
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-3xl p-6 text-white flex items-start gap-4 shadow-lg shadow-orange-500/20">
+              <div className="bg-white/20 p-2.5 rounded-xl shrink-0">
+                <FiClock size={20} />
+              </div>
               <div>
-                <p className="font-semibold text-sm">We reply within 24 hours</p>
-                <p className="text-orange-100 text-xs mt-0.5">Mon - Sat, 9AM to 6PM IST</p>
+                <p className="font-bold text-sm mb-1">We reply within 24 hours</p>
+                <p className="text-orange-100 text-[13px] font-medium">Mon - Sat, 9AM to 6PM IST</p>
               </div>
             </div>
           </div>
 
           {/* Contact form */}
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
-            <h2 className="text-lg font-bold text-gray-900 mb-1">Send us a message</h2>
-            <p className="text-sm text-gray-500 mb-6">We read every message and reply as quickly as possible.</p>
+          <div className="lg:col-span-2 bg-white rounded-3xl border border-gray-100 p-6 sm:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Send us a message</h2>
+            <p className="text-sm text-gray-500 mb-8 font-medium">We read every message and reply as quickly as possible.</p>
 
             <AnimatePresence>
               {success && (
@@ -220,11 +223,11 @@ export default function Contact() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-orange-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3.5 bg-gray-900 text-white text-[15px] font-bold rounded-xl hover:bg-orange-500 hover:shadow-lg hover:shadow-orange-500/30 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
               >
                 {loading
                   ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  : <FiSend size={14} />
+                  : <FiSend size={16} />
                 }
                 {loading ? 'Sending...' : 'Send Message'}
               </button>
@@ -233,20 +236,22 @@ export default function Contact() {
         </div>
 
         {/* FAQs */}
-        <div className="mt-12">
-          <h2 className="text-xl font-bold text-gray-900 mb-6 text-center">Frequently Asked Questions</h2>
-          <div className="grid sm:grid-cols-2 gap-3 max-w-4xl mx-auto">
+        <div className="mt-20">
+          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Frequently Asked Questions</h2>
+          <div className="grid sm:grid-cols-2 gap-4 max-w-5xl mx-auto">
             {FAQS.map((faq, i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+              <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-[0_4px_20px_rgb(0,0,0,0.02)] transition-all duration-300 hover:shadow-[0_4px_20px_rgb(0,0,0,0.06)]">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                  className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors gap-3"
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50/50 transition-colors gap-4"
                 >
-                  <p className="text-sm font-medium text-gray-900">{faq.q}</p>
-                  {openFaq === i
-                    ? <FiChevronUp size={14} className="text-orange-500 shrink-0" />
-                    : <FiChevronDown size={14} className="text-gray-400 shrink-0" />
-                  }
+                  <p className="text-[15px] font-bold text-gray-800">{faq.q}</p>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-colors ${openFaq === i ? 'bg-orange-50 text-orange-500' : 'bg-gray-50 text-gray-400'}`}>
+                    {openFaq === i
+                      ? <FiChevronUp size={16} />
+                      : <FiChevronDown size={16} />
+                    }
+                  </div>
                 </button>
                 <AnimatePresence>
                   {openFaq === i && (

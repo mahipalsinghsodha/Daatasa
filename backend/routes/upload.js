@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinaryStorage = require('multer-storage-cloudinary');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 
@@ -13,14 +14,12 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ── Tell multer to upload straight to Cloudinary ──
-const storage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-        folder: 'categories',          // images go into a "categories" folder in your Cloudinary
-        allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
-        transformation: [{ width: 800, crop: 'limit' }], // optional: cap max width
-    },
+// ── Tell multer to upload straight to Cloudinary (v2.2.1 syntax) ──
+const storage = cloudinaryStorage({
+    cloudinary: cloudinary,
+    folder: 'categories',
+    allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, crop: 'limit' }],
 });
 
 const fileFilter = (req, file, cb) => {

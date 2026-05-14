@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import {
   FiPlus, FiPackage, FiShoppingBag, FiAlertCircle, FiTag,
   FiUsers, FiShield, FiActivity, FiBarChart2, FiTrendingUp,
-  FiArrowRight, FiBox
+  FiArrowRight, FiBox, FiSettings
 } from 'react-icons/fi'
 import api from '../../api/axios'
 
@@ -195,6 +195,7 @@ const AdminDashboard = () => {
             <div className="p-4 space-y-2">
               <QuickCard title="Analytics" desc="Sales reports and insights" icon={FiBarChart2} to="/admin/analytics" accent />
               <QuickCard title="Support Tickets" desc="Customer support messages" icon={FiActivity} to="/admin/support" />
+              <QuickCard title="Platform Settings" desc="GST rate and shipping config" icon={FiSettings} to="/admin/settings" />
               {isSuperAdmin && (
                 <>
                   <QuickCard title="Admin Management" desc="Manage admin accounts and permissions" icon={FiShield} to="/admin/manage-admins" accent />

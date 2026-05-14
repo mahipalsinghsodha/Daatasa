@@ -59,7 +59,9 @@ const ProductCard = ({ product, categories = [] }) => {
       <div className="relative aspect-[4/3] bg-gray-50 overflow-hidden">
         <img
           src={product.image}
-          alt={product.name}
+          alt={`${product.name} — DhaniFresh`}
+          loading="lazy"
+          decoding="async"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         {/* Category badge */}

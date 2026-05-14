@@ -1,40 +1,49 @@
-import { motion } from 'framer-motion'
+import { FiRefreshCcw } from 'react-icons/fi'
 
-const s = (num, title, children) => (
-  <section>
-    <h2 className="text-base font-bold text-gray-900 mb-3" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>{num}. {title}</h2>
-    <div className="text-sm text-gray-600 leading-relaxed">{children}</div>
-  </section>
-)
+export default function RefundPolicy() {
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
+      <div className="bg-[#0f172a] pt-20 pb-32 text-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+        <div className="relative z-10 max-w-xl mx-auto px-4">
+          <span className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-400 text-[11px] font-bold tracking-wider uppercase rounded-full border border-red-500/20 mb-5">
+            <FiRefreshCcw size={12} /> Legal Compliance
+          </span>
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            Refund & <span className="text-red-500">Cancellation</span>
+          </h1>
+          <p className="text-gray-400 text-sm sm:text-base max-w-md mx-auto">
+            Last Updated: {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+      </div>
 
-const RefundPolicy = () => (
-  <div className="min-h-screen" style={{ background: '#f8f9fa' }}>
-    <div className="bg-white border-b border-gray-100">
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-14 sm:py-20">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-          <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200 mb-4">Policy</span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>Refund & Return Policy</h1>
-          <p className="text-sm text-gray-400">Clear, hassle-free resolutions for our customers.</p>
-        </motion.div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
+        <div className="bg-white rounded-3xl border border-gray-100 p-8 sm:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-gray-600 space-y-8 text-[15px] leading-relaxed">
+          
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>1. Cancellation Policy</h2>
+            <p>Orders can be cancelled before they are dispatched. Once an order is shipped, it cannot be cancelled. To request a cancellation, please email support@dhanifresh.com with your Order ID.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>2. Returns and Refunds</h2>
+            <p>Due to the consumable nature of our products, we only accept returns if:</p>
+            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-500">
+              <li>The product was damaged in transit</li>
+              <li>The wrong product was delivered</li>
+              <li>The product is expired at the time of delivery</li>
+            </ul>
+            <p className="mt-4">Return requests must be raised within 7 days of delivery. Approved refunds will be credited to the original method of payment within 5-7 business days.</p>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>3. How to Request a Return</h2>
+            <p>Please contact our support team with your order number and photographs of the product in question. Our team will verify the claim and initiate a return pickup if applicable.</p>
+          </section>
+
+        </div>
       </div>
     </div>
-
-    <div className="max-w-[860px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 sm:p-10 space-y-8">
-        {s('1', 'Return Eligibility', <>
-          <p className="mb-2">Due to the perishable nature of our products, we generally do not accept returns. However, we will offer a replacement or refund under the following circumstances:</p>
-          <ul className="list-disc pl-5 space-y-1 mt-2">
-            <li>The product was damaged during transit</li>
-            <li>You received the wrong item</li>
-            <li>The jar seal was broken upon arrival</li>
-          </ul>
-        </>)}
-        {s('2', 'How to Request a Refund', <p>If your order falls into any of the categories above, please contact our support team within <strong>48 hours</strong> of delivery. You will need to provide your order ID and photographic evidence of the issue.</p>)}
-        {s('3', 'Refund Timeline', <p>Once your claim is verified and approved, we will initiate a refund to your original method of payment. You will receive the credit within <strong>5–7 business days</strong>, depending on your card issuer's policies.</p>)}
-        {s('4', 'Order Cancellations', <p>Orders can be cancelled free of charge if they have not yet been dispatched. Once an order is shipped, it cannot be cancelled.</p>)}
-      </motion.div>
-    </div>
-  </div>
-)
-
-export default RefundPolicy
+  )
+}

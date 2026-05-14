@@ -29,12 +29,14 @@ const Login = () => {
   const handleGoogleLogin = () => {
     // Store the intended destination so we can restore it after OAuth
     if (from) sessionStorage.setItem('loginRedirect', from)
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
     const w = 500, h = 600
     const left = window.screen.width / 2 - w / 2
     const top = window.screen.height / 2 - h / 2
-    const popup = window.open('https://dhanifresh.onrender.com/api/auth/google', 'Google Login', `width=${w},height=${h},top=${top},left=${left}`)
+    const popup = window.open(`${apiUrl}/api/auth/google`, 'Google Login', `width=${w},height=${h},top=${top},left=${left}`)
+    const allowedOrigin = new URL(apiUrl).origin
     const handler = (event) => {
-      if (event.origin !== 'https://dhanifresh.onrender.com') return
+      if (event.origin !== allowedOrigin) return
       const token = event.data?.token
       if (token) {
         localStorage.setItem('token', token)
