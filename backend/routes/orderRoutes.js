@@ -7,6 +7,8 @@ const Coupon = require('../models/Coupon');
 const Settings = require('../models/Settings');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
+const { sendShippingUpdateEmail } = require('../services/emailService');
+const { invalidateAnalytics } = require('../utils/cache');
 
 // ========================================================================
 // CREATE ORDER - IMPROVED FLOW
@@ -150,22 +152,30 @@ router.post('/', auth, async (req, res) => {
 
     let order;
     try {
-      // 5️⃣ CREATE ORDER DATA
-      const orderData = {
-        user: req.user._id,
-        orderItems,
-        shippingAddress: req.body.shippingAddress || req.user.address,
-        paymentMethod,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice,
-        discount,
-        coupon: appliedCoupon,
-        gstRate: gstRatePct,           // store the GST rate that was applied
-        isPaid: false,
-        paymentStatus: 'PENDING'
-      };
+      // ✅ FIX B2: Validate shipping address before creating order
+    const addr = req.body.shippingAddress;
+    if (!addr || !addr.name || !addr.phone || !addr.street || !addr.city || !addr.state || !addr.zipCode) {
+      return res.status(400).json({
+        message: 'A complete shipping address (name, phone, street, city, state, pincode) is required to place an order.'
+      });
+    }
+
+    // 5️⃣ CREATE ORDER DATA
+    const orderData = {
+      user: req.user._id,
+      orderItems,
+      shippingAddress: addr,
+      paymentMethod,
+      itemsPrice,
+      taxPrice,
+      shippingPrice,
+      totalPrice,
+      discount,
+      coupon: appliedCoupon,
+      gstRate: gstRatePct,
+      isPaid: false,
+      paymentStatus: 'PENDING'
+    };
 
 
       // 6️⃣ CREATE ORDER
@@ -242,6 +252,9 @@ router.post('/', auth, async (req, res) => {
         console.error('COD SUCCESS EMAIL ERROR:', emailErr);
       }
     }
+
+    // Invalidate analytics cache so next fetch gets fresh data
+    invalidateAnalytics().catch(() => {});
 
     res.status(201).json(order);
 
@@ -589,7 +602,7 @@ router.put('/:id/pay', auth, auth.admin, auth.hasPermission('orders'), async (re
 
     await order.populate('user', 'name email');
     await order.populate('orderItems.product');
-
+    invalidateAnalytics().catch(() => {});
     res.json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -615,10 +628,53 @@ router.put('/:id/deliver', auth, auth.admin, auth.hasPermission('orders'), async
 
     await order.populate('user', 'name email');
     await order.populate('orderItems.product');
-
+    invalidateAnalytics().catch(() => {});
     res.json(order);
   } catch (error) {
     res.status(400).json({ message: error.message });
+  }
+});
+
+// ========================================================================
+// ADMIN: SHIP ORDER (ADD TRACKING AND DISPATCH EMAIL)
+// ========================================================================
+router.put('/:id/ship', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
+  try {
+    const { trackingNumber, shippingProvider } = req.body;
+    if (!trackingNumber || !shippingProvider) {
+      return res.status(400).json({ message: 'Tracking number and shipping provider are required' });
+    }
+
+
+
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    order.trackingNumber = trackingNumber;
+    order.shippingProvider = shippingProvider;
+    await order.save();
+
+    await logAction(req, 'SHIP_ORDER', 'ORDER', order._id, { trackingNumber, shippingProvider });
+
+    // Send shipping update email in background
+    sendShippingUpdateEmail({
+      to: order.user.email,
+      userName: order.user.name,
+      orderId: order._id.toString(),
+      trackingNumber,
+      shippingProvider
+    }).catch(err => {
+      console.error('Shipping update email error (non-fatal):', err.message);
+    });
+
+    res.json({
+      message: 'Order shipped successfully and tracking info updated',
+      order
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
@@ -675,17 +731,18 @@ router.post('/:id/cancel', auth, async (req, res) => {
   try {
     const { reason } = req.body;
 
-    // Superadmin/Admin can cancel any order; user can only cancel their own
     const isAdmin = req.user.role === 'admin' || req.user.role === 'superadmin';
+
+    // ✅ FIX S9/B7: Permission check BEFORE DB query (not after)
+    if (isAdmin && !req.user.permissions?.includes('orders') && req.user.role !== 'superadmin') {
+      return res.status(403).json({ message: 'Access denied. You need order permissions.' });
+    }
+
     const query = isAdmin
       ? { _id: req.params.id }
       : { _id: req.params.id, user: req.user._id };
 
     const order = await Order.findOne(query).populate('user', 'name email');
-
-    if (isAdmin && !req.user.permissions?.includes('orders') && req.user.role !== 'superadmin') {
-      return res.status(403).json({ message: 'Access denied. You need order permissions.' });
-    }
 
     if (!order) return res.status(404).json({ message: 'Order not found' });
     if (order.isDelivered) return res.status(400).json({ message: 'Cannot cancel a delivered order' });

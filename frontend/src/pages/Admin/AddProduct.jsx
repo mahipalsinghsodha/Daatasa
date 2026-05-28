@@ -161,17 +161,23 @@ const AddProduct = () => {
 
   /* ── Main form ── */
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: T.font }}>
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)', fontFamily: 'var(--font-body)' }}>
 
-      {/* Sub-header */}
-      <div style={{ background: T.white, borderBottom: `2.5px solid ${T.border}`, padding: '24px 32px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 44, height: 44, background: T.accentDim, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <FiPackage size={22} style={{ color: T.accent }} />
+      {/* ── Premium Admin Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 max-w-[800px] mx-auto px-4 sm:px-6 py-6 flex items-center gap-4">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+            style={{ background: 'rgba(245,166,35,0.20)', border: '1px solid rgba(245,166,35,0.35)' }}>
+            <FiPackage size={22} style={{ color: 'var(--gold)' }} />
           </div>
           <div>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: T.accent, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product Management</p>
-            <h1 style={{ margin: 0, fontSize: 24, fontWeight: 900, color: T.text, letterSpacing: '-0.02em' }}>
+            <p className="text-[11px] font-extrabold uppercase tracking-wider mb-0.5" style={{ color: 'var(--gold)' }}>Product Management</p>
+            <h1 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
               {isEdit ? 'Edit Product' : 'Add New Product'}
             </h1>
           </div>

@@ -80,16 +80,27 @@ const AdminSettings = () => {
   )
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-          <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200 mb-3">Admin Panel</span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>
+      {/* ── Premium Admin Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border mb-3"
+            style={{ background: 'rgba(245,197,24,0.18)', color: 'var(--gold)', borderColor: 'rgba(245,197,24,0.35)' }}>
+            ⚙ Admin Panel
+          </span>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white"
+            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
             Platform Settings
           </h1>
-          <p className="text-sm text-gray-400 mt-1">Configure GST rate and shipping charges. Changes apply to all new orders immediately.</p>
+          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.60)' }}>
+            Configure GST rate and shipping charges. Changes apply to all new orders immediately.
+          </p>
         </div>
       </div>
 

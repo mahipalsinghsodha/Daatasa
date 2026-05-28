@@ -1,45 +1,46 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
-import { FiSearch, FiPackage, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import { FiSearch, FiPackage, FiChevronLeft, FiChevronRight, FiSliders, FiX } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const PAGE_SIZE = 12
 
-// Skeleton card for loading state
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden animate-pulse">
-    <div className="aspect-square bg-gray-100" />
+  <div className="rounded-[20px] overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+    <div className="aspect-square skeleton" />
     <div className="p-4 space-y-2.5">
-      <div className="h-3.5 bg-gray-100 rounded w-3/4" />
-      <div className="h-3 bg-gray-100 rounded w-1/2" />
-      <div className="h-5 bg-gray-100 rounded w-1/3 mt-1" />
-      <div className="h-9 bg-gray-100 rounded-lg mt-2" />
+      <div className="h-3 skeleton rounded-full w-3/4" />
+      <div className="h-3 skeleton rounded-full w-1/2" />
+      <div className="h-5 skeleton rounded-full w-1/3 mt-1" />
     </div>
   </div>
 )
 
 const SORT_OPTIONS = [
-  { label: 'Default',         value: 'default' },
+  { label: 'Default',           value: 'default'   },
   { label: 'Price: Low → High', value: 'price_asc' },
   { label: 'Price: High → Low', value: 'price_desc' },
-  { label: 'Top Rated',       value: 'rating' },
-  { label: 'Newest',          value: 'newest' },
+  { label: 'Top Rated',         value: 'rating'    },
+  { label: 'Newest',            value: 'newest'    },
 ]
 
 const Products = () => {
   const [searchParams, setSearchParams] = useSearchParams()
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [products,         setProducts]         = useState([])
+  const [loading,          setLoading]          = useState(true)
+  const [error,            setError]            = useState(null)
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all')
-  const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [categories, setCategories] = useState([])
-  const [sort, setSort] = useState('default')
-  const [page, setPage] = useState(1)
+  const [searchTerm,       setSearchTerm]       = useState('')
+  const [debouncedSearch,  setDebouncedSearch]  = useState('')
+  const [categories,       setCategories]       = useState([])
+  const [sort,             setSort]             = useState('default')
+  const [page,             setPage]             = useState(1)
+  const [total,            setTotal]            = useState(0)
+  const [totalPages,       setTotalPages]       = useState(0)
 
-  // Debounce search
   useEffect(() => {
     const t = setTimeout(() => { setDebouncedSearch(searchTerm); setPage(1) }, 400)
     return () => clearTimeout(t)
@@ -49,80 +50,99 @@ const Products = () => {
     api.get('/api/categories').then(r => setCategories(r.data)).catch(console.error)
   }, [])
 
-  useEffect(() => { fetchProducts() }, [selectedCategory, debouncedSearch])
+  useEffect(() => { fetchProducts() }, [selectedCategory, debouncedSearch, page, sort])
 
   const fetchProducts = async () => {
-    setLoading(true)
+    setLoading(true); setError(null)
     try {
-      const params = {}
+      const params = { page, limit: PAGE_SIZE, sort }
       if (selectedCategory !== 'all') params.category = selectedCategory
-      if (debouncedSearch.trim()) params.search = debouncedSearch
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
       const res = await api.get('/api/products', { params })
-      setProducts(res.data)
-      setPage(1)
+      setProducts(res.data.products || [])
+      setTotal(res.data.total || 0)
+      setTotalPages(res.data.pages || 0)
     } catch (err) {
       console.error(err)
-    } finally {
-      setLoading(false)
-    }
+      setError('Could not load products. Please check your connection and try again.')
+    } finally { setLoading(false) }
   }
 
-  const handleCategoryChange = (cat) => {
-    setSelectedCategory(cat)
-    setPage(1)
+  const handleCategoryChange = cat => {
+    setSelectedCategory(cat); setPage(1)
     cat === 'all' ? setSearchParams({}) : setSearchParams({ category: cat })
   }
 
-  // Client-side sort
-  const sorted = useMemo(() => {
-    const arr = [...products]
-    if (sort === 'price_asc')  return arr.sort((a, b) => a.price - b.price)
-    if (sort === 'price_desc') return arr.sort((a, b) => b.price - a.price)
-    if (sort === 'rating')     return arr.sort((a, b) => (b.rating || 0) - (a.rating || 0))
-    if (sort === 'newest')     return arr.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    return arr
-  }, [products, sort])
+  const clearFilters = () => {
+    setSearchTerm(''); setSelectedCategory('all')
+    setSearchParams({}); setSort('default'); setPage(1)
+  }
 
-  // Client-side pagination
-  const totalPages = Math.ceil(sorted.length / PAGE_SIZE)
-  const paginated  = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const hasFilters = selectedCategory !== 'all' || debouncedSearch
 
   return (
-    <div className="min-h-screen" style={{ background: '#f8f9fa' }}>
+    <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      <Helmet>
+        <title>{selectedCategory && selectedCategory !== 'all'
+          ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Ghee — DhaniFresh`
+          : 'Buy Pure Desi Ghee Online — DhaniFresh'}</title>
+        <meta name="description" content="Shop premium Bilona Desi Ghee online. Cow ghee, buffalo ghee, A2 ghee and more. FSSAI certified. Free shipping above ₹500. Pan India delivery." />
+        <link rel="canonical" href="https://dhanifresh.in/products" />
+      </Helmet>
 
-      {/* Page Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 text-center">
+      {/* ── Premium Hero Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.30) 0%, transparent 70%)', filter: 'blur(60px)', opacity: 0.5, transform: 'translate(20%, -30%)' }} />
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 text-center">
           <motion.span initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-            className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200 mb-3">
+            className="inline-block text-xs font-bold uppercase tracking-wider mb-4 px-4 py-1.5 rounded-full"
+            style={{ background: 'rgba(245,166,35,0.18)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.30)' }}>
             Pure Ghee Collection
           </motion.span>
-          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-3"
-            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>
-            Our Ghee Products
+          <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}
+            className="text-4xl sm:text-5xl font-extrabold mb-3 text-white"
+            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
+            Our <span className="shimmer-text">Ghee</span> Products
           </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="text-base text-gray-500 max-w-lg mx-auto">
+          <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}
+            className="text-sm sm:text-base max-w-md mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
             Handcrafted using traditional methods for absolute purity and rich aroma.
           </motion.p>
         </div>
+
+        <div className="absolute bottom-0 left-0 right-0" style={{ lineHeight: 0 }}>
+          <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 60 }}>
+            <path d="M0,60 C360,0 1080,0 1440,60 L1440,60 L0,60 Z" fill="var(--bg-base)" />
+          </svg>
+        </div>
       </div>
 
-      {/* Sticky Filter Bar */}
-      <div className="sticky top-[106px] z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+      {/* ── Sticky Filter Bar ── */}
+      <div
+        className="sticky top-[60px] z-30 backdrop-blur-xl"
+        style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}
+      >
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
 
-            {/* Category Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {/* Category Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
               {[{ slug: 'all', name: 'All Products' }, ...categories].map(cat => {
                 const active = selectedCategory === cat.slug
                 return (
-                  <button key={cat.slug} onClick={() => handleCategoryChange(cat.slug)}
-                    className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      active ? 'bg-gray-900 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                    }`}>
+                  <button
+                    key={cat.slug}
+                    onClick={() => handleCategoryChange(cat.slug)}
+                    className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200"
+                    style={active
+                      ? { background: 'var(--brand-gradient)', color: 'var(--brand-text)', boxShadow: '0 4px 14px rgba(19,60,42,0.25)' }
+                      : { color: 'var(--text-secondary)', background: 'var(--bg-card)', border: '1px solid var(--border-color)' }
+                    }
+                  >
                     {cat.name}
                   </button>
                 )
@@ -131,87 +151,151 @@ const Products = () => {
 
             {/* Search + Sort */}
             <div className="flex items-center gap-2 shrink-0">
+              {/* Search */}
               <div className="relative group">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-orange-500 transition-colors" size={15} />
-                <input type="text" placeholder="Search..." value={searchTerm}
+                <FiSearch
+                  className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  size={14}
+                />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-9 pr-4 py-2 rounded-lg bg-gray-50 border border-gray-200 focus:bg-white focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 outline-none text-sm text-gray-800 transition-all placeholder:text-gray-400 w-44" />
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '12px' }}
+                  className="pl-9 pr-4 py-2 text-sm outline-none focus:ring-0 transition-all placeholder:text-[var(--text-muted)] w-44"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    <FiX size={13} />
+                  </button>
+                )}
               </div>
-              <select value={sort} onChange={e => { setSort(e.target.value); setPage(1) }}
-                className="py-2 pl-3 pr-8 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-700 outline-none focus:border-orange-400 transition-all cursor-pointer">
-                {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-              </select>
+
+              {/* Sort */}
+              <div className="relative">
+                <FiSliders className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} size={13} />
+                <select
+                  value={sort}
+                  onChange={e => { setSort(e.target.value); setPage(1) }}
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '12px' }}
+                  className="pl-9 pr-8 py-2 text-sm outline-none transition-all cursor-pointer appearance-none"
+                >
+                  {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* ── Products Grid ── */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
 
-        {/* Result count */}
-        {!loading && sorted.length > 0 && (
-          <p className="text-sm text-gray-500 mb-6">
-            Showing <span className="font-semibold text-gray-800">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, sorted.length)}</span> of <span className="font-semibold text-gray-800">{sorted.length}</span> products
-            {selectedCategory !== 'all' && <> in <span className="text-orange-600 font-semibold capitalize">{selectedCategory}</span></>}
-          </p>
+        {/* Result count + clear */}
+        {!loading && total > 0 && (
+          <div className="flex items-center justify-between mb-6">
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              Showing <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)}</span> of{' '}
+              <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{total}</span> products
+              {selectedCategory !== 'all' && (
+                <> in <span className="font-bold capitalize" style={{ color: 'var(--brand-secondary)' }}>{selectedCategory}</span></>
+              )}
+            </p>
+            {hasFilters && (
+              <button onClick={clearFilters} className="flex items-center gap-1.5 text-xs font-semibold transition-colors" style={{ color: 'var(--text-muted)' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--brand-primary)'}
+                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+              >
+                <FiX size={12} /> Clear filters
+              </button>
+            )}
+          </div>
         )}
 
+        {/* Products Grid */}
         <AnimatePresence mode="wait">
           {loading ? (
             <motion.div key="skeleton" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {[...Array(PAGE_SIZE)].map((_, i) => <SkeletonCard key={i} />)}
             </motion.div>
-          ) : paginated.length > 0 ? (
-            <motion.div key="grid" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
+          ) : error ? (
+            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              className="py-24 rounded-3xl flex flex-col items-center text-center p-10"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                style={{ background: 'rgba(220,38,38,0.08)', color: 'var(--danger)' }}>
+                <FiPackage size={28} />
+              </div>
+              <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Could Not Load Products</h2>
+              <p className="text-sm max-w-xs mb-6" style={{ color: 'var(--text-muted)' }}>{error}</p>
+              <button onClick={fetchProducts} className="btn btn-primary text-sm">Try Again</button>
+            </motion.div>
+          ) : products.length > 0 ? (
+            <motion.div key="grid" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}
               className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {paginated.map(product => (
+              {products.map(product => (
                 <ProductCard key={product._id} product={product} categories={categories} />
               ))}
             </motion.div>
           ) : (
             <motion.div key="empty" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}
-              className="py-24 bg-white rounded-2xl border border-dashed border-gray-200 flex flex-col items-center text-center p-10">
-              <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-300 mb-4">
-                <FiPackage size={22} />
+              className="py-28 rounded-3xl border-dashed flex flex-col items-center text-center p-10"
+              style={{ background: 'var(--bg-card)', border: '2px dashed var(--border-color)' }}>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+                style={{ background: 'var(--bg-base)', color: 'var(--text-muted)' }}>
+                <FiPackage size={28} />
               </div>
-              <h3 className="text-lg font-bold text-gray-800 mb-1" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>No Products Found</h3>
-              <p className="text-sm text-gray-400 max-w-xs mb-6">Try adjusting your search or filter to find what you're looking for.</p>
-              <button onClick={() => { setSearchTerm(''); setSelectedCategory('all'); setSearchParams({}); setSort('default') }}
-                className="px-5 py-2.5 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-all">
-                Reset Filters
-              </button>
+              <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>No Products Found</h3>
+              <p className="text-sm max-w-xs mb-7" style={{ color: 'var(--text-muted)' }}>
+                Try adjusting your search or filter to find what you're looking for.
+              </p>
+              <button onClick={clearFilters} className="btn btn-primary text-sm">Reset Filters</button>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Pagination */}
         {!loading && totalPages > 1 && (
-          <div className="flex items-center justify-center gap-2 mt-12">
+          <div className="flex items-center justify-center gap-2 mt-14">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gray-900 hover:text-gray-900 disabled:opacity-40 transition-all">
+              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all disabled:opacity-40"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+            >
               <FiChevronLeft size={16} />
             </button>
-
             {[...Array(totalPages)].map((_, i) => {
               const p = i + 1
               if (totalPages > 7 && Math.abs(p - page) > 2 && p !== 1 && p !== totalPages) {
-                if (p === 2 || p === totalPages - 1) return <span key={p} className="text-gray-400 text-sm">…</span>
+                if (p === 2 || p === totalPages - 1) return <span key={p} style={{ color: 'var(--text-muted)' }} className="text-sm px-1">…</span>
                 return null
               }
               return (
                 <button key={p} onClick={() => setPage(p)}
-                  className={`w-9 h-9 rounded-lg text-sm font-semibold transition-all border ${
-                    page === p ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-900 hover:text-gray-900'
-                  }`}>
+                  className="w-10 h-10 rounded-xl text-sm font-bold transition-all"
+                  style={page === p
+                    ? { background: 'var(--brand-gradient)', color: 'var(--brand-text)', boxShadow: 'var(--shadow-brand)' }
+                    : { background: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }
+                  }
+                >
                   {p}
                 </button>
               )
             })}
-
             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
-              className="w-9 h-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-600 hover:border-gray-900 hover:text-gray-900 disabled:opacity-40 transition-all">
+              className="w-10 h-10 flex items-center justify-center rounded-xl transition-all disabled:opacity-40"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--brand-primary)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+            >
               <FiChevronRight size={16} />
             </button>
           </div>

@@ -1,14 +1,12 @@
-const User = require('../models/User');
+const User    = require('../models/User');
 const AuditLog = require('../models/AuditLog');
-const Order = require('../models/Order');
+const Order   = require('../models/Order');
 const Product = require('../models/Product');
+const Coupon  = require('../models/Coupon');
 const { logAction } = require('../utils/logger');
-const bcrypt = require('bcryptjs');
+const { getCache, setCache, invalidateAnalytics } = require('../utils/cache');
+const bcrypt  = require('bcryptjs');
 
-/**
- * GET ALL ACTIVITY LOGS
- * Only accessible by Super Admin
- */
 exports.getActivityLogs = async (req, res) => {
   try {
     const logs = await AuditLog.find()
@@ -16,220 +14,439 @@ exports.getActivityLogs = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(500);
     res.json(logs);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
-/**
- * GET ALL ADMINS
- * Only accessible by Super Admin
- */
 exports.getAllAdmins = async (req, res) => {
   try {
-    const admins = await User.find({ 
-      role: { $in: ['admin', 'superadmin'] } 
-    }).select('-password');
+    const admins = await User.find({ role: { $in: ['admin','superadmin'] } }).select('-password');
     res.json(admins);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
-/**
- * CREATE NEW ADMIN
- */
 exports.createAdmin = async (req, res) => {
   try {
     const { name, email, password, permissions } = req.body;
-    if (await User.findOne({ email })) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+    if (await User.findOne({ email })) return res.status(400).json({ message: 'User already exists' });
     const newAdmin = new User({ name, email, password, role: 'admin', permissions: permissions || [] });
     await newAdmin.save();
-    await logAction(req, 'CREATE_ADMIN', 'USER', newAdmin._id, { name: newAdmin.name, email: newAdmin.email, assignedPermissions: newAdmin.permissions });
-    const adminResponse = newAdmin.toObject();
-    delete adminResponse.password;
-    res.status(201).json(adminResponse);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    await logAction(req, 'CREATE_ADMIN', 'USER', newAdmin._id, { name: newAdmin.name });
+    const obj = newAdmin.toObject(); delete obj.password; res.status(201).json(obj);
+  } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
-/**
- * UPDATE ADMIN PERMISSIONS
- */
 exports.updateAdminPermissions = async (req, res) => {
   try {
-    const { id } = req.params;
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ message: 'Admin not found' });
     const { permissions, role } = req.body;
-    const targetAdmin = await User.findById(id);
-    if (!targetAdmin) return res.status(404).json({ message: 'Admin not found' });
-    const oldPermissions = targetAdmin.permissions;
-    const oldRole = targetAdmin.role;
-    if (permissions !== undefined) targetAdmin.permissions = permissions;
-    if (role !== undefined) targetAdmin.role = role;
-    await targetAdmin.save();
-    await logAction(req, 'UPDATE_ADMIN_ACCESS', 'USER', targetAdmin._id, { previousRole: oldRole, newRole: targetAdmin.role, previousPermissions: oldPermissions, newPermissions: targetAdmin.permissions });
-    res.json({ message: 'Admin permissions updated successfully', user: { id: targetAdmin._id, name: targetAdmin.name, role: targetAdmin.role, permissions: targetAdmin.permissions } });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    if (permissions !== undefined) target.permissions = permissions;
+    if (role !== undefined) target.role = role;
+    await target.save();
+    await logAction(req, 'UPDATE_ADMIN_ACCESS', 'USER', target._id, { role: target.role });
+    res.json({ message: 'Updated', user: { id: target._id, name: target.name, role: target.role, permissions: target.permissions } });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
-/**
- * DELETE ADMIN
- */
 exports.deleteAdmin = async (req, res) => {
   try {
-    const { id } = req.params;
-    const target = await User.findById(id);
+    const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: 'Admin not found' });
     if (target.role === 'superadmin') return res.status(403).json({ message: 'Cannot delete a Super Admin' });
     await target.deleteOne();
-    await logAction(req, 'DELETE_ADMIN', 'USER', id, { name: target.name, email: target.email });
-    res.json({ message: 'Admin removed successfully' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+    await logAction(req, 'DELETE_ADMIN', 'USER', req.params.id, { name: target.name });
+    res.json({ message: 'Admin removed' });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 };
 
 /**
- * GET ANALYTICS
- * Comprehensive dashboard data: revenue trends, top products, order breakdowns, user growth
+ * ════════════════════════════════════════════════════════════
+ *  GET ANALYTICS — Redis-cached, MongoDB aggregation pipelines
+ *  Cache TTL: 5 min. Auto-invalidated on order changes.
+ * ════════════════════════════════════════════════════════════
  */
 exports.getAnalytics = async (req, res) => {
   try {
-    const { days } = req.query;
+    const { days, page = 1, limit = 10, statusFilter = 'all', force } = req.query;
     let daysNum = parseInt(days);
-    if (isNaN(daysNum)) daysNum = 30; // default 30 days
-    
-    const now = new Date();
-    const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
-    const todayEnd   = new Date(now); todayEnd.setHours(23,59,59,999);
-    
-    let startDate = new Date(0); // Epoch for all time
+    if (isNaN(daysNum)) daysNum = 30;
+
+    const cacheKey = `analytics:v3:d${daysNum}:p${page}:l${limit}:s${statusFilter}`;
+    if (force !== '1') {
+      const cached = await getCache(cacheKey);
+      if (cached) return res.json({ ...cached, fromCache: true });
+    }
+
+    const now    = new Date();
+    const todayS = new Date(now); todayS.setHours(0,0,0,0);
+    const todayE = new Date(now); todayE.setHours(23,59,59,999);
+
+    // Current period start
+    let startDate = new Date(0); // epoch = all time
     if (daysNum !== -1) {
       startDate = new Date(now);
       startDate.setDate(now.getDate() - (daysNum === 0 ? 0 : daysNum - 1));
       startDate.setHours(0,0,0,0);
     }
 
-    // ── 1. KPI CARDS ────────────────────────────────────────────────────────
+    // Previous period (same length, before current start)
+    let prevStart = new Date(0);
+    let prevEnd   = new Date(startDate);
+    if (daysNum > 0) {
+      prevStart = new Date(startDate);
+      prevStart.setDate(prevStart.getDate() - daysNum);
+    }
+
+    // ── Cancelled/Failed statuses
+    const VOID_STATUSES = ['CANCELLED', 'FAILED'];
+
+    // ── Active-order match (non-void)
+    const activeMatch = { paymentStatus: { $nin: VOID_STATUSES } };
+
+    // Period date filters
+    const df    = { createdAt: { $gte: startDate, $lte: now    } };
+    const prevDf= { createdAt: { $gte: prevStart,  $lt: startDate } };
+    const tdf   = { createdAt: { $gte: todayS,    $lte: todayE  } };
+
+    // ── Safe $cond helper: isActive = paymentStatus NOT in VOID_STATUSES
+    // Using $or with $ne for each void status — avoids $in inside $cond
+    const isActiveCond = {
+      $and: [
+        { $ne: ['$paymentStatus', 'CANCELLED'] },
+        { $ne: ['$paymentStatus', 'FAILED']    },
+      ]
+    };
+
+    // ── Run all aggregations in parallel ──────────────────────────────────
     const [
-      todayOrders,
-      allOrders,
-      totalProducts,
-      totalUsers,
+      kpiAgg, prevKpiAgg, todayAgg,
+      totalProducts, totalUsers, activeCoupons,
+      trendAgg, hourlyAgg, dowAgg,
+      topProductsAgg, categoryAgg, couponAgg,
+      weeklyAgg, customerGrowthAgg,
+      lowStock,
     ] = await Promise.all([
-      Order.find({ createdAt: { $gte: todayStart, $lte: todayEnd } }),
-      Order.find({ createdAt: { $gte: startDate, $lte: now } }), // Filtered by date range!
+
+      /* 1. KPI — current period */
+      Order.aggregate([
+        { $match: df },
+        { $group: {
+          _id: null,
+          totalOrders:     { $sum: 1 },
+          activeOrders:    { $sum: { $cond: [isActiveCond, 1, 0] } },
+          totalRevenue:    { $sum: { $cond: [isActiveCond, '$totalPrice', 0] } },
+          deliveredOrders: { $sum: { $cond: ['$isDelivered', 1, 0] } },
+          paidOrders:      { $sum: { $cond: [{ $and: ['$isPaid', { $eq: ['$isDelivered', false] }] }, 1, 0] } },
+          codConfirmed:    { $sum: { $cond: [{ $eq: ['$paymentStatus', 'COD_CONFIRMED'] }, 1, 0] } },
+          pendingOrders: {
+            $sum: {
+              $cond: [
+                { $and: [isActiveCond, { $eq: ['$isDelivered', false] }] },
+                1, 0
+              ]
+            }
+          },
+          cancelledOrders: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'CANCELLED'] }, 1, 0] } },
+          codCount:        { $sum: { $cond: [{ $eq: ['$paymentMethod', 'COD'] }, 1, 0] } },
+          onlineCount:     { $sum: { $cond: [{ $eq: ['$paymentMethod', 'Online'] }, 1, 0] } },
+          totalDiscount:   { $sum: { $cond: [isActiveCond, { $ifNull: ['$discount', 0] }, 0] } },
+        }}
+      ]),
+
+      /* 2. KPI — previous period */
+      Order.aggregate([
+        { $match: prevDf },
+        { $group: {
+          _id: null,
+          totalRevenue: { $sum: { $cond: [isActiveCond, '$totalPrice', 0] } },
+          totalOrders:  { $sum: 1 },
+        }}
+      ]),
+
+      /* 3. Today snapshot */
+      Order.aggregate([
+        { $match: { ...tdf, ...activeMatch } },
+        { $group: { _id: null, revenue: { $sum: '$totalPrice' }, count: { $sum: 1 } } }
+      ]),
+
+      /* 4 & 5. Counts */
       Product.countDocuments(),
       User.countDocuments({ role: 'user' }),
+
+      /* 6. Active coupons */
+      Coupon.countDocuments({ isActive: true, validUntil: { $gte: now } }).catch(() => 0),
+
+      /* 7. Revenue trend (daily) */
+      Order.aggregate([
+        { $match: { ...df, ...activeMatch } },
+        { $group: {
+          _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' }, d: { $dayOfMonth: '$createdAt' } },
+          revenue:  { $sum: '$totalPrice' },
+          orders:   { $sum: 1 },
+          avgOrder: { $avg: '$totalPrice' },
+        }},
+        { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1 } }
+      ]),
+
+      /* 8. Hourly distribution */
+      Order.aggregate([
+        { $match: df },
+        { $group: {
+          _id: { $mod: [{ $add: [{ $hour: '$createdAt' }, 5] }, 24] }, // rough IST
+          orders:  { $sum: 1 },
+          revenue: { $sum: { $cond: [isActiveCond, '$totalPrice', 0] } },
+        }},
+        { $sort: { _id: 1 } }
+      ]),
+
+      /* 9. Day-of-week revenue */
+      Order.aggregate([
+        { $match: { ...df, ...activeMatch } },
+        { $group: {
+          _id:     { $dayOfWeek: '$createdAt' },
+          revenue: { $sum: '$totalPrice' },
+          orders:  { $sum: 1 },
+        }},
+        { $sort: { _id: 1 } }
+      ]),
+
+      /* 10. Top products by revenue */
+      Order.aggregate([
+        { $match: { ...df, ...activeMatch } },
+        { $unwind: '$orderItems' },
+        { $group: {
+          _id:     '$orderItems.name',
+          qty:     { $sum: '$orderItems.quantity' },
+          revenue: { $sum: { $multiply: ['$orderItems.price', '$orderItems.quantity'] } },
+          orders:  { $addToSet: '$_id' },
+        }},
+        { $project: { _id: 0, name: '$_id', qty: 1, revenue: { $round: ['$revenue', 0] }, orders: { $size: '$orders' } } },
+        { $sort: { revenue: -1 } },
+        { $limit: 8 }
+      ]),
+
+      /* 11. Revenue by category — lookup product category */
+      Order.aggregate([
+        { $match: { ...df, ...activeMatch } },
+        { $unwind: '$orderItems' },
+        { $lookup: {
+          from: 'products',
+          localField: 'orderItems.product',
+          foreignField: '_id',
+          as: 'prod'
+        }},
+        { $unwind: { path: '$prod', preserveNullAndEmptyArrays: true } },
+        { $group: {
+          _id:     { $ifNull: ['$prod.category', 'Uncategorized'] },
+          revenue: { $sum: { $multiply: ['$orderItems.price', '$orderItems.quantity'] } },
+          qty:     { $sum: '$orderItems.quantity' },
+        }},
+        { $project: { _id: 0, name: '$_id', revenue: { $round: ['$revenue', 0] }, qty: 1 } },
+        { $sort: { revenue: -1 } },
+        { $limit: 6 }
+      ]),
+
+      /* 12. Coupon usage stats */
+      Order.aggregate([
+        { $match: { ...df, coupon: { $exists: true, $ne: null } } },
+        { $group: {
+          _id:      '$coupon.code',
+          used:     { $sum: 1 },
+          discount: { $sum: { $ifNull: ['$discount', 0] } },
+          revenue:  { $sum: { $cond: [isActiveCond, '$totalPrice', 0] } },
+        }},
+        { $match: { _id: { $ne: null } } },
+        { $project: { _id: 0, code: '$_id', used: 1, discount: { $round: ['$discount', 0] }, revenue: { $round: ['$revenue', 0] } } },
+        { $sort: { used: -1 } },
+        { $limit: 6 }
+      ]),
+
+      /* 13. Weekly orders (always last 7 days) */
+      (() => {
+        const w7 = new Date(now); w7.setDate(now.getDate() - 6); w7.setHours(0,0,0,0);
+        return Order.aggregate([
+          { $match: { createdAt: { $gte: w7, $lte: now } } },
+          { $group: {
+            _id:     { $dayOfWeek: '$createdAt' },
+            orders:  { $sum: 1 },
+            revenue: { $sum: { $cond: [isActiveCond, '$totalPrice', 0] } },
+          }}
+        ]);
+      })(),
+
+      /* 14. Customer growth */
+      User.aggregate([
+        { $match: { role: 'user', createdAt: { $gte: startDate, $lte: now } } },
+        { $group: {
+          _id: { y: { $year: '$createdAt' }, m: { $month: '$createdAt' }, d: { $dayOfMonth: '$createdAt' } },
+          newUsers: { $sum: 1 }
+        }},
+        { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1 } }
+      ]),
+
+      /* 15. Low stock */
+      Product.find({ stock: { $lte: 10 }, isActive: { $ne: false } })
+        .select('name stock price image category')
+        .sort({ stock: 1 })
+        .limit(8)
+        .lean(),
     ]);
 
-    const activeOrders       = allOrders.filter(o => !['CANCELLED','FAILED'].includes(o.paymentStatus));
-    const todayActiveOrders  = todayOrders.filter(o => !['CANCELLED','FAILED'].includes(o.paymentStatus));
-    const todayRevenue       = todayActiveOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
-    const totalRevenue       = activeOrders.reduce((s, o) => s + (o.totalPrice || 0), 0);
-    const avgOrderValue      = activeOrders.length ? totalRevenue / activeOrders.length : 0;
-    const pendingOrders      = activeOrders.filter(o => !o.isDelivered).length;
+    // ── Process KPI ───────────────────────────────────────────────────────
+    const k      = kpiAgg[0]     || {};
+    const kPrev  = prevKpiAgg[0] || {};
+    const todayD = todayAgg[0]   || { revenue: 0, count: 0 };
+    const avgOV  = k.activeOrders ? (k.totalRevenue / k.activeOrders) : 0;
 
-    // ── 2. REVENUE TREND ─────────────────────────────────────
+    const delta = (curr, prev) => (prev && prev > 0) ? Math.round(((curr - prev) / prev) * 100) : null;
+
+    const kpi = {
+      totalRevenue:    Math.round(k.totalRevenue    || 0),
+      totalOrders:     k.totalOrders    || 0,
+      activeOrders:    k.activeOrders   || 0,
+      pendingOrders:   k.pendingOrders  || 0,
+      deliveredOrders: k.deliveredOrders|| 0,
+      cancelledOrders: k.cancelledOrders|| 0,
+      avgOrderValue:   Math.round(avgOV),
+      totalDiscount:   Math.round(k.totalDiscount || 0),
+      todayRevenue:    Math.round(todayD.revenue || 0),
+      todayOrders:     todayD.count || 0,
+      totalProducts,
+      totalUsers,
+      activeCoupons:   activeCoupons || 0,
+      revenueDelta:    delta(k.totalRevenue || 0, kPrev.totalRevenue || 0),
+      ordersDelta:     delta(k.totalOrders  || 0, kPrev.totalOrders  || 0),
+    };
+
+    // ── Revenue Trend ─────────────────────────────────────────────────────
+    const trendDays = daysNum === -1 ? 30 : (daysNum === 0 ? 1 : Math.min(daysNum, 90));
+    const trendMap  = {};
+    trendAgg.forEach(t => {
+      const key = `${t._id.y}-${String(t._id.m).padStart(2,'0')}-${String(t._id.d).padStart(2,'0')}`;
+      trendMap[key] = { revenue: Math.round(t.revenue), orders: t.orders, avgOrder: Math.round(t.avgOrder || 0) };
+    });
     const revenueTrend = [];
-    const trendDays = daysNum === -1 ? 30 : (daysNum === 0 ? 1 : daysNum); // Cap trend to 30 days if all time to avoid overload
-    const limitDays = Math.min(trendDays, 90); // max 90 days of daily data
-    
-    for (let i = limitDays - 1; i >= 0; i--) {
-      const d = new Date(now); d.setDate(now.getDate() - i); d.setHours(0,0,0,0);
-      const dEnd = new Date(d); dEnd.setHours(23,59,59,999);
-      const dayOrders = allOrders.filter(o => {
-        const c = new Date(o.createdAt);
-        return c >= d && c <= dEnd && !['CANCELLED','FAILED'].includes(o.paymentStatus);
-      });
+    for (let i = trendDays - 1; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       revenueTrend.push({
-        date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-        revenue: Math.round(dayOrders.reduce((s, o) => s + (o.totalPrice || 0), 0)),
-        orders: dayOrders.length,
+        date:     d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        revenue:  trendMap[key]?.revenue  || 0,
+        orders:   trendMap[key]?.orders   || 0,
+        avgOrder: trendMap[key]?.avgOrder || 0,
       });
     }
 
-    // ── 3. ORDERS BY STATUS ─────────────────────────────────────────────────
+    // ── Hourly Distribution ───────────────────────────────────────────────
+    const hourMap = {};
+    hourlyAgg.forEach(h => { hourMap[h._id] = { orders: h.orders, revenue: Math.round(h.revenue) }; });
+    const hourlyDistribution = Array.from({ length: 24 }, (_, h) => ({
+      hour:    `${String(h).padStart(2,'0')}:00`,
+      orders:  hourMap[h]?.orders  || 0,
+      revenue: hourMap[h]?.revenue || 0,
+    }));
+
+    // ── Day of Week ───────────────────────────────────────────────────────
+    const DOW = ['','Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const dowMap = {};
+    dowAgg.forEach(d => { dowMap[d._id] = { revenue: Math.round(d.revenue), orders: d.orders }; });
+    const dayOfWeekData = [1,2,3,4,5,6,7].map(i => ({
+      day:     DOW[i],
+      revenue: dowMap[i]?.revenue || 0,
+      orders:  dowMap[i]?.orders  || 0,
+    }));
+
+    // ── Status Breakdown ──────────────────────────────────────────────────
+    const pendingOnly = Math.max(0, (k.pendingOrders||0) - (k.codConfirmed||0) - (k.paidOrders||0));
     const statusBreakdown = [
-      { name: 'Delivered',    value: allOrders.filter(o => o.isDelivered).length,                                                     color: '#10b981' },
-      { name: 'Paid',         value: allOrders.filter(o => o.isPaid && !o.isDelivered).length,                                        color: '#3b82f6' },
-      { name: 'COD Confirmed',value: allOrders.filter(o => o.paymentStatus === 'COD_CONFIRMED' && !o.isDelivered).length,             color: '#f59e0b' },
-      { name: 'Pending',      value: allOrders.filter(o => !o.isPaid && !o.isDelivered && !['CANCELLED','FAILED','COD_CONFIRMED'].includes(o.paymentStatus)).length, color: '#a78bfa' },
-      { name: 'Cancelled',    value: allOrders.filter(o => o.paymentStatus === 'CANCELLED').length,                                    color: '#ef4444' },
+      { name: 'Delivered',     value: k.deliveredOrders || 0, color: '#10b981' },
+      { name: 'Processing',    value: k.paidOrders      || 0, color: '#3b82f6' },
+      { name: 'COD Confirmed', value: k.codConfirmed    || 0, color: '#f59e0b' },
+      { name: 'Pending',       value: pendingOnly,             color: '#a78bfa' },
+      { name: 'Cancelled',     value: k.cancelledOrders || 0, color: '#ef4444' },
     ].filter(s => s.value > 0);
 
-    // ── 4. PAYMENT METHOD SPLIT ─────────────────────────────────────────────
     const paymentSplit = [
-      { name: 'Cash on Delivery', value: activeOrders.filter(o => o.paymentMethod === 'COD').length,    color: '#e8621a' },
-      { name: 'Online (Razorpay)', value: activeOrders.filter(o => o.paymentMethod === 'Online').length, color: '#6366f1' },
+      { name: 'Cash on Delivery', value: k.codCount    || 0, color: '#f97316' },
+      { name: 'Online / UPI',     value: k.onlineCount || 0, color: '#6366f1' },
     ].filter(p => p.value > 0);
 
-    // ── 5. TOP PRODUCTS (by quantity sold) ──────────────────────────────────
-    const productSales = {};
-    activeOrders.forEach(o => {
-      (o.orderItems || []).forEach(item => {
-        const key = item.name || 'Unknown';
-        if (!productSales[key]) productSales[key] = { name: key, qty: 0, revenue: 0 };
-        productSales[key].qty     += item.quantity || 0;
-        productSales[key].revenue += (item.price || 0) * (item.quantity || 0);
-      });
-    });
-    const topProducts = Object.values(productSales)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 6)
-      .map(p => ({ ...p, revenue: Math.round(p.revenue) }));
-
-    // ── 6. WEEKLY ORDERS (last 7 days, independent of filter for consistency) ──────────────────────────────────────
+    // ── Weekly Orders ─────────────────────────────────────────────────────
+    const weeklyMap = {};
+    weeklyAgg.forEach(w => { weeklyMap[w._id] = { orders: w.orders, revenue: Math.round(w.revenue) }; });
     const weeklyOrders = [];
-    const daysArr = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    // We must query DB directly to guarantee last 7 days exist even if filter is 1 day
-    const last7Orders = await Order.find({ createdAt: { $gte: new Date(now.setDate(now.getDate() - 7)) } });
-    now.setDate(now.getDate() + 7); // restore now
-    
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(now.getDate() - i); d.setHours(0,0,0,0);
-      const dEnd = new Date(d); dEnd.setHours(23,59,59,999);
-      const dayOrders = last7Orders.filter(o => {
-        const c = new Date(o.createdAt); return c >= d && c <= dEnd;
-      });
-      weeklyOrders.push({
-        day: daysArr[d.getDay()],
-        orders: dayOrders.length,
-        revenue: Math.round(dayOrders.filter(o => !['CANCELLED','FAILED'].includes(o.paymentStatus)).reduce((s,o) => s+(o.totalPrice||0), 0)),
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const dow = d.getDay() + 1;
+      weeklyOrders.push({ day: DOW[dow], orders: weeklyMap[dow]?.orders||0, revenue: weeklyMap[dow]?.revenue||0 });
+    }
+
+    // ── Customer Growth ───────────────────────────────────────────────────
+    const cgMap = {};
+    customerGrowthAgg.forEach(u => {
+      const key = `${u._id.y}-${String(u._id.m).padStart(2,'0')}-${String(u._id.d).padStart(2,'0')}`;
+      cgMap[key] = u.newUsers;
+    });
+    const customerGrowth = [];
+    for (let i = trendDays - 1; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      customerGrowth.push({
+        date:     d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+        newUsers: cgMap[key] || 0,
       });
     }
 
-    // ── 7. RECENT ORDERS (last 5) ───────────────────────────────────────────
-    const recentOrders = await Order.find()
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .populate('user', 'name email')
-      .lean();
+    // ── Paginated Orders ──────────────────────────────────────────────────
+    const pageNum  = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.min(50, parseInt(limit) || 10);
+    const skip     = (pageNum - 1) * limitNum;
 
-    // ── 8. LOW STOCK PRODUCTS ───────────────────────────────────────────────
-    const lowStock = await Product.find({ stock: { $lte: 10 }, isActive: { $ne: false } })
-      .select('name stock price image')
-      .sort({ stock: 1 })
-      .limit(6)
-      .lean();
+    let orderQuery = {};
+    if      (statusFilter === 'pending')   orderQuery = { isPaid: false, isDelivered: false, paymentStatus: { $nin: [...VOID_STATUSES, 'COD_CONFIRMED'] } };
+    else if (statusFilter === 'cod')       orderQuery = { paymentStatus: 'COD_CONFIRMED', isDelivered: false };
+    else if (statusFilter === 'paid')      orderQuery = { isPaid: true, isDelivered: false };
+    else if (statusFilter === 'delivered') orderQuery = { isDelivered: true };
+    else if (statusFilter === 'cancelled') orderQuery = { paymentStatus: { $in: VOID_STATUSES } };
 
-    res.json({
-      kpi: { todayRevenue, totalRevenue, avgOrderValue, totalOrders: allOrders.length, activeOrders: activeOrders.length, pendingOrders, totalProducts, totalUsers, todayOrders: todayActiveOrders.length },
+    const [recentOrders, totalOrderCount] = await Promise.all([
+      Order.find(orderQuery)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .populate('user', 'name email')
+        .select('_id totalPrice paymentStatus isPaid isDelivered paymentMethod createdAt user orderItems shippingAddress discount')
+        .lean(),
+      Order.countDocuments(orderQuery),
+    ]);
+
+    // ── Build response ────────────────────────────────────────────────────
+    const result = {
+      kpi,
       revenueTrend,
+      hourlyDistribution,
+      dayOfWeekData,
       statusBreakdown,
       paymentSplit,
-      topProducts,
+      topProducts:     topProductsAgg,
+      categoryRevenue: categoryAgg,
+      couponStats:     couponAgg,
       weeklyOrders,
+      customerGrowth,
       recentOrders,
+      totalOrderCount,
+      totalOrderPages: Math.ceil(totalOrderCount / limitNum),
+      currentPage:     pageNum,
       lowStock,
-    });
+      generatedAt:     new Date().toISOString(),
+    };
+
+    const ttl = daysNum === 0 ? 60 : 300;
+    await setCache(cacheKey, result, ttl);
+    res.json({ ...result, fromCache: false });
+
   } catch (error) {
-    console.error('ANALYTICS ERROR:', error);
+    console.error('ANALYTICS ERROR:', error.message, error.stack);
     res.status(500).json({ message: error.message });
   }
 };

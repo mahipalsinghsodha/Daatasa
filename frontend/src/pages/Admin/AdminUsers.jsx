@@ -77,36 +77,64 @@ const AdminUsers = () => {
   )
 
   if (loading) return (
-    <div className="min-h-[60vh] flex items-center justify-center" style={{ background: '#f8f9fa' }}>
-      <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
+      <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)' }}>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="h-8 w-40 shimmer rounded mb-2" />
+          <div className="h-5 w-56 shimmer rounded" />
+        </div>
+      </div>
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-3">
+        {[...Array(6)].map((_,i) => (
+          <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-4">
+            <div className="w-10 h-10 shimmer rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-36 shimmer rounded" />
+              <div className="h-3 w-52 shimmer rounded" />
+            </div>
+            <div className="h-7 w-20 shimmer rounded-full" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      {/* ── Premium Admin Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200 mb-3">Admin</span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border mb-3"
+                style={{ background: 'rgba(245,197,24,0.18)', color: 'var(--gold)', borderColor: 'rgba(245,197,24,0.35)' }}>
+                <FiShield size={10} /> Admin Panel
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white"
+                style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>
                 Manage Users
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-                <FiSearch size={15} className="text-gray-400 shrink-0" />
-                <input
-                  type="text"
-                  placeholder="Search name, email, phone…"
-                  value={search}
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.14)' }}>
+                <FiSearch size={15} style={{ color: 'rgba(255,255,255,0.55)' }} className="shrink-0" />
+                <input type="text" placeholder="Search name, email, phone…" value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="bg-transparent outline-none text-sm text-gray-700 w-52 placeholder:text-gray-400"
+                  className="bg-transparent outline-none text-sm w-52"
+                  style={{ color: '#FFFFFF', caretColor: 'var(--gold)' }}
+                  id="user-search"
                 />
               </div>
-              <button onClick={() => fetchAllData(true)} disabled={refreshing} className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              <button onClick={() => fetchAllData(true)} disabled={refreshing}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all"
+                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.80)' }}>
                 <FiRefreshCw size={14} className={refreshing ? 'animate-spin' : ''} />
                 Refresh
               </button>
@@ -115,29 +143,30 @@ const AdminUsers = () => {
 
           {/* Stats + Filters */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-100 rounded-lg">
-                <FiUsers size={14} className="text-orange-500" />
-                <span className="text-xs font-semibold text-orange-700">{users.length} Users</span>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                style={{ background: 'rgba(245,166,35,0.18)', border: '1px solid rgba(245,166,35,0.30)' }}>
+                <FiUsers size={13} style={{ color: 'var(--gold)' }} />
+                <span className="text-xs font-bold" style={{ color: 'var(--gold)' }}>{users.length} Users</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-lg">
-                <FiLock size={14} className="text-red-500" />
-                <span className="text-xs font-semibold text-red-700">{users.filter(u => u.isBlocked).length} Blocked</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                style={{ background: 'rgba(239,68,68,0.18)', border: '1px solid rgba(239,68,68,0.30)' }}>
+                <FiLock size={13} style={{ color: '#FCA5A5' }} />
+                <span className="text-xs font-bold" style={{ color: '#FCA5A5' }}>{users.filter(u => u.isBlocked).length} Blocked</span>
               </div>
-              <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg">
-                <FiShield size={14} className="text-blue-500" />
-                <span className="text-xs font-semibold text-blue-700">{users.filter(u => u.role === 'admin').length} Admins</span>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl"
+                style={{ background: 'rgba(96,165,250,0.18)', border: '1px solid rgba(96,165,250,0.30)' }}>
+                <FiShield size={13} style={{ color: '#93C5FD' }} />
+                <span className="text-xs font-bold" style={{ color: '#93C5FD' }}>{users.filter(u => u.role === 'admin').length} Admins</span>
               </div>
             </div>
-
-            {/* Filters */}
             <div className="flex gap-1.5 flex-wrap">
               {[['all', 'All'], ['user', 'Customers'], ['admin', 'Admins'], ['blocked', 'Blocked']].map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setFilterRole(val)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${filterRole === val ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                >
+                <button key={val} onClick={() => setFilterRole(val)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+                  style={filterRole === val
+                    ? { background: 'var(--gold)', color: 'var(--navy)', border: 'none' }
+                    : { background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.75)' }}>
                   {label}
                 </button>
               ))}

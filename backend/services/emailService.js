@@ -208,6 +208,68 @@ const sendContactAutoReply = async ({ name, email, phone, subject, message }) =>
   await sendWithRetry({ from: FROM(), to: `${name} <${email}>`, subject: `We received your message — DhaniFresh 🧈`, html: wrap(body) });
 };
 
+// ── 8. WELCOME EMAIL ──────────────────────────────────────────────────────────
+const sendWelcomeEmail = async ({ to, userName }) => {
+  const body = `<div style="padding:28px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:50px;height:50px;background:#fff7ed;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px"><span style="font-size:24px">👋</span></div>
+      <h2 style="margin:0;font-size:22px;font-weight:800;color:${darkBg}">Welcome to DhaniFresh!</h2>
+      <p style="margin:4px 0 0;font-size:14px;color:#8899aa">Pure & Natural Desi Ghee</p>
+    </div>
+    <p style="margin:0 0 20px;font-size:14px;color:#444455">Hi <strong>${userName}</strong>,</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#444455;line-height:1.6">We are absolutely thrilled to welcome you to our family! At DhaniFresh, we are dedicated to crafting the finest Bilona Desi Ghee, sourcing directly from local milk farms and using traditional hand-churned methods.</p>
+    ${box(`<h3 style="margin:0 0 12px;font-size:12px;font-weight:800;color:#8899aa;text-transform:uppercase;letter-spacing:0.05em">Why Bilona Ghee?</h3>
+      <div style="font-size:13px;color:#444455;line-height:1.7">
+        • <strong>100% Pure:</strong> Free from additives, preservatives, and artificial flavorings.<br/>
+        • <strong>Hand-Churned:</strong> Made using the ancient Bilona slow-cooking method.<br/>
+        • <strong>Nutritious:</strong> Rich in vitamins, antioxidants, and healthy fats that boost digestion.
+      </div>`)}
+    <p style="margin:0 0 20px;font-size:14px;color:#444455;line-height:1.6">To celebrate your new journey, use the discount code below on your first purchase:</p>
+    ${box(`<div style="text-align:center;font-size:16px;color:${brand};font-weight:800;letter-spacing:2px">CODE: FIRST10</div>
+      <div style="text-align:center;font-size:12px;color:#8899aa;margin-top:4px">Get 10% off on your first order above ₹500</div>`, '#fff7ed', '#fed7aa')}
+    ${btn('Explore Our Collection', `${CLIENT_URL()}/products`)}
+  </div>`;
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: `Welcome to DhaniFresh, ${userName}! 🧈`,
+    html: wrap(body),
+  });
+};
+
+// ── 9. SHIPPING UPDATE ────────────────────────────────────────────────────────
+const sendShippingUpdateEmail = async ({ to, userName, orderId, trackingNumber, shippingProvider }) => {
+  const sid = orderId.slice(-8).toUpperCase();
+  const trackingUrl = shippingProvider?.toLowerCase().includes('delhivery')
+    ? `https://www.delhivery.com/track/package/${trackingNumber}`
+    : shippingProvider?.toLowerCase().includes('bluedart')
+    ? `https://www.bluedart.com/tracking?trackid=${trackingNumber}`
+    : `https://www.google.com/search?q=track+package+${trackingNumber}`;
+
+  const body = `<div style="padding:28px">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:50px;height:50px;background:#dcfce7;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px"><span style="font-size:24px">🚚</span></div>
+      <h2 style="margin:0;font-size:20px;font-weight:800;color:${darkBg}">Your Order is Shipped!</h2>
+      <p style="margin:4px 0 0;font-size:14px;color:#8899aa">Order #${sid}</p>
+    </div>
+    <p style="margin:0 0 20px;font-size:14px;color:#444455">Hi ${userName},</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#444455;line-height:1.6">Great news! Your premium ghee package has been handed over to our courier partner and is on its way to your kitchen.</p>
+    ${box(`<h3 style="margin:0 0 12px;font-size:12px;font-weight:800;color:#8899aa;text-transform:uppercase;letter-spacing:0.05em">Tracking Details</h3>
+      ${row('Courier Partner', shippingProvider || 'Our Delivery Partner')}
+      ${row('Tracking ID', trackingNumber)}`)}
+    ${btn('Track Package', trackingUrl)}
+    <p style="font-size:13px;color:#8899aa;text-align:center;margin-top:20px">Please allow up to 24 hours for the tracking information to update.</p>
+  </div>`;
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: `Your order #${sid} has been shipped! 🚚`,
+    html: wrap(body),
+  });
+};
+
 module.exports = {
   sendCancelEmail,
   sendBlockEmail,
@@ -216,4 +278,6 @@ module.exports = {
   sendPasswordResetEmail,
   sendContactAdminEmail,
   sendContactAutoReply,
+  sendWelcomeEmail,
+  sendShippingUpdateEmail,
 };

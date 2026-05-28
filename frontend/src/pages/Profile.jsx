@@ -26,9 +26,9 @@ const emptyAddr = {
   city: '', district: '', state: '', zipCode: '', country: 'India', isDefault: false,
 }
 
-// ── Shared input style ──────────────────────────────────────────────────────
-const inp = 'w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm text-gray-800 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all placeholder:text-gray-400'
-const lbl = 'block text-sm font-medium text-gray-600 mb-1'
+// ── Shared input style (uses global design system) ────────────────────────────────
+const inp = 'input-base'
+const lbl = 'label'
 
 const Profile = () => {
   const { user, setUser, logout } = useAuth()
@@ -87,8 +87,8 @@ const Profile = () => {
     if (cleaned.length === 6) {
       setPinLoading(true)
       try {
-        const res = await fetch(`https://api.postalpincode.in/pincode/${cleaned}`)
-        const data = await res.json()
+        const res = await api.get(`/api/pincode/${cleaned}`)
+        const data = res.data
         if (data[0]?.Status === 'Success' && data[0].PostOffice?.length) {
           const po = data[0].PostOffice[0]
           setAddrForm(p => ({
@@ -175,13 +175,13 @@ const Profile = () => {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
+    <div className="min-h-screen pb-16" style={{ background: 'var(--bg-base)' }}>
 
       {/* ── Page header ── */}
-      <div className="bg-white border-b border-gray-100">
+      <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-          <h1 className="text-2xl font-bold text-gray-900">My Account</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Manage your profile and delivery addresses</p>
+          <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>My Account</h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Manage your profile and delivery addresses</p>
         </div>
       </div>
 
@@ -192,23 +192,24 @@ const Profile = () => {
           <div className="space-y-4">
 
             {/* Avatar card */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center">
-              <div className="w-16 h-16 rounded-xl bg-gray-900 flex items-center justify-center text-xl font-bold text-white mx-auto mb-3">
+            <div className="rounded-2xl p-6 text-center" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+              <div className="w-16 h-16 rounded-xl flex items-center justify-center text-xl font-bold mx-auto mb-3"
+                style={{ background: 'var(--brand-gradient)', color: 'var(--brand-text)' }}>
                 {user.name?.[0]?.toUpperCase()}
               </div>
-              <p className="font-semibold text-gray-900">{user.name}</p>
-              <p className="text-sm text-gray-400">{user.email}</p>
-              <span className={`inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full ${
-                user.role === 'admin' || user.role === 'superadmin'
-                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                  : 'bg-green-50 text-green-600 border border-green-100'
-              }`}>
+              <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>{user.name}</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{user.email}</p>
+              <span className="inline-block mt-2 px-2.5 py-0.5 text-xs font-medium rounded-full"
+                style={user.role === 'admin' || user.role === 'superadmin'
+                  ? { background: 'rgba(139,92,246,0.10)', color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.2)' }
+                  : { background: 'rgba(245,197,24,0.10)', color: 'var(--brand-secondary)', border: '1px solid rgba(245,197,24,0.25)' }
+                }>
                 {user.role === 'superadmin' ? 'Super Admin' : user.role === 'admin' ? 'Admin' : 'Customer'}
               </span>
             </div>
 
             {/* Nav links */}
-            <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
               {[
                 { label: 'My Orders', icon: FiPackage, to: '/orders' },
                 { label: 'Sign Out', icon: FiLogOut, danger: true, action: () => { logout(); navigate('/') } },
@@ -216,15 +217,16 @@ const Profile = () => {
                 <button
                   key={i}
                   onClick={item.action || (() => navigate(item.to))}
-                  className={`w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${
-                    item.danger ? 'text-red-500 hover:bg-red-50' : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-colors"
+                  style={{ borderBottom: '1px solid var(--border-color)', color: item.danger ? 'var(--danger)' : 'var(--text-primary)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = item.danger ? 'rgba(239,68,68,0.05)' : 'var(--bg-base)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                 >
                   <div className="flex items-center gap-3">
-                    <item.icon size={15} className={item.danger ? 'text-red-400' : 'text-gray-400'} />
+                    <item.icon size={15} style={{ color: item.danger ? 'var(--danger)' : 'var(--text-muted)' }} />
                     {item.label}
                   </div>
-                  <FiChevronRight size={14} className="text-gray-300" />
+                  <FiChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
                 </button>
               ))}
             </div>
@@ -234,69 +236,45 @@ const Profile = () => {
           <div className="lg:col-span-2 space-y-6">
 
             {/* ── Profile form ── */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-5 flex items-center gap-2">
-                <FiUser size={16} className="text-orange-500" /> Personal Details
+            <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+              <h2 className="text-base font-semibold mb-5 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                <FiUser size={16} style={{ color: 'var(--brand-secondary)' }} /> Personal Details
               </h2>
               <form onSubmit={handleProfileSubmit} className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className={lbl}>Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={name}
-                      onChange={e => setName(e.target.value)}
-                      placeholder="Your full name"
-                      className={inp}
-                    />
+                    <input type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" className={inp} />
                   </div>
                   <div>
                     <label className={lbl}>Phone Number</label>
-                    <input
-                      type="tel"
-                      value={phone}
-                      maxLength={10}
-                      onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="10-digit mobile number"
-                      inputMode="numeric"
-                      className={inp}
-                    />
+                    <input type="tel" value={phone} maxLength={10} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} placeholder="10-digit mobile number" inputMode="numeric" className={inp} />
                     {phone && !/^[6-9][0-9]{9}$/.test(phone) && phone.length === 10 && (
-                      <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                        <FiAlertCircle size={11} /> Enter a valid Indian mobile number
-                      </p>
+                      <p className="text-xs mt-1 flex items-center gap-1" style={{ color: 'var(--danger)' }}><FiAlertCircle size={11} /> Enter a valid Indian mobile number</p>
                     )}
                   </div>
                 </div>
                 <div>
                   <label className={lbl}>Email</label>
-                  <input type="email" disabled value={user.email} className={`${inp} bg-gray-50 cursor-not-allowed text-gray-400`} />
-                  <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+                  <input type="email" disabled value={user.email} className={inp} style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Email cannot be changed</p>
                 </div>
                 <div className="flex justify-end pt-1">
-                  <button
-                    type="submit"
-                    disabled={profLoading}
-                    className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-orange-500 transition-all disabled:opacity-50"
-                  >
-                    {profLoading ? 'Saving...' : 'Save Changes'}
+                  <button type="submit" disabled={profLoading} className="btn-primary text-sm">
+                    {profLoading ? 'Saving…' : 'Save Changes'}
                   </button>
                 </div>
               </form>
             </div>
 
             {/* ── Addresses ── */}
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="rounded-2xl p-6" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                  <FiMapPin size={16} className="text-orange-500" /> Saved Addresses
+                <h2 className="text-base font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <FiMapPin size={16} style={{ color: 'var(--brand-secondary)' }} /> Saved Addresses
                 </h2>
                 {!showForm && (
-                  <button
-                    onClick={openNew}
-                    className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white rounded-lg transition-all border border-orange-100 hover:border-orange-500"
-                  >
+                  <button onClick={openNew} className="btn-secondary text-[13px]">
                     <FiPlus size={14} /> Add Address
                   </button>
                 )}
@@ -310,11 +288,12 @@ const Profile = () => {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="bg-gray-50 rounded-xl p-5 border border-gray-100 mb-4"
+                    className="rounded-xl p-5 mb-4"
+                    style={{ background: 'var(--bg-base)', border: '1px solid var(--border-color)' }}
                   >
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-gray-900">{editId ? 'Edit Address' : 'New Address'}</h3>
-                      <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} className="text-gray-400 hover:text-gray-700 transition-colors">
+                      <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{editId ? 'Edit Address' : 'New Address'}</h3>
+                      <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} style={{ color: 'var(--text-muted)' }}>
                         <FiX size={18} />
                       </button>
                     </div>
@@ -330,11 +309,11 @@ const Profile = () => {
                               key={l}
                               type="button"
                               onClick={() => setAddrForm(p => ({ ...p, label: l }))}
-                              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all border ${
-                                addrForm.label === l
-                                  ? 'bg-gray-900 text-white border-gray-900'
-                                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-400'
-                              }`}
+                              className="flex-1 py-2 rounded-lg text-sm font-medium transition-all"
+                              style={addrForm.label === l
+                                ? { background: 'var(--brand-gradient)', color: 'var(--brand-text)', border: '1px solid transparent' }
+                                : { background: 'var(--bg-card)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }
+                              }
                             >
                               {l}
                             </button>
@@ -455,29 +434,21 @@ const Profile = () => {
                         </div>
                       </div>
 
-                      <label className="flex items-center gap-2.5 cursor-pointer p-3 bg-white rounded-lg border border-gray-100">
+                      <label className="flex items-center gap-2.5 cursor-pointer p-3 rounded-lg border" style={{ background: 'var(--bg-base)', borderColor: 'var(--border-color)' }}>
                         <input
                           type="checkbox"
                           checked={addrForm.isDefault}
                           onChange={e => setAddrForm(p => ({ ...p, isDefault: e.target.checked }))}
-                          className="w-4 h-4 accent-orange-500 rounded cursor-pointer"
+                          className="w-4 h-4 rounded cursor-pointer accent-orange-500"
                         />
-                        <span className="text-sm text-gray-700">Set as my default address</span>
+                        <span className="text-sm" style={{ color: 'var(--text-primary)' }}>Set as my default address</span>
                       </label>
 
                       <div className="flex gap-3 pt-1">
-                        <button
-                          type="submit"
-                          disabled={addrLoading}
-                          className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-orange-500 transition-all disabled:opacity-50"
-                        >
-                          {addrLoading ? 'Saving...' : editId ? 'Update Address' : 'Save Address'}
+                        <button type="submit" disabled={addrLoading} className="btn-primary flex-1">
+                          {addrLoading ? 'Saving…' : editId ? 'Update Address' : 'Save Address'}
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => { setShowForm(false); setEditId(null) }}
-                          className="px-4 py-3 text-sm text-gray-500 hover:text-gray-900 border border-gray-200 rounded-lg transition-colors"
-                        >
+                        <button type="button" onClick={() => { setShowForm(false); setEditId(null) }} className="btn-secondary px-5">
                           Cancel
                         </button>
                       </div>
@@ -494,21 +465,25 @@ const Profile = () => {
                           key={addr._id}
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between items-start gap-3 transition-all ${
-                            addr.isDefault ? 'bg-orange-50 border-orange-200' : 'bg-white border-gray-100 hover:border-gray-200'
-                          }`}
+                          className="p-4 rounded-xl flex flex-col sm:flex-row justify-between items-start gap-3 transition-all"
+                          style={addr.isDefault
+                            ? { background: 'rgba(245,197,24,0.06)', border: '1px solid rgba(245,197,24,0.30)' }
+                            : { background: 'var(--bg-base)', border: '1px solid var(--border-color)' }
+                          }
                         >
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <div className={`p-1.5 rounded-md ${addr.label === 'Home' ? 'bg-blue-100 text-blue-600' : addr.label === 'Work' ? 'bg-purple-100 text-purple-600' : 'bg-pink-100 text-pink-600'}`}>
+                              <div className="p-1.5 rounded-md"
+                                style={{ background: addr.label === 'Home' ? 'rgba(59,130,246,0.12)' : addr.label === 'Work' ? 'rgba(139,92,246,0.12)' : 'rgba(245,197,24,0.12)',
+                                  color: addr.label === 'Home' ? '#3B82F6' : addr.label === 'Work' ? '#8B5CF6' : 'var(--brand-secondary)' }}>
                                 {addr.label === 'Home' ? <FiHome size={12} /> : addr.label === 'Work' ? <FiBriefcase size={12} /> : <FiMapPin size={12} />}
                               </div>
-                              <span className="text-sm font-semibold text-gray-900">{addr.name}</span>
+                              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{addr.name}</span>
                               {addr.isDefault && (
-                                <span className="text-[10px] font-semibold bg-orange-500 text-white px-2 py-0.5 rounded-full">Default</span>
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: 'var(--brand-gradient)', color: 'var(--brand-text)' }}>Default</span>
                               )}
                             </div>
-                            <p className="text-xs text-gray-500 leading-relaxed">
+                            <p className="text-xs leading-relaxed" style={{ color: 'var(--text-muted)' }}>
                               {addr.street}<br />
                               {addr.city}{addr.district && `, ${addr.district}`} – {addr.zipCode}<br />
                               {addr.state} · {addr.phone}
@@ -517,26 +492,16 @@ const Profile = () => {
 
                           <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
                             {!addr.isDefault && (
-                              <button
-                                onClick={() => handleSetDefault(addr._id)}
-                                title="Set as default"
-                                className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-orange-500 hover:border-orange-200 transition-all text-xs"
-                              >
+                              <button onClick={() => handleSetDefault(addr._id)} title="Set as default" className="btn-icon">
                                 <FiStar size={14} />
                               </button>
                             )}
-                            <button
-                              onClick={() => openEdit(addr)}
-                              title="Edit"
-                              className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-blue-600 hover:border-blue-200 transition-all"
-                            >
+                            <button onClick={() => openEdit(addr)} title="Edit" className="btn-icon">
                               <FiEdit2 size={14} />
                             </button>
-                            <button
-                              onClick={() => handleDeleteAddress(addr._id)}
-                              title="Delete"
-                              className="p-2 bg-white border border-gray-100 rounded-lg text-gray-400 hover:text-red-500 hover:border-red-200 transition-all"
-                            >
+                            <button onClick={() => handleDeleteAddress(addr._id)} title="Delete" className="btn-icon"
+                              style={{ color: 'var(--danger)' }} onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(239,68,68,0.3)'}
+                              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}>
                               <FiTrash2 size={14} />
                             </button>
                           </div>
@@ -544,10 +509,10 @@ const Profile = () => {
                       ))}
                     </div>
                   ) : (
-                    <div className="py-10 text-center border-2 border-dashed border-gray-100 rounded-xl">
-                      <FiMapPin size={28} className="text-gray-200 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">No addresses saved yet</p>
-                      <button onClick={openNew} className="mt-3 text-sm text-orange-500 hover:text-orange-600 font-medium">
+                    <div className="py-10 text-center rounded-xl" style={{ border: '2px dashed var(--border-color)' }}>
+                      <FiMapPin size={28} className="mx-auto mb-2" style={{ color: 'var(--border-color)' }} />
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No addresses saved yet</p>
+                      <button onClick={openNew} className="mt-3 text-sm font-medium" style={{ color: 'var(--brand-secondary)' }}>
                         + Add your first address
                       </button>
                     </div>

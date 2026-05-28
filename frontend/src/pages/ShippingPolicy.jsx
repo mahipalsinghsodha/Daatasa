@@ -1,47 +1,56 @@
-import { FiTruck } from 'react-icons/fi'
+import PolicyPage, { PolicySection, PolicyBullet, PolicyCallout } from '../components/PolicyPage'
+
+const date = new Date().toLocaleDateString('en-IN', { month:'long', year:'numeric' })
+const TOC = ['Processing Time','Shipping Rates','Delivery Estimates','Order Tracking','Damaged Shipments']
 
 export default function ShippingPolicy() {
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      <div className="bg-[#0f172a] pt-20 pb-32 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        <div className="relative z-10 max-w-xl mx-auto px-4">
-          <span className="inline-flex items-center gap-2 px-3 py-1 bg-green-500/20 text-green-400 text-[11px] font-bold tracking-wider uppercase rounded-full border border-green-500/20 mb-5">
-            <FiTruck size={12} /> Logistics
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            Shipping <span className="text-green-500">Policy</span>
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-            Last Updated: {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-          </p>
+    <PolicyPage icon="🚚" accentClass="from-emerald-400 to-teal-400" tag="Legal"
+      title="Shipping Policy"
+      subtitle="Fast, reliable delivery across all of India."
+      lastUpdated={date} toc={TOC}>
+
+      <PolicySection id="section-1" title="Processing Time">
+        <p>All orders are processed within <strong className="text-slate-900">1–2 business days</strong>. Orders placed on Sundays or public holidays are processed on the next working day.</p>
+        <PolicyCallout type="tip">Place your order before 12 PM IST for same-day dispatch (business days only).</PolicyCallout>
+      </PolicySection>
+
+      <PolicySection id="section-2" title="Shipping Rates">
+        <div className="grid sm:grid-cols-2 gap-4 mt-2">
+          {[
+            { label:'Orders above ₹500', val:'FREE Standard Shipping', color:'bg-emerald-50 border-emerald-200 text-emerald-800' },
+            { label:'Orders below ₹500', val:'₹50 Flat Rate',          color:'bg-slate-50 border-slate-200 text-slate-700'     },
+          ].map(item => (
+            <div key={item.label} className={`p-5 rounded-2xl border ${item.color}`}>
+              <p className="text-xs font-black uppercase tracking-widest mb-2 opacity-60">{item.label}</p>
+              <p className="text-xl font-extrabold">{item.val}</p>
+            </div>
+          ))}
         </div>
-      </div>
+      </PolicySection>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 sm:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-gray-600 space-y-8 text-[15px] leading-relaxed">
-          
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>1. Processing Time</h2>
-            <p>All orders are processed within 1-2 business days. Orders are not shipped or delivered on Sundays or public holidays.</p>
-          </section>
+      <PolicySection id="section-3" title="Delivery Estimates">
+        <ul className="space-y-2 list-none">
+          <PolicyBullet color="text-emerald-500">Metro cities (Mumbai, Delhi, Bangalore, Hyderabad): 2–4 business days</PolicyBullet>
+          <PolicyBullet color="text-emerald-500">Tier-2 cities: 4–6 business days</PolicyBullet>
+          <PolicyBullet color="text-emerald-500">Remote / rural areas: 5–8 business days</PolicyBullet>
+        </ul>
+        <PolicyCallout type="warning">Delivery times may be extended during festive seasons and extreme weather conditions.</PolicyCallout>
+      </PolicySection>
 
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>2. Shipping Rates & Delivery Estimates</h2>
-            <p>Shipping charges for your order will be calculated and displayed at checkout.</p>
-            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-500">
-              <li>Orders above Rs. 500: Free Standard Shipping (3-5 business days)</li>
-              <li>Orders below Rs. 500: Rs. 50 Flat Rate (3-5 business days)</li>
-            </ul>
-          </section>
+      <PolicySection id="section-4" title="Order Tracking">
+        <p>You will receive a Shipment Confirmation email with a tracking number once your order ships. The tracking link becomes active within 24 hours of dispatch.</p>
+        <PolicyCallout type="info">Track your order anytime at <strong>My Orders</strong> in your DhaniFresh account.</PolicyCallout>
+      </PolicySection>
 
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>3. Shipment Confirmation & Order Tracking</h2>
-            <p>You will receive a Shipment Confirmation email once your order has shipped containing your tracking number(s). The tracking number will be active within 24 hours.</p>
-          </section>
-
-        </div>
-      </div>
-    </div>
+      <PolicySection id="section-5" title="Damaged Shipments">
+        <p>If your order arrives damaged, please:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet>Take clear photographs of the damaged packaging and product</PolicyBullet>
+          <PolicyBullet>Email us within 48 hours of delivery at support@dhanifresh.com</PolicyBullet>
+          <PolicyBullet>We will arrange a replacement or full refund within 5 business days</PolicyBullet>
+        </ul>
+      </PolicySection>
+    </PolicyPage>
   )
 }

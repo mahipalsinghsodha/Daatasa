@@ -183,84 +183,99 @@ exports.verifyPayment = async (req, res) => {
 
 /**
  * RAZORPAY WEBHOOK
- * Catch payments even if frontend connection drops
+ * ✅ Receives raw Buffer body (registered with express.raw() in server.js)
+ * ✅ Validates HMAC-SHA256 signature using RAZORPAY_WEBHOOK_SECRET
+ * ✅ Idempotent — skips orders already marked PAID
+ * ✅ Clears cart + sends email after confirming payment
  */
 exports.razorpayWebhook = async (req, res) => {
   try {
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET || process.env.RAZORPAY_KEY_SECRET;
-    
-    // Webhook secret validation
-    const crypto = require('crypto');
-    const shasum = crypto.createHmac('sha256', secret);
-    shasum.update(JSON.stringify(req.body));
-    const digest = shasum.digest('hex');
+
+    // ✅ req.body is a raw Buffer from express.raw() — use it directly for HMAC
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from(JSON.stringify(req.body));
+    const digest = crypto
+      .createHmac('sha256', secret)
+      .update(rawBody)
+      .digest('hex');
 
     if (digest !== req.headers['x-razorpay-signature']) {
-      console.error('WEBHOOK SIGNATURE INVALID');
+      console.error('WEBHOOK: Invalid signature');
       return res.status(400).send('Invalid signature');
     }
 
-    const event = req.body.event;
+    // Parse body (Buffer -> JSON)
+    const payload = JSON.parse(rawBody.toString());
+    const event = payload.event;
+
+    console.log(`WEBHOOK: received event '${event}'`);
 
     if (event === 'payment.captured' || event === 'payment.authorized') {
-      const paymentInfo = req.body.payload.payment.entity;
-      const orderId = paymentInfo.notes.orderId;
+      const paymentInfo = payload.payload.payment.entity;
+      const orderId     = paymentInfo.notes?.orderId;
+
+      if (!orderId) {
+        console.warn('WEBHOOK: No orderId in payment notes');
+        return res.status(200).send('OK');
+      }
 
       const order = await Order.findById(orderId);
-      
-      // If already paid (handled by frontend verify endpoint), just return ok
-      if (order && order.paymentStatus === 'PENDING') {
-        order.isPaid = true;
-        order.paidAt = Date.now();
-        order.paymentStatus = 'PAID';
-        
-        // Generate invoice number
-        if (!order.invoiceNumber) {
-          const orderCount = await Order.countDocuments();
-          order.invoiceNumber = `INV-${new Date().getFullYear()}-${String(orderCount).padStart(6, '0')}`;
-        }
 
-        order.paymentInfo = {
-          razorpay_order_id: paymentInfo.order_id,
-          razorpay_payment_id: paymentInfo.id,
-          razorpay_signature: 'WEBHOOK_VERIFIED'
-        };
+      if (!order) {
+        console.warn(`WEBHOOK: Order ${orderId} not found`);
+        return res.status(200).send('OK'); // Still 200 so Razorpay doesn't retry
+      }
 
-        await order.save();
+      // ✅ Idempotent — if already paid (by frontend verify), skip cleanly
+      if (order.paymentStatus !== 'PENDING') {
+        console.log(`WEBHOOK: Order ${orderId} already processed (${order.paymentStatus}), skipping`);
+        return res.status(200).send('OK');
+      }
 
-        // Clear cart for the user
-        await Cart.findOneAndUpdate(
-          { user: order.user },
-          { items: [] }
-        );
+      // Mark as paid
+      order.isPaid         = true;
+      order.paidAt         = new Date();
+      order.paymentStatus  = 'PAID';
 
-        // Increment coupon usage
-        if (order.coupon && order.coupon.code) {
-          await Coupon.findOneAndUpdate(
-            { code: order.coupon.code },
-            { $inc: { usedCount: 1 } }
-          );
-        }
+      if (!order.invoiceNumber) {
+        const year   = new Date().getFullYear();
+        const ts     = Date.now().toString(36).toUpperCase();
+        const suffix = order._id.toString().slice(-4).toUpperCase();
+        order.invoiceNumber = `INV-${year}-${ts}${suffix}`;
+      }
 
-        // Send email
-        try {
-          const { sendOrderSuccessEmail } = require('../services/emailService');
-          const populatedOrder = await order.populate('user', 'name email');
-          await sendOrderSuccessEmail({
-            to:            populatedOrder.user.email,
-            userName:      populatedOrder.user.name,
-            orderId:       order._id.toString(),
-            totalPrice:    order.totalPrice,
-            paymentMethod: 'Online Payment',
-            items:         order.orderItems.map(i => ({
-              name:     i.name,
-              quantity: i.quantity,
-              price:    i.price
-            }))
-          });
-        } catch (emailErr) {
-          console.error('WEBHOOK EMAIL ERROR:', emailErr);
-        }
+      order.paymentInfo = {
+        razorpay_order_id:   paymentInfo.order_id,
+        razorpay_payment_id: paymentInfo.id,
+        razorpay_signature:  'WEBHOOK_VERIFIED',
+      };
+
+      await order.save();
+
+      // Clear cart
+      await Cart.findOneAndUpdate({ user: order.user }, { items: [] });
+
+      // Increment coupon usage
+      if (order.coupon?.code) {
+        await Coupon.findOneAndUpdate({ code: order.coupon.code }, { $inc: { usedCount: 1 } });
+      }
+
+      console.log(`WEBHOOK: Order ${orderId} marked PAID via webhook`);
+
+      // Send success email (non-fatal)
+      try {
+        const { sendOrderSuccessEmail } = require('../services/emailService');
+        const populatedOrder = await order.populate('user', 'name email');
+        await sendOrderSuccessEmail({
+          to:            populatedOrder.user.email,
+          userName:      populatedOrder.user.name,
+          orderId:       order._id.toString(),
+          totalPrice:    order.totalPrice,
+          paymentMethod: 'Online Payment',
+          items:         order.orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
+        });
+      } catch (emailErr) {
+        console.error('WEBHOOK EMAIL ERROR (non-fatal):', emailErr);
       }
     }
 
@@ -269,4 +284,4 @@ exports.razorpayWebhook = async (req, res) => {
     console.error('WEBHOOK ERROR:', error);
     res.status(500).send('Server Error');
   }
-};
+};

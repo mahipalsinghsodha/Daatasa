@@ -11,8 +11,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
-const inputCls = "w-full px-4 py-3 rounded-lg border border-gray-200 bg-white focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 outline-none text-sm text-gray-800 transition-all placeholder:text-gray-400"
-const labelCls = "block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5"
+const inputCls = "input-base"
+const labelCls = "label"
 
 const WEIGHT_OPTIONS = ['250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg']
 
@@ -34,7 +34,8 @@ const AdminProducts = () => {
   const fetchData = async () => {
     try {
       const [pRes, cRes] = await Promise.all([api.get('/api/products?all=true'), api.get('/api/categories')])
-      setProducts(pRes.data)
+      // API returns an object { products, total, ... }. Extract the array.
+      setProducts(pRes.data.products)
       setCategories(cRes.data)
     } catch {
       toast.error('Failed to load products')
@@ -45,19 +46,21 @@ const AdminProducts = () => {
 
   const handleSelect = (prod) => {
     setSelectedProduct(prod)
-    setForm({
-      name: prod.name,
-      description: prod.description,
-      price: prod.price,
-      stock: prod.stock,
-      category: prod.category,
-      weight: prod.weight || '',
-      isActive: prod.isActive ?? true,
-    })
+      setForm({
+        name: prod.name,
+        description: prod.description,
+        price: prod.price,
+        mrp: prod.mrp ?? '',
+        stock: prod.stock,
+        category: prod.category,
+        weight: prod.weight || '',
+        isActive: prod.isActive ?? true,
+      })
   }
 
   const handleSave = async () => {
-    if (!form.name || !form.price || !form.category) return toast.error('Name, price, and category are required')
+    if (!form.name || !form.price || !form.category) return toast.error('Name, price, and category are required');
+    if (form.mrp && Number(form.mrp) < Number(form.price)) return toast.error('MRP must be greater than or equal to price');
     if (!window.confirm(`Save changes to "${form.name}"?`)) return
     setSaving(true)
     try {
@@ -99,24 +102,29 @@ const AdminProducts = () => {
   )
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#f8f9fa' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)' }}>
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 shrink-0">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
+      {/* ── Premium Admin Header ── */}
+      <div className="shrink-0 relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center">
-              <FiBox size={18} className="text-orange-500" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(245,166,35,0.20)', border: '1px solid rgba(245,166,35,0.35)' }}>
+              <FiBox size={18} style={{ color: 'var(--gold)' }} />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Manage Products</h1>
-              <p className="text-xs text-gray-400">{products.length} products in catalogue</p>
+              <h1 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>Manage Products</h1>
+              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>{products.length} products in catalogue</p>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/admin/add-product')}
-            className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
-          >
+          <button onClick={() => navigate('/admin/add-product')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
+            style={{ background: 'var(--gold)', color: 'var(--navy)', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(245,166,35,0.45)' }}>
             <FiPlus size={15} /> Add Product
           </button>
         </div>
@@ -247,6 +255,10 @@ const AdminProducts = () => {
                     <div>
                       <label className={labelCls}>Price (₹)</label>
                       <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} className={inputCls} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>MRP (₹)</label>
+                      <input type="number" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} className={inputCls} placeholder="Optional" />
                     </div>
                     <div>
                       <label className={labelCls}>Stock Quantity</label>

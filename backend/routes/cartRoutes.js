@@ -3,8 +3,12 @@ const router = express.Router();
 const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
+const mongoose = require('mongoose');
 
 const MAX_QTY_PER_ITEM = 10; // Maximum quantity of a single product in cart
+
+// Helper: validate MongoDB ObjectId format
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 // Get user's cart
 router.get('/', auth, async (req, res) => {
@@ -27,6 +31,11 @@ router.post('/items', auth, async (req, res) => {
  
   try {
     const { productId, quantity } = req.body;
+
+    // Validate ObjectId format to prevent CastError HTML 500
+    if (!productId || !isValidObjectId(productId)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
 
     const product = await Product.findById(productId);
     if (!product) {

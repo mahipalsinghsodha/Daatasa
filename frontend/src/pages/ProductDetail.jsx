@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import { useAuth } from '../context/AuthContext'
 import { useCart } from '../context/CartContext'
@@ -10,6 +11,12 @@ import {
   Star, Truck, Shield, RefreshCw, MapPin, Package,
   CheckCircle, AlertCircle, Tag, User, Send, BadgeCheck, Heart
 } from 'lucide-react'
+
+// ── Cloudinary URL transform: serve optimized images ──────────────────────────
+const cloudinaryTransform = (url, { width = 800, quality = 'auto', format = 'auto' } = {}) => {
+  if (!url || !url.includes('cloudinary.com')) return url
+  return url.replace('/upload/', `/upload/c_fill,w_${width},f_${format},q_${quality}/`)
+}
 
 // ── Star selector component ────────────────────────────────────────────────
 const StarPicker = ({ value, onChange }) => (
@@ -62,32 +69,40 @@ const ProductDetail = () => {
   const [reviewComment, setReviewComment] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
   const [hasReviewed, setHasReviewed] = useState(false)
+  const [estPin, setEstPin] = useState('')
+  const [estLoading, setEstLoading] = useState(false)
+  const [estState, setEstState] = useState(null)
+  const [estError, setEstError] = useState('')
 
   useEffect(() => {
-    window.scrollTo(0, 0)
-    setQuantity(1)
-    setActiveTab('description')
-    fetchAll()
-  }, [id])
+  const controller = new AbortController();
+  window.scrollTo(0, 0);
+  setQuantity(1);
+  setActiveTab('description');
+  fetchAll(controller);
+  return () => controller.abort();
+}, [id])
 
-  const fetchAll = async () => {
+  const fetchAll = async (controller = new AbortController()) => {
     setLoading(true)
     try {
       const [prodRes] = await Promise.all([
-        api.get(`/api/products/${id}`),
+        api.get(`/api/products/${id}`, { signal: controller.signal }),
       ])
       const prod = prodRes.data
       setProduct(prod)
-      document.title = `${prod.name} – DhaniFresh`
 
       // Check if current user already reviewed
       if (user && prod.reviews?.length) {
-        setHasReviewed(prod.reviews.some(r => r.user === user._id || r.user?._id === user._id))
+        setHasReviewed(prod.reviews.some(r => {
+          const rUserId = r.user?._id || r.user;
+          return String(rUserId) === String(user._id || user.id);
+        }))
       }
 
       // Fetch related products (same category)
       try {
-        const relRes = await api.get(`/api/products?category=${prod.category}`)
+        const relRes = await api.get(`/api/products?category=${prod.category}`, { signal: controller.signal })
         setRelated((relRes.data || []).filter(p => p._id !== prod._id).slice(0, 4))
       } catch {}
 
@@ -96,8 +111,8 @@ const ProductDetail = () => {
         try {
           // Fetch addresses and review eligibility in parallel
           const [meRes, eligRes] = await Promise.allSettled([
-            api.get('/api/auth/me'),
-            api.get(`/api/products/${id}/review-eligibility`)
+            api.get('/api/auth/me', { signal: controller.signal }),
+            api.get(`/api/products/${id}/review-eligibility`, { signal: controller.signal })
           ])
           if (meRes.status === 'fulfilled') setAddresses(meRes.value.data.addresses || [])
           if (eligRes.status === 'fulfilled') {
@@ -111,6 +126,54 @@ const ProductDetail = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleEstPinChange = async (val) => {
+    const cleaned = val.replace(/\D/g, '').slice(0, 6)
+    setEstPin(cleaned)
+    setEstError('')
+    if (cleaned.length === 6) {
+      setEstLoading(true)
+      try {
+        const res = await api.get(`/api/pincode/${cleaned}`)
+        const data = res.data
+        if (data[0]?.Status === 'Success' && data[0].PostOffice?.length) {
+          const po = data[0].PostOffice[0]
+          setEstState(po.State)
+        } else {
+          setEstError('PIN code not found')
+        }
+      } catch {
+        setEstError('Could not fetch delivery details')
+      } finally {
+        setEstLoading(false)
+      }
+    } else {
+      setEstState(null)
+    }
+  }
+
+  const getDeliveryEstimateText = (stateName) => {
+    const today = new Date()
+    let daysMin = 3
+    let daysMax = 5
+
+    if (stateName) {
+      const state = stateName.toLowerCase()
+      if (['delhi', 'haryana', 'punjab', 'uttar pradesh', 'rajasthan'].some(s => state.includes(s))) {
+        daysMin = 2
+        daysMax = 3
+      } else if (['kerala', 'tamil nadu', 'karnataka', 'assam', 'meghalaya', 'tripura', 'mizoram', 'nagaland', 'manipur', 'arunachal pradesh'].some(s => state.includes(s))) {
+        daysMin = 4
+        daysMax = 6
+      }
+    }
+
+    const dateMin = new Date(today.getTime() + daysMin * 24 * 60 * 60 * 1000)
+    const dateMax = new Date(today.getTime() + daysMax * 24 * 60 * 60 * 1000)
+
+    const opt = { day: 'numeric', month: 'short', weekday: 'short' }
+    return `${dateMin.toLocaleDateString('en-IN', opt)} - ${dateMax.toLocaleDateString('en-IN', opt)}`
   }
 
   const handleAddToCart = async ({ redirectTo } = {}) => {
@@ -204,6 +267,40 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
+      {product && (
+        <Helmet>
+          <title>{product.name} – DhaniFresh | Premium Bilona Ghee</title>
+          <meta name="description" content={`${product.description?.slice(0, 155)}... Buy ${product.name} online from DhaniFresh. FSSAI certified, lab tested, pan India delivery.`} />
+          <meta property="og:title" content={`${product.name} – DhaniFresh`} />
+          <meta property="og:description" content={product.description?.slice(0, 200)} />
+          <meta property="og:image" content={product.image} />
+          <meta property="og:type" content="product" />
+          <meta property="og:url" content={`https://dhanifresh.in/products/${product._id}`} />
+          <link rel="canonical" href={`https://dhanifresh.in/products/${product._id}`} />
+          <script type="application/ld+json">{JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name,
+            image: product.image,
+            description: product.description,
+            brand: { '@type': 'Brand', name: 'DhaniFresh' },
+            offers: {
+              '@type': 'Offer',
+              priceCurrency: 'INR',
+              price: product.price,
+              availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+              url: `https://dhanifresh.in/products/${product._id}`,
+            },
+            ...(product.rating && {
+              aggregateRating: {
+                '@type': 'AggregateRating',
+                ratingValue: product.rating.toFixed(1),
+                reviewCount: product.numReviews || 0,
+              },
+            }),
+          })}</script>
+        </Helmet>
+      )}
 
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
@@ -229,8 +326,9 @@ const ProductDetail = () => {
                 </span>
               )}
               <img
-                src={product.image}
+                src={cloudinaryTransform(product.image, { width: 800, quality: 'auto', format: 'auto' })}
                 alt={product.name}
+                loading="eager"
                 className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
             </div>
@@ -276,7 +374,7 @@ const ProductDetail = () => {
                   onClick={handleWishlist}
                   className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-orange-50 text-orange-500 hover:bg-orange-500 hover:text-white transition-colors"
                 >
-                  <Heart size={18} className={user?.wishlist?.includes(product._id) ? 'fill-current' : ''} />
+                  <Heart size={18} className={user?.wishlist?.some(id => String(id?._id || id) === String(product._id)) ? 'fill-current' : ''} />
                 </button>
               )}
             </div>
@@ -305,9 +403,23 @@ const ProductDetail = () => {
 
             {/* Price */}
             <div className="flex items-baseline gap-2">
-              <span className="text-4xl font-bold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                ₹{product.price.toLocaleString('en-IN')}
-              </span>
+              {product.mrp && product.mrp > product.price ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-4xl font-bold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                    ₹{product.price.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-sm line-through text-gray-400" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                    ₹{product.mrp.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-xs font-medium text-green-600">
+                    You Save ₹{(product.mrp - product.price).toLocaleString('en-IN')}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-4xl font-bold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                  ₹{product.price.toLocaleString('en-IN')}
+                </span>
+              )}
               <span className="text-sm text-gray-400">/ {product.weight || 'unit'}</span>
             </div>
 
@@ -337,6 +449,51 @@ const ProductDetail = () => {
                 )}
               </div>
             )}
+
+            {/* ── Delivery Estimation (PIN check) ── */}
+            <div className="border border-slate-100 rounded-2xl p-4 bg-white space-y-3">
+              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+                <Truck size={13} className="text-orange-500" /> Check Delivery
+              </p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={estPin}
+                    onChange={e => handleEstPinChange(e.target.value)}
+                    placeholder="Enter 6-digit PIN"
+                    className="w-full pl-8 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-orange-400 transition-all bg-white"
+                  />
+                </div>
+                {estLoading && (
+                  <div className="flex items-center px-3">
+                    <div className="w-4 h-4 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+              {estError && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle size={12} /> {estError}
+                </p>
+              )}
+              {estState && !estError && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+                  <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5 mb-0.5">
+                    <CheckCircle size={13} /> Delivery available to {estState}
+                  </p>
+                  <p className="text-sm font-bold text-slate-900">
+                    Est. Delivery: {getDeliveryEstimateText(estState)}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Free shipping on orders above ₹500</p>
+                </div>
+              )}
+              {!estPin && (
+                <p className="text-[11px] text-slate-400">We deliver across India • Usually 2-6 business days</p>
+              )}
+            </div>
 
             {/* Purchase controls — only for logged-in regular customers */}
             {product.stock > 0 && isCustomer && (() => {
@@ -419,7 +576,7 @@ const ProductDetail = () => {
 
         {/* ── Tabs: Description + Reviews ── */}
         <div className="mt-12">
-          <div className="flex border-b border-gray-100 mb-6 gap-1">
+          <div className="relative flex border-b border-slate-100 mb-6">
             {[
               { key: 'description', label: 'Description' },
               { key: 'reviews',     label: `Reviews (${numReviews})` },
@@ -427,13 +584,20 @@ const ProductDetail = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-5 py-3 text-sm font-semibold transition-all border-b-2 ${
+                className={`relative px-6 py-3.5 text-sm font-bold transition-colors duration-200 ${
                   activeTab === tab.key
-                    ? 'border-orange-500 text-orange-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                    ? 'text-orange-600'
+                    : 'text-slate-400 hover:text-slate-600'
                 }`}
               >
                 {tab.label}
+                {activeTab === tab.key && (
+                  <motion.div
+                    layoutId="tab-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-500 rounded-full"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
               </button>
             ))}
           </div>
@@ -600,36 +764,92 @@ const ProductDetail = () => {
 
         {/* ── Related products ── */}
         {related.length > 0 && (
-          <div className="mt-14">
-            <h2 className="text-lg font-bold text-gray-900 mb-5">You might also like</h2>
+          <div className="mt-16">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-extrabold text-slate-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>You Might Also Like</h2>
+              <Link to={`/products?category=${product.category}`} className="text-sm font-semibold text-orange-500 hover:text-orange-600 transition-colors">View All →</Link>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {related.map(p => (
-                <Link
+              {related.map((p, idx) => (
+                <motion.div
                   key={p._id}
-                  to={`/products/${p._id}`}
-                  className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md hover:border-orange-100 transition-all group"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.07 }}
                 >
-                  <div className="aspect-square bg-gray-50 p-4 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={p.image}
-                      alt={p.name}
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="p-3">
-                    <p className="text-sm font-semibold text-gray-900 truncate">{p.name}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-sm font-bold text-orange-600">₹{p.price.toLocaleString('en-IN')}</p>
-                      <Stars rating={p.rating || 0} size={11} />
+                  <Link
+                    to={`/products/${p._id}`}
+                    className="group block bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-[0_8px_24px_-4px_rgb(0_0_0_/_0.10)] hover:-translate-y-1 transition-all duration-300 will-change-transform"
+                  >
+                    <div className="aspect-square bg-slate-50 overflow-hidden">
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400"
+                      />
                     </div>
-                  </div>
-                </Link>
+                    <div className="p-3.5">
+                      <p className="text-xs font-bold text-slate-900 truncate mb-1 group-hover:text-orange-500 transition-colors">{p.name}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-extrabold text-orange-500">₹{p.price.toLocaleString('en-IN')}</p>
+                        <div className="flex gap-0.5">
+                          {[1,2,3,4,5].map(i => (
+                            <Star key={i} size={9} className={i <= Math.round(p.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
               ))}
             </div>
           </div>
         )}
 
       </div>
+
+      {/* ── Sticky Mobile Add to Cart Bar ── */}
+      {product && product.stock > 0 && isCustomer && (
+        <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur-xl border-t border-gray-100 shadow-[0_-4px_24px_rgb(0_0_0_/_0.10)] px-4 py-3 safe-area-inset-bottom">
+          <div className="flex items-center gap-3 max-w-lg mx-auto">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-500 truncate">{product.name}</p>
+              <p className="text-base font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                ₹{(product.price * quantity).toLocaleString('en-IN')}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 border border-gray-200 rounded-xl p-1 shrink-0">
+              <button
+                onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                aria-label="Decrease quantity"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-200 transition-colors text-gray-700"
+              >
+                <Minus size={13} />
+              </button>
+              <span className="w-8 text-center text-sm font-bold text-gray-900">{quantity}</span>
+              <button
+                onClick={() => setQuantity(q => Math.min(Math.min(product.stock, 10), q + 1))}
+                aria-label="Increase quantity"
+                className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-200 transition-colors text-gray-700"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
+            <button
+              onClick={() => handleAddToCart()}
+              disabled={adding}
+              className="px-5 py-3 bg-orange-500 text-white font-bold rounded-xl text-sm hover:bg-orange-600 transition-all disabled:opacity-50 flex items-center gap-2 shadow-[0_4px_14px_rgb(249_115_22_/_0.35)] shrink-0"
+            >
+              {adding
+                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <ShoppingCart size={16} />
+              }
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

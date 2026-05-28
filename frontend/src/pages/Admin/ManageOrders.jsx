@@ -108,46 +108,84 @@ const ManageOrders = () => {
   if (!hasPermission('orders')) return <RestrictedAccess title="Access Restricted" message="You don't have permission to manage orders." />
 
   if (loading) return (
-    <div className="min-h-[60vh] flex items-center justify-center" style={{ background: '#f8f9fa' }}>
-      <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
+      <div style={{ background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-color)' }}>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="h-8 w-48 shimmer rounded mb-2" />
+          <div className="h-5 w-64 shimmer rounded" />
+        </div>
+      </div>
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-3">
+        {[...Array(5)].map((_,i) => (
+          <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 flex items-center gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-32 shimmer rounded" />
+              <div className="h-3 w-48 shimmer rounded" />
+            </div>
+            <div className="h-6 w-20 shimmer rounded-full" />
+            <div className="h-8 w-24 shimmer rounded-xl" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
+      {/* ── Premium Admin Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
             <div>
-              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200 mb-3">Admin</span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>
-                Manage Orders
-              </h1>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border mb-3"
+                style={{ background: 'rgba(245,197,24,0.18)', color: 'var(--gold)', borderColor: 'rgba(245,197,24,0.35)' }}>
+                <FiShield size={10} /> Admin Panel
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white"
+                style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>Manage Orders</h1>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-                <FiSearch size={14} className="text-gray-400 shrink-0" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders…" className="bg-transparent outline-none text-sm text-gray-700 w-48 placeholder:text-gray-400" />
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.14)' }}>
+                <FiSearch size={14} style={{ color: 'rgba(255,255,255,0.55)' }} className="shrink-0" />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders…"
+                  className="bg-transparent outline-none text-sm w-48" style={{ color: '#FFF', caretColor: 'var(--gold)' }} />
               </div>
-              <button onClick={() => fetchOrders()} disabled={syncing} className="flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+              <button onClick={() => fetchOrders()} disabled={syncing}
+                className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all"
+                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.80)' }}>
                 <FiRefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> Refresh
               </button>
             </div>
           </div>
 
-          {/* Filter Tabs */}
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+          {/* Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {[
-              ['all', 'All', counts.all],
-              ['pending', 'Pending', counts.pending],
-              ['cod', 'COD', counts.cod],
-              ['paid', 'Paid', counts.paid],
-              ['delivered', 'Delivered', counts.delivered],
-              ['cancelled', 'Cancelled', counts.cancelled],
-            ].map(([v, l, c]) => (
-              <button key={v} onClick={() => setFilter(v)} className={`whitespace-nowrap px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${filter === v ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-                {l} <span className={`text-[10px] ${filter === v ? 'text-white/70' : 'text-gray-400'}`}>{c}</span>
+              { v: 'all',       l: 'All',       c: counts.all },
+              { v: 'pending',   l: 'Pending',   c: counts.pending },
+              { v: 'cod',       l: 'COD',       c: counts.cod },
+              { v: 'paid',      l: 'Paid',      c: counts.paid },
+              { v: 'delivered', l: 'Delivered', c: counts.delivered },
+              { v: 'cancelled', l: 'Cancelled', c: counts.cancelled },
+            ].map(({ v, l, c }) => (
+              <button key={v} onClick={() => setFilter(v)}
+                className="whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
+                style={filter === v
+                  ? { background: 'var(--gold)', color: 'var(--navy)', border: 'none' }
+                  : { background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.75)' }
+                }>
+                {l}
+                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
+                  style={filter === v
+                    ? { background: 'rgba(27,47,110,0.25)', color: 'var(--navy)' }
+                    : { background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)' }
+                  }>{c}</span>
               </button>
             ))}
           </div>
@@ -157,9 +195,14 @@ const ManageOrders = () => {
       {/* Order List */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {filteredOrders.length === 0 ? (
-          <div className="py-20 bg-white rounded-2xl border border-dashed border-gray-200 flex flex-col items-center text-center">
-            <FiPackage size={32} className="text-gray-200 mb-3" />
-            <p className="text-sm font-medium text-gray-400">No orders found</p>
+          <div className="py-20 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center">
+            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-4">
+              <FiPackage size={28} />
+            </div>
+            <p className="text-base font-bold text-slate-400 mb-1">No orders found</p>
+            <p className="text-sm text-slate-300">
+              {search ? `No results for "${search}"` : `No ${filter === 'all' ? '' : filter} orders yet`}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">

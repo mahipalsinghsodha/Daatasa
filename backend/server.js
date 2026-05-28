@@ -7,6 +7,8 @@ const session = require("express-session");
 const helmet = require("helmet");
 const mongoSanitize = require("express-mongo-sanitize");
 const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
+const http = require("http");
 const startOrderCleanup = require('./services/orderCleanup');
 const MongoStore = require('connect-mongo');
 const dbCheck = require('./middleware/dbCheck');
@@ -69,8 +71,20 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-app.use(express.json({ limit: '10kb' })); // Body parser, reading data from body into req.body
+// ✅ FIX C5: Razorpay webhook MUST receive raw body for HMAC signature validation
+// Registered BEFORE express.json() so it gets raw Buffer (not parsed object)
+// paymentController.razorpayWebhook handles Buffer vs string via req.body
+app.post(
+  '/api/payment/webhook',
+  express.raw({ type: 'application/json' }),
+  require('./controllers/paymentController').razorpayWebhook
+);
+
+app.use(express.json({ limit: '10kb' })); // Body parser for all other routes
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+
+// Cookie parser — required for httpOnly refresh token cookie
+app.use(cookieParser(process.env.COOKIE_SECRET || process.env.SESSION_SECRET));
 
 // Data sanitization against NoSQL query injection
 app.use(mongoSanitize());
@@ -137,7 +151,12 @@ app.use('/api/coupons', require('./routes/couponRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/pincode', require('./routes/pincodeRoute'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/search', require('./routes/searchRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
 
 // Dynamic sitemap — accessible at GET /sitemap.xml (no /api prefix, for search engines)
 app.use('/sitemap.xml', require('./routes/sitemapRoute'));
@@ -223,13 +242,16 @@ const startServer = async () => {
   // Start background jobs
   startOrderCleanup();
 
-  const PORT =
-    process.env.PORT || 5000;
+  const PORT = process.env.PORT || 5000;
 
-  const server = app.listen(PORT, () => {
-    console.log(
-      `Server running on port ${PORT}`
-    );
+  // ── Socket.io Server ──────────────────────────────────────────────────────
+  const server = http.createServer(app);
+  const { initSocketServer } = require('./socket');
+  initSocketServer(server);
+
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Socket.io listening on port ${PORT}`);
   });
 
   const shutdown = async (signal) => {
@@ -239,7 +261,7 @@ const startServer = async () => {
       console.log('Server and DB connections closed.');
       process.exit(0);
     });
-    setTimeout(() => process.exit(1), 10000); // Force exit after 10s
+    setTimeout(() => process.exit(1), 10000);
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

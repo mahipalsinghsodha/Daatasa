@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { lazy, Suspense, useEffect } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { HelmetProvider } from 'react-helmet-async'
 import Navbar from './components/Navbar'
 import Breadcrumb from './components/Breadcrumb'
 import Footer from './components/Footer'
@@ -10,6 +11,9 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import ChatWidget from './components/chat/ChatWidget'
+import { useThemeStore } from './store/theme'
+import NotificationDrawer from './components/NotificationDrawer'
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
@@ -26,6 +30,7 @@ const Profile         = lazy(() => import('./pages/Profile'))
 const Orders          = lazy(() => import('./pages/Orders'))
 const Checkout        = lazy(() => import('./pages/Checkout'))
 const Support         = lazy(() => import('./pages/Support'))
+const Wishlist        = lazy(() => import('./pages/Wishlist'))  // ✅ P1: Wishlist page
 const NotFound        = lazy(() => import('./pages/NotFound'))
 
 // Static Pages
@@ -76,9 +81,13 @@ function ScrollToTop() {
 // ─── Page loading spinner ─────────────────────────────────────────────────────
 function PageLoader() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3" style={{ background: '#f8f9fa' }}>
-      <div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-      <p className="text-xs text-gray-400 font-medium">Loading...</p>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4"
+      style={{ background: 'var(--bg-base)' }}>
+      <div className="relative w-10 h-10">
+        <div className="absolute inset-0 rounded-full" style={{ border: '2px solid var(--border-color)' }} />
+        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--brand-primary)] animate-spin" />
+      </div>
+      <p className="text-[12px] font-medium tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>Loading…</p>
     </div>
   )
 }
@@ -126,6 +135,7 @@ function AnimatedRoutes() {
             <Route path="/profile"  element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/orders"   element={<ProtectedRoute><Orders /></ProtectedRoute>} />
             <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} /> {/* ✅ P1 */}
 
             {/* ── Admin ── */}
             <Route path="/admin"                  element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
@@ -156,32 +166,48 @@ function AnimatedRoutes() {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
+  const { initTheme } = useThemeStore()
+
+  // Sync theme class with stored state on mount
+  useEffect(() => { initTheme() }, [])
+
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <CartProvider>
-          <Router>
-            {/* CRITICAL: flex flex-col min-h-screen ensures footer always stays at bottom */}
-            <div className="flex flex-col min-h-screen" style={{ background: '#f8f9fa' }}>
-              <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                closeOnClick
-                pauseOnHover
-                draggable
-                theme="light"
-                toastStyle={{ borderRadius: '12px', fontSize: '14px' }}
-              />
-              <ScrollToTop />
-              <Navbar />
-              <Breadcrumb />
-              <AnimatedRoutes />
-              <Footer />
-            </div>
-          </Router>
-        </CartProvider>
-      </AuthProvider>
+      <HelmetProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Router>
+              <div className="flex flex-col min-h-screen" style={{ background: 'var(--bg-base)' }}>
+                <ToastContainer
+                  position="bottom-center"
+                  autoClose={4000}
+                  hideProgressBar={false}
+                  newestOnTop
+                  closeOnClick
+                  pauseOnHover
+                  draggable
+                  theme="light"
+                  limit={3}
+                  toastStyle={{
+                    borderRadius: '12px',
+                    fontSize: '13.5px',
+                    fontWeight: 500,
+                    background: 'var(--bg-surface)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+                <ScrollToTop />
+                <Navbar />
+                <Breadcrumb />
+                <AnimatedRoutes />
+                <Footer />
+                <ChatWidget />
+                <NotificationDrawer />
+              </div>
+            </Router>
+          </CartProvider>
+        </AuthProvider>
+      </HelmetProvider>
     </ErrorBoundary>
   )
 }

@@ -1,66 +1,61 @@
-import { motion } from 'framer-motion'
-import { FiShield } from 'react-icons/fi'
+import PolicyPage, { PolicySection, PolicyBullet, PolicyCallout } from '../components/PolicyPage'
+
+const date = new Date().toLocaleDateString('en-IN', { month:'long', year:'numeric' })
+const TOC = ['Information We Collect','How We Use Your Information','Information Sharing','Data Security','Your Rights','Contacting Us']
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      <div className="bg-[#0f172a] pt-20 pb-32 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-orange-500/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/3" />
-        <div className="relative z-10 max-w-xl mx-auto px-4">
-          <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/20 text-blue-400 text-[11px] font-bold tracking-wider uppercase rounded-full border border-blue-500/20 mb-5">
-            <FiShield size={12} /> Legal Compliance
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            Privacy <span className="text-blue-500">Policy</span>
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-            Last Updated: {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-          </p>
+    <PolicyPage icon="🔒" accentClass="from-blue-400 to-indigo-400" tag="Legal"
+      title="Privacy Policy"
+      subtitle="We take your privacy seriously. Here's how we handle your data."
+      lastUpdated={date} toc={TOC}>
+
+      <PolicySection id="section-1" title="Information We Collect">
+        <p>At DhaniFresh, we collect information you provide when creating an account, placing an order, or contacting support:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet>Name, email address, and phone number</PolicyBullet>
+          <PolicyBullet>Shipping and billing addresses</PolicyBullet>
+          <PolicyBullet>Payment transaction references (we do NOT store full card numbers — processed securely via Razorpay)</PolicyBullet>
+          <PolicyBullet>Device information, browser type, and IP address (for security purposes)</PolicyBullet>
+        </ul>
+      </PolicySection>
+
+      <PolicySection id="section-2" title="How We Use Your Information">
+        <p>We use collected data to:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet>Process and fulfill your orders, including sending order confirmation and shipment emails</PolicyBullet>
+          <PolicyBullet>Communicate about products, services, offers, and promotions</PolicyBullet>
+          <PolicyBullet>Detect, investigate, and prevent fraudulent transactions and illegal activities</PolicyBullet>
+          <PolicyBullet>Improve our website, products, and customer experience</PolicyBullet>
+        </ul>
+      </PolicySection>
+
+      <PolicySection id="section-3" title="Information Sharing">
+        <p>We do not sell, trade, or rent your personal information to others. We use third-party service providers including Shiprocket (delivery) and Razorpay (payments) who have limited access to perform their duties only.</p>
+        <PolicyCallout type="success">Your data is never sold to advertisers or third-party marketing companies.</PolicyCallout>
+      </PolicySection>
+
+      <PolicySection id="section-4" title="Data Security">
+        <p>We adopt appropriate data collection, storage, and processing practices. Security measures include:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet>SSL-encrypted data transmission on all pages</PolicyBullet>
+          <PolicyBullet>Bcrypt-hashed passwords — never stored in plain text</PolicyBullet>
+          <PolicyBullet>Regular security audits and dependency updates</PolicyBullet>
+        </ul>
+      </PolicySection>
+
+      <PolicySection id="section-5" title="Your Rights">
+        <p>You have the right to access, correct, or delete your personal data at any time. You may also opt out of marketing communications by clicking "Unsubscribe" in any email we send.</p>
+        <PolicyCallout type="info">To request account deletion or data export, email us at privacy@dhanifresh.com.</PolicyCallout>
+      </PolicySection>
+
+      <PolicySection id="section-6" title="Contacting Us">
+        <p>Questions about this Privacy Policy? Contact us:</p>
+        <div className="mt-3 inline-block p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+          <p className="text-sm font-bold text-slate-900">📧 privacy@dhanifresh.com</p>
+          <p className="text-xs text-slate-500 mt-0.5">Response within 48 hours</p>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 sm:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-gray-600 space-y-8 text-[15px] leading-relaxed">
-          
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>1. Information We Collect</h2>
-            <p>At DhaniFresh, we collect information that you provide directly to us when creating an account, placing an order, or contacting support. This includes:</p>
-            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-500">
-              <li>Name, email address, and phone number</li>
-              <li>Shipping and billing addresses</li>
-              <li>Payment transaction references (We do NOT store full credit card numbers; payments are processed securely via Razorpay)</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>2. How We Use Your Information</h2>
-            <p>We use the collected information for the following purposes:</p>
-            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-500">
-              <li>To process and fulfill your orders, including sending emails to confirm your order status and shipment</li>
-              <li>To communicate with you about products, services, offers, and promotions</li>
-              <li>To detect, investigate, and prevent fraudulent transactions and other illegal activities</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>3. Information Sharing</h2>
-            <p>We do not sell, trade, or rent your personal identification information to others. We may share generic aggregated demographic information not linked to any personal identification information with our business partners and trusted affiliates. We utilize third-party service providers (like Shiprocket for delivery and Razorpay for payments) who have limited access to your information purely to perform their duties.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>4. Data Security</h2>
-            <p>We adopt appropriate data collection, storage, and processing practices and security measures to protect against unauthorized access, alteration, disclosure, or destruction of your personal information, username, password, transaction information, and data stored on our site. All data exchange over the site happens over an SSL secured communication channel.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>5. Contacting Us</h2>
-            <p>If you have any questions about this Privacy Policy, the practices of this site, or your dealings with this site, please contact us at:</p>
-            <p className="mt-2 font-medium text-gray-900">Email: privacy@dhanifresh.com</p>
-          </section>
-
-        </div>
-      </div>
-    </div>
+      </PolicySection>
+    </PolicyPage>
   )
 }

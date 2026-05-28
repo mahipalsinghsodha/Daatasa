@@ -241,22 +241,32 @@ const AdminCategories = () => {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: T.bg, fontFamily: T.font, display: 'flex', flexDirection: 'column' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-base)', fontFamily: 'var(--font-body)' }}>
 
-      {/* Header */}
-      <div style={{ background: T.white, borderBottom: `2.5px solid ${T.border}`, padding: '24px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 44, height: 44, background: T.accentDim, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ShieldCheck size={22} style={{ color: T.accent }} />
+      {/* ── Premium Admin Header ── */}
+      <div className="relative overflow-hidden shrink-0" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 px-6 sm:px-8 py-6 flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: 'rgba(245,166,35,0.20)', border: '1px solid rgba(245,166,35,0.35)' }}>
+              <ShieldCheck size={22} style={{ color: 'var(--gold)' }} />
+            </div>
+            <div>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider" style={{ color: 'var(--gold)' }}>Admin Panel</span>
+              <h1 className="text-xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>Manage Categories</h1>
+            </div>
           </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.text, letterSpacing: '-0.02em' }}>Taxonomy Console</h1>
-            <p style={{ margin: 0, fontSize: 13, color: T.textDim, fontWeight: 500 }}>Organize and manage store grouping hierarchies</p>
-          </div>
+          <button onClick={handleCreateNew}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
+            style={{ background: 'var(--gold)', color: 'var(--navy)', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(245,166,35,0.45)' }}>
+            <Plus size={16} /> Add Category
+          </button>
         </div>
-        <button onClick={handleCreateNew} style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.accent, color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 14, fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: T.font, boxShadow: `0 8px 16px ${T.accent}40`, transition: 'all 0.2s' }}>
-          <Plus size={16} /> Provision Category
-        </button>
       </div>
 
       {/* Split Layout */}

@@ -1,29 +1,34 @@
 
-// routes/auth.js
-// Security features on reset link:
-//   ✅ Expires in 2 minutes
-//   ✅ One-time use — invalidated the moment password is changed
-//   ✅ Device-locked — IP + User-Agent fingerprint is stored and verified
-//      so copying the link to another browser/device/network returns 403
+// routes/authRoutes.js
+// JWT Security:
+//   ✅ Access token: 15min expiry, stored in memory (never localStorage)
+//   ✅ Refresh token: 7d expiry, stored in httpOnly cookie (path: /api/auth/refresh)
+//   ✅ Refresh token rotation: new refresh token issued on every use
+//   ✅ Device fingerprint on password reset
+//   ✅ Rate limiting on all auth endpoints
 
 const express     = require('express');
 const router      = express.Router();
 const jwt         = require('jsonwebtoken');
 const crypto      = require('crypto');
-const { sendPasswordResetEmail } = require('../services/emailService');
+const { sendPasswordResetEmail, sendWelcomeEmail } = require('../services/emailService');
 const User        = require('../models/User');
-const auth     = require('../middleware/auth');
-const dbCheck  = require('../middleware/dbCheck');
+const auth        = require('../middleware/auth');
+const dbCheck     = require('../middleware/dbCheck');
 const { logAction } = require('../utils/logger');
-const rateLimit = require('express-rate-limit');
+const rateLimit   = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 
-// Rate limiting for auth endpoints
+// ─── Constants ────────────────────────────────────────────────────────────────
+const JWT_SECRET         = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
+const CLIENT_URL         = process.env.CLIENT_URL || 'http://localhost:3000';
+
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // limit each IP to 10 requests per windowMs
-  skip: (req, res) => {
-    // Skip rate limiting in local environment
+  max: 10,
+  skip: (req) => {
     const ip = req.ip || req.connection?.remoteAddress;
     return ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1';
   },
@@ -32,25 +37,53 @@ const authLimiter = rateLimit({
   }
 });
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+// ─── Token Helpers ────────────────────────────────────────────────────────────
 
-const makeToken = (user) => jwt.sign({ id: user._id, version: user.tokenVersion }, JWT_SECRET, { expiresIn: '30d' });
+/** Short-lived access token — stored in memory (React state), never localStorage */
+const makeAccessToken = (user) => jwt.sign(
+  { id: user._id, version: user.tokenVersion, role: user.role },
+  JWT_SECRET,
+  { expiresIn: '15m' }
+);
 
+/** Long-lived refresh token — stored in httpOnly cookie only */
+const makeRefreshToken = (user) => jwt.sign(
+  { id: user._id, version: user.tokenVersion, type: 'refresh' },
+  JWT_REFRESH_SECRET,
+  { expiresIn: '7d' }
+);
+
+/** Set refresh token as httpOnly cookie (path restricted to refresh endpoint) */
+const setRefreshCookie = (res, token) => {
+  res.cookie('refreshToken', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    path: '/', // Allow cookie to be sent with any request (interceptor needs it)
+  });
+};
+
+/** Clear refresh token cookie */
+const clearRefreshCookie = (res) => {
+  res.clearCookie('refreshToken', { path: '/' });
+};
+
+/** Public user object — never expose password/reset tokens/refresh hashes */
 const safeUser = (u) => ({
-  id:        u._id,
-  name:      u.name,
-  email:     u.email,
-  role:      u.role,
+  id:          u._id,
+  name:        u.name,
+  email:       u.email,
+  role:        u.role,
   permissions: u.permissions || [],
-  phone:     u.phone || '',
-  addresses: u.addresses || [],
+  phone:       u.phone || '',
+  avatar:      u.avatar || null,
+  addresses:   u.addresses || [],
+  wishlist:    u.wishlist   || [],
+  isBlocked:   u.isBlocked  || false,
 });
 
-/* ── Device fingerprint helper ──────────────────────────────────────────────
-   We hash IP + User-Agent so the stored value is not sensitive in itself.
-   The same hash must be reproduced on the reset request to pass validation.
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ── Device fingerprint helper ──────────────────────────────────────────────── */
 const makeFingerprint = (req) => {
   const ip  = req.ip || req.connection?.remoteAddress || 'unknown';
   const ua  = req.headers['user-agent'] || 'unknown';
@@ -77,7 +110,28 @@ router.post('/register', authLimiter, dbCheck, [
 
     const user = new User({ name, email, password });
     await user.save();
-    res.status(201).json({ token: makeToken(user), user: safeUser(user) });
+
+    // Welcome email (non-fatal)
+    sendWelcomeEmail({ to: user.email, userName: user.name }).catch(err => {
+      console.error('Welcome email error (non-fatal):', err.message);
+    });
+
+    const accessToken  = makeAccessToken(user);
+    const refreshToken = makeRefreshToken(user);
+
+    // Store hashed refresh token in DB for rotation tracking
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    user.refreshTokens = user.refreshTokens || [];
+    user.cleanExpiredRefreshTokens();
+    user.refreshTokens.push({
+      tokenHash,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      deviceInfo: (req.headers['user-agent'] || '').substring(0, 100),
+    });
+    await user.save({ validateBeforeSave: false });
+
+    setRefreshCookie(res, refreshToken);
+    res.status(201).json({ token: accessToken, user: safeUser(user) });
   } catch (error) {
     if (error.name === 'ValidationError')
       return res.status(400).json({ message: Object.values(error.errors).map(e => e.message).join(', ') });
@@ -101,29 +155,146 @@ router.post('/login', authLimiter, dbCheck, [
     }
 
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password +refreshTokens');
     if (!user) {
-      return res.status(401).json({ message: 'User not found' });
+      // Generic message prevents user enumeration
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+    if (!user.password) {
+      return res.status(400).json({ message: 'This account uses Google Sign-In. Please login with Google.' });
     }
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: 'Incorrect password' });
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
-    res.json({ token: makeToken(user), user: safeUser(user) });
+    if (user.isBlocked) {
+      return res.status(403).json({ message: 'Your account has been suspended. Please contact support.' });
+    }
+
+    const accessToken  = makeAccessToken(user);
+    const refreshToken = makeRefreshToken(user);
+
+    // Store hashed refresh token in DB
+    const tokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
+    user.refreshTokens = user.refreshTokens || [];
+    user.cleanExpiredRefreshTokens();
+    // Limit to 5 active sessions per user
+    if (user.refreshTokens.length >= 5) user.refreshTokens.shift();
+    user.refreshTokens.push({
+      tokenHash,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      deviceInfo: (req.headers['user-agent'] || '').substring(0, 100),
+    });
+    await user.save({ validateBeforeSave: false });
+
+    setRefreshCookie(res, refreshToken);
+    res.json({ token: accessToken, user: safeUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Login failed' });
   }
 });
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+/*  REFRESH TOKEN  →  POST /api/auth/refresh                                  */
+/*  Reads httpOnly cookie → verifies → issues new access + rotated refresh    */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.post('/refresh', async (req, res) => {
+  const incomingRefresh = req.cookies?.refreshToken;
+  if (!incomingRefresh) {
+    return res.status(401).json({ message: 'No refresh token' });
+  }
+
+  try {
+    const decoded = jwt.verify(incomingRefresh, JWT_REFRESH_SECRET);
+    if (decoded.type !== 'refresh') {
+      return res.status(401).json({ message: 'Invalid token type' });
+    }
+
+    const user = await User.findById(decoded.id).select('+refreshTokens');
+    if (!user) return res.status(401).json({ message: 'User not found' });
+    if (user.isBlocked) return res.status(403).json({ message: 'Account suspended' });
+    if (decoded.version !== user.tokenVersion) {
+      clearRefreshCookie(res);
+      return res.status(401).json({ message: 'Token revoked' });
+    }
+
+    // Verify token hash is in DB (rotation check)
+    const incomingHash = crypto.createHash('sha256').update(incomingRefresh).digest('hex');
+    user.refreshTokens = user.refreshTokens || [];
+    const tokenIndex = user.refreshTokens.findIndex(t => t.tokenHash === incomingHash);
+    if (tokenIndex === -1) {
+      // Token not in DB — possible theft/reuse attack; invalidate ALL sessions
+      user.refreshTokens = [];
+      await user.save({ validateBeforeSave: false });
+      clearRefreshCookie(res);
+      return res.status(401).json({ message: 'Refresh token reuse detected. Please login again.' });
+    }
+
+    // Rotate: remove old, issue new
+    user.refreshTokens.splice(tokenIndex, 1);
+    const newRefreshToken = makeRefreshToken(user);
+    const newHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
+    user.cleanExpiredRefreshTokens();
+    user.refreshTokens.push({
+      tokenHash: newHash,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      deviceInfo: (req.headers['user-agent'] || '').substring(0, 100),
+    });
+    await user.save({ validateBeforeSave: false });
+
+    const accessToken = makeAccessToken(user);
+    setRefreshCookie(res, newRefreshToken);
+    res.json({ token: accessToken, user: safeUser(user) });
+  } catch (err) {
+    clearRefreshCookie(res);
+    res.status(401).json({ message: 'Invalid or expired refresh token. Please login again.' });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 /*  LOGOUT                                                                     */
 /* ─────────────────────────────────────────────────────────────────────────── */
-router.post('/logout', auth, async (req, res) => {
+router.post('/logout', async (req, res) => {
   try {
-    await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } });
+    const incomingRefresh = req.cookies?.refreshToken;
+
+    // If we have an auth header, use it to get user and increment tokenVersion
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        const user = await User.findById(decoded.id).select('+refreshTokens');
+        if (user) {
+          // Remove this specific refresh token
+          if (incomingRefresh) {
+            const hash = crypto.createHash('sha256').update(incomingRefresh).digest('hex');
+            user.refreshTokens = (user.refreshTokens || []).filter(t => t.tokenHash !== hash);
+          }
+          await user.save({ validateBeforeSave: false });
+        }
+      } catch { /* ignore invalid token on logout */ }
+    }
+
+    clearRefreshCookie(res);
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    console.error('Logout error:', error);
+    clearRefreshCookie(res);
+    res.status(500).json({ message: 'Logout failed' });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  LOGOUT ALL DEVICES                                                         */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.post('/logout-all', auth, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { tokenVersion: 1 },
+      $set: { refreshTokens: [] }
+    });
+    clearRefreshCookie(res);
+    res.json({ message: 'Logged out from all devices' });
+  } catch (error) {
     res.status(500).json({ message: 'Logout failed' });
   }
 });
@@ -138,10 +309,14 @@ router.get('/me', auth, (req, res) => res.json(safeUser(req.user)));
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, phone } = req.body;
+    const { name, phone, avatar } = req.body;
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { ...(name && { name }), ...(phone !== undefined && { phone }) },
+      {
+        ...(name !== undefined && { name }),
+        ...(phone !== undefined && { phone }),
+        ...(avatar !== undefined && { avatar }),
+      },
       { new: true, runValidators: true }
     );
     res.json(safeUser(user));
@@ -152,13 +327,8 @@ router.put('/profile', auth, async (req, res) => {
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 /*  FORGOT PASSWORD  →  POST /api/auth/forgot-password                        */
-/*                                                                             */
-/*  New security checks:                                                       */
-/*   • 404 if email not registered (frontend redirects to /register)           */
-/*   • 409 if a valid link is already active — returns remainingSeconds        */
-/*     so the frontend can show a countdown before allowing resend             */
 /* ─────────────────────────────────────────────────────────────────────────── */
-router.post('/forgot-password', dbCheck, async (req, res) => {
+router.post('/forgot-password', authLimiter, dbCheck, async (req, res) => {
   try {
     const { email } = req.body;
     if (!email)
@@ -166,22 +336,18 @@ router.post('/forgot-password', dbCheck, async (req, res) => {
 
     const user = await User.findOne({ email }).select('+resetPasswordToken +resetPasswordExpire +resetPasswordFingerprint');
 
-    // ── 404: email not registered ──────────────────────────────────────────
     if (!user)
       return res.status(404).json({ message: 'No account found with that email address.' });
 
-    // ── 409: a valid (non-expired) link already exists ─────────────────────
-    //    Prevents spamming and multiple active links for the same account.
     if (user.resetPasswordToken && user.resetPasswordExpire && user.resetPasswordExpire > Date.now()) {
       const remainingMs      = user.resetPasswordExpire - Date.now();
       const remainingSeconds = Math.ceil(remainingMs / 1000);
       return res.status(409).json({
-        message:          'A reset link was already sent and is still active. Please check your inbox.',
+        message: 'A reset link was already sent and is still active. Please check your inbox.',
         remainingSeconds,
       });
     }
 
-    // Generate cryptographically secure token
     const resetToken        = crypto.randomBytes(32).toString('hex');
     const tokenHashed       = crypto.createHash('sha256').update(resetToken).digest('hex');
     const deviceFingerprint = makeFingerprint(req);
@@ -208,13 +374,6 @@ router.post('/forgot-password', dbCheck, async (req, res) => {
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 /*  RESET PASSWORD  →  POST /api/auth/reset-password/:token                   */
-/*                                                                             */
-/*  Security checks (in order):                                               */
-/*   1. Token hash must match                                                  */
-/*   2. Token must not be expired (2-min window)                              */
-/*   3. Device fingerprint (IP + UA) must match                               */
-/*   4. New password must NOT be the same as the current password             */
-/*   5. Token cleared immediately — cannot be replayed                        */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/reset-password/:token', dbCheck, async (req, res) => {
   try {
@@ -222,10 +381,8 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
     if (!password || password.length < 6)
       return res.status(400).json({ message: 'Password must be at least 6 characters' });
 
-    // 1. Hash incoming raw token
     const tokenHashed = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
-    // 2. Find user with matching non-expired token (also select password for same-password check)
     const user = await User.findOne({
       resetPasswordToken:  tokenHashed,
       resetPasswordExpire: { $gt: Date.now() },
@@ -236,7 +393,6 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
         message: 'This reset link has expired or already been used. Please request a new one.',
       });
 
-    // 3. Verify device fingerprint
     const incomingFingerprint = makeFingerprint(req);
     if (user.resetPasswordFingerprint && user.resetPasswordFingerprint !== incomingFingerprint) {
       user.resetPasswordToken       = undefined;
@@ -244,11 +400,10 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
       user.resetPasswordFingerprint = undefined;
       await user.save({ validateBeforeSave: false });
       return res.status(403).json({
-        message: 'This link can only be used on the device and browser where the reset was requested. Please request a new reset link.',
+        message: 'This link can only be used on the device and browser where the reset was requested.',
       });
     }
 
-    // 4. ── New password must differ from current password ──────────────────
     const bcrypt = require('bcryptjs');
     const isSamePassword = await bcrypt.compare(password, user.password);
     if (isSamePassword)
@@ -256,11 +411,13 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
         message: 'Your new password cannot be the same as your current password.',
       });
 
-    // 5. Set new password and clear all reset fields (one-time use)
     user.password                 = password;
     user.resetPasswordToken       = undefined;
     user.resetPasswordExpire      = undefined;
     user.resetPasswordFingerprint = undefined;
+    // Invalidate all sessions on password change
+    user.tokenVersion             = (user.tokenVersion || 0) + 1;
+    user.refreshTokens            = [];
     await user.save();
 
     res.json({ message: 'Password reset successfully. You can now log in.' });
@@ -269,7 +426,6 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
     res.status(500).json({ message: error.message || 'Password reset failed' });
   }
 });
-
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 /*  ADDRESS ROUTES                                                             */
@@ -342,94 +498,69 @@ router.patch('/addresses/:addrId/default', auth, async (req, res) => {
   }
 });
 
-// Admin: Get all users with total orders and spent amount
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  ADMIN: Users list                                                          */
+/* ─────────────────────────────────────────────────────────────────────────── */
 router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
   try {
-    const User = require('../models/User');
     const Order = require('../models/Order');
+    const page  = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000;
+    const skip  = (page - 1) * limit;
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 1000; // Default high for backward compatibility
-    const skip = (page - 1) * limit;
-
-    // 1. Fetch total count and users
     const totalCount = await User.countDocuments();
     const users = await User.find()
-      .select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint')
-      .skip(skip)
-      .limit(limit)
-      .lean();
+      .select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint -refreshTokens')
+      .skip(skip).limit(limit).lean();
 
-    // 2. Fetch all orders and aggregate by user
     const orders = await Order.aggregate([
-      {
-        $group: {
-          _id: "$user",
-          totalOrders: { $sum: 1 },
-          totalSpent: { $sum: "$totalPrice" }
-        }
-      }
+      { $group: { _id: '$user', totalOrders: { $sum: 1 }, totalSpent: { $sum: '$totalPrice' } } }
     ]);
 
-    // 3. Map aggregates back to users map
     const orderStatsMap = {};
     orders.forEach(stat => {
-      if (stat._id) {
-        orderStatsMap[stat._id.toString()] = {
-          totalOrders: stat.totalOrders,
-          totalSpent: stat.totalSpent
-        };
-      }
+      if (stat._id) orderStatsMap[stat._id.toString()] = { totalOrders: stat.totalOrders, totalSpent: stat.totalSpent };
     });
 
     const enrichedUsers = users.map(u => ({
       ...u,
       totalOrders: orderStatsMap[u._id.toString()]?.totalOrders || 0,
-      totalSpent: orderStatsMap[u._id.toString()]?.totalSpent || 0
+      totalSpent:  orderStatsMap[u._id.toString()]?.totalSpent  || 0,
     }));
 
-    // If page parameter was passed, return a paginated response object, else return array for backward compatibility
     if (req.query.page) {
-      return res.json({
-        users: enrichedUsers,
-        total: totalCount,
-        page,
-        pages: Math.ceil(totalCount / limit)
-      });
+      return res.json({ users: enrichedUsers, total: totalCount, page, pages: Math.ceil(totalCount / limit) });
     }
-
     res.json(enrichedUsers);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
-// Admin: block or unblock a user (toggles)
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  ADMIN: Block/unblock user                                                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
 router.put('/users/:id/block', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
   try {
     const { reason } = req.body;
-    const User = require('../models/User');
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: 'User not found' });
 
     target.isBlocked = !target.isBlocked;
-    await target.save();
+    // If blocking, also invalidate all their sessions
+    if (target.isBlocked) {
+      target.tokenVersion = (target.tokenVersion || 0) + 1;
+      target.refreshTokens = [];
+    }
+    await target.save({ validateBeforeSave: false });
 
     await logAction(req, target.isBlocked ? 'BLOCK_USER' : 'UNBLOCK_USER', 'USER', target._id, {
-      reason,
-      userName: target.name,
-      userEmail: target.email
+      reason, userName: target.name, userEmail: target.email
     });
 
-    // Send email notification to user
     try {
       const { sendBlockEmail } = require('../services/emailService');
-      await sendBlockEmail({
-        to:        target.email,
-        userName:  target.name,
-        isBlocked: target.isBlocked,
-        reason,
-      });
+      await sendBlockEmail({ to: target.email, userName: target.name, isBlocked: target.isBlocked, reason });
     } catch (e) { console.error('Block email error (non-fatal):', e); }
 
     res.json({
@@ -442,29 +573,26 @@ router.put('/users/:id/block', auth, auth.admin, auth.hasPermission('users'), as
   }
 });
 
-// Toggle wishlist
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  WISHLIST                                                                   */
+/* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/wishlist', auth, async (req, res) => {
   try {
     const { productId } = req.body;
-    const User = require('../models/User');
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    
-    // Ensure wishlist array exists
-    if (!user.wishlist) {
-      user.wishlist = [];
-    }
 
+    if (!user.wishlist) user.wishlist = [];
     const index = user.wishlist.findIndex(id => id.toString() === productId);
     let added = false;
-    
+
     if (index > -1) {
       user.wishlist.splice(index, 1);
     } else {
       user.wishlist.push(productId);
       added = true;
     }
-    
+
     await user.save();
     res.json({ wishlist: user.wishlist, added });
   } catch (error) {

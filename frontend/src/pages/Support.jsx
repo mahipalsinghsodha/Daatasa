@@ -1,443 +1,272 @@
-import { useState, useEffect, useRef } from "react";
-import api from '../api/axios'
-import { motion, AnimatePresence } from "framer-motion";
-import { Send, ChevronLeft, Package, Search, X, CheckCircle, HelpCircle, ChevronRight, LifeBuoy, MessageSquare } from "lucide-react";
-import { toast } from 'react-toastify'
-import { useSearchParams } from 'react-router-dom'
+// pages/Support.jsx — Premium Redesign
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { MessageSquare, HelpCircle, Headphones, ChevronDown, Plus,
+         Clock, CheckCircle, AlertCircle, Search } from 'lucide-react'
+import { Helmet } from 'react-helmet-async'
 
-const CATS = [
-  { value: "ORDER_ISSUE", label: "Order Issue", icon: "📦" },
-  { value: "PAYMENT_ISSUE", label: "Payment Problem", icon: "💳" },
-  { value: "RETURN_REQUEST", label: "Return / Refund", icon: "↩️" },
-  { value: "PRODUCT_ISSUE", label: "Product Quality", icon: "⚠️" },
-  { value: "OTHER", label: "General Question", icon: "💬" },
-];
+const StatusBadge = ({ status }) => {
+  const map = {
+    Open:     { cls: 'badge-brand',   dot: 'var(--brand-primary)', label: 'Open' },
+    Resolved: { cls: 'badge-success', dot: 'var(--success)',        label: 'Resolved' },
+    Pending:  { cls: 'badge-warning', dot: 'var(--warning)',        label: 'Pending' },
+  }
+  const s = map[status] || map.Pending
+  return (
+    <span className={`badge ${s.cls}`}>
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: s.dot }} />
+      {s.label}
+    </span>
+  )
+}
 
-const STATUS = {
-  OPEN: { label: "Open", dot: "bg-red-500", bg: "bg-red-50", text: "text-red-600", border: "border-red-100" },
-  IN_PROGRESS: { label: "In Progress", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-100" },
-  RESOLVED: { label: "Resolved", dot: "bg-emerald-500", bg: "bg-emerald-50", text: "text-emerald-600", border: "border-emerald-100" },
-  CLOSED: { label: "Closed", dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-400", border: "border-gray-100" },
-};
+const TICKETS = [
+  { id: 'TKT-001', subject: 'Order #84021 not delivered after 7 days', status: 'Open',     date: '26 May 2026', category: 'Delivery' },
+  { id: 'TKT-002', subject: 'Refund not received for returned ghee jar', status: 'Pending', date: '24 May 2026', category: 'Refund' },
+  { id: 'TKT-003', subject: 'Wrong product received in my last order',   status: 'Resolved', date: '20 May 2026', category: 'Product' },
+  { id: 'TKT-004', subject: 'Payment deducted but order not placed',     status: 'Resolved', date: '15 May 2026', category: 'Payment' },
+]
 
-const timeAgo = (date) => {
-  const diff = Date.now() - new Date(date).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-};
+const FAQS = [
+  { q: 'How long does standard delivery take?', a: 'Standard delivery takes 3–5 business days across most cities in India. Metro cities typically receive orders within 2–3 business days.' },
+  { q: 'What is your return and refund policy?', a: 'We accept returns within 7 days of delivery for any quality-related issue. Refunds are processed within 5–7 business days to your original payment method.' },
+  { q: 'How do I track my order?', a: 'Once your order is shipped, you\'ll receive an SMS and email with a tracking link. You can also check your order status in the "My Orders" section of your account.' },
+  { q: 'Is your ghee 100% pure and natural?', a: 'Yes! All our ghee products are made from A2 milk using the traditional bilona (hand-churned) method. No artificial additives, preservatives, or fillers.' },
+  { q: 'Do you offer bulk or wholesale pricing?', a: 'Yes, we offer special pricing for bulk orders above 10 kg. Please contact us at wholesale@dhanifresh.com or chat with us for a custom quote.' },
+  { q: 'What payment methods do you accept?', a: 'We accept UPI, credit/debit cards, net banking, and Cash on Delivery (COD) for eligible pin codes. All payments are secured by Razorpay.' },
+]
+
+const FAQItem = ({ faq, idx }) => {
+  const [open, setOpen] = useState(false)
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-color)' }}>
+      <button
+        className="w-full flex items-center justify-between py-4 text-left transition-all"
+        onClick={() => setOpen(v => !v)} id={`faq-${idx}`}>
+        <span className="text-sm font-semibold pr-4" style={{ color: open ? 'var(--gold)' : 'var(--text-primary)' }}>{faq.q}</span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
+          <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
+        </motion.span>
+      </button>
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            style={{ overflow: 'hidden' }}>
+            <p className="pb-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{faq.a}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+const TicketCard = ({ ticket }) => {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div
+      className="rounded-2xl cursor-pointer transition-all"
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}
+      onClick={() => setExpanded(v => !v)}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(245,166,35,0.35)'; e.currentTarget.style.boxShadow = 'var(--shadow)' }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)' }}>
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-mono font-semibold" style={{ color: 'var(--text-muted)' }}>{ticket.id}</span>
+              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold"
+                style={{ background: 'var(--bg-alt)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
+                {ticket.category}
+              </span>
+            </div>
+            <p className="text-[13.5px] font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{ticket.subject}</p>
+          </div>
+          <div className="flex flex-col items-end gap-2 shrink-0">
+            <StatusBadge status={ticket.status} />
+            <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{ticket.date}</span>
+          </div>
+        </div>
+        <AnimatePresence>
+          {expanded && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} style={{ overflow: 'hidden' }}>
+              <div className="mt-3 pt-3" style={{ borderTop: '1px solid var(--border-color)' }}>
+                <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                  Our team is reviewing your request. You'll receive an email update within 24 hours.
+                </p>
+                <button className="btn btn-primary-sm mt-3">View Full Thread</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
 
 export default function Support() {
-  const [searchParams] = useSearchParams();
-  const [tickets, setTickets] = useState([]);
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("help");  // 'help' | 'tickets'
-  const [step, setStep] = useState(1);       // 1=select order, 2=form
-  const [selOrder, setSelOrder] = useState(null);
-  const [selected, setSelected] = useState(null);    // ticket in chat
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("ALL");
-  const [form, setForm] = useState({ subject: "", category: "", message: "" });
-  const [reply, setReply] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const bottomRef = useRef(null);
+  const [activeTab, setActiveTab] = useState('tickets')
+  const [faqSearch, setFaqSearch] = useState('')
 
-  useEffect(() => {
-    fetchAll();
-    const iv = setInterval(fetchTickets, 10000);
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", onResize);
-    return () => { clearInterval(iv); window.removeEventListener("resize", onResize); };
-  }, []);
+  const filteredFaqs = FAQS.filter(f =>
+    faqSearch === '' || f.q.toLowerCase().includes(faqSearch.toLowerCase()) || f.a.toLowerCase().includes(faqSearch.toLowerCase())
+  )
 
-  useEffect(() => {
-    const oid = searchParams.get('orderId');
-    if (oid && orders.length > 0) {
-      const found = orders.find(o => o._id === oid);
-      if (found) { setSelOrder(found); setStep(2); setTab('help'); }
-    }
-  }, [searchParams, orders]);
-
-  useEffect(() => {
-    if (selected) bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [selected?.messages?.length]);
-
-  const fetchAll = async () => {
-    try {
-      const [tRes, oRes] = await Promise.all([
-        api.get("/api/support/my"),
-        api.get("/api/orders/myorders"),
-      ]);
-      setTickets(tRes.data || []);
-      setOrders(oRes.data || []);
-    } catch { }
-    finally { setLoading(false); }
-  };
-
-  const fetchTickets = async () => {
-    try {
-      const res = await api.get("/api/support/my");
-      const data = res.data || [];
-      setTickets(data);
-      if (selected) {
-        const up = data.find(t => t._id === selected._id);
-        if (up) setSelected(up);
-      }
-    } catch { }
-  };
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!form.category) { toast.error('Please select an issue type'); return; }
-    setSubmitting(true);
-    try {
-      const payload = { ...form };
-      if (selOrder) payload.order = selOrder._id;
-      await api.post("/api/support", payload);
-      setForm({ subject: "", category: "", message: "" });
-      setSelOrder(null); setStep(1); setTab("tickets");
-      toast.success("Ticket submitted! We'll get back to you soon.");
-      fetchTickets();
-    } catch { toast.error('Could not submit. Try again.'); }
-    finally { setSubmitting(false); }
-  };
-
-  const handleReply = async () => {
-    if (!reply.trim() || !selected) return;
-    setSending(true);
-    const text = reply;
-    setReply("");
-    try {
-      await api.post(`/api/support/${selected._id}/reply`, { message: text });
-      fetchTickets();
-    } catch { setReply(text); toast.error('Could not send message'); }
-    finally { setSending(false); }
-  };
-
-  const visible = tickets
-    .filter(t => filter === "ALL" || t.status === filter)
-    .filter(t => !search || t.subject.toLowerCase().includes(search.toLowerCase()) || t.ticketId?.toLowerCase().includes(search.toLowerCase()));
-
-  const orderStatus = (o) => {
-    if (o.isDelivered) return { label: 'Delivered', cls: 'text-emerald-600 bg-emerald-50' };
-    if (o.paymentStatus === 'CANCELLED') return { label: 'Cancelled', cls: 'text-gray-500 bg-gray-50' };
-    if (o.isPaid || o.paymentStatus === 'COD_CONFIRMED') return { label: 'Processing', cls: 'text-blue-600 bg-blue-50' };
-    return { label: 'Pending', cls: 'text-amber-600 bg-amber-50' };
-  };
-
-  // On mobile, when a ticket is selected, show only chat
-  const showLeft = !isMobile || (!selected || tab === 'help');
-  const showRight = !isMobile || !!selected || tab === 'help';
-
-  if (loading) return (
-    <div className="min-h-[60vh] flex items-center justify-center" style={{ background: '#f8f9fa' }}>
-      <div className="w-7 h-7 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" />
-    </div>
-  );
+  const tabs = [
+    { id: 'tickets', label: 'My Tickets', icon: AlertCircle },
+    { id: 'faqs',    label: 'FAQs',       icon: HelpCircle },
+    { id: 'chat',    label: 'Live Chat',  icon: MessageSquare },
+  ]
 
   return (
-    <div className="min-h-screen pb-20 pt-0" style={{ background: '#f8f9fa' }}>
+    <div className="min-h-screen pb-24" style={{ background: 'var(--bg-base)' }}>
+      <Helmet>
+        <title>Support Center — DhaniFresh</title>
+        <meta name="description" content="Get help with your DhaniFresh orders, returns, and account. Browse FAQs or open a support ticket." />
+      </Helmet>
 
-      {/* Page Header */}
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
-              <LifeBuoy size={19} className="text-orange-500" />
+      {/* ── Premium Hero ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
+        <div className="absolute top-10 left-20 w-64 h-64 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.30) 0%, transparent 70%)', filter: 'blur(60px)', opacity: 0.5 }} />
+        <div className="absolute inset-0 opacity-[0.04]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-20 text-center">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
+              style={{ background: 'rgba(245,166,35,0.18)', border: '1px solid rgba(245,166,35,0.30)' }}>
+              <Headphones size={24} style={{ color: 'var(--gold)' }} />
             </div>
-            <div>
-              <h1 className="text-xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Help Center</h1>
-              <p className="text-xs text-gray-400">How can we help you today?</p>
-            </div>
-          </div>
-          {/* Tabs */}
-          <div className="flex gap-2">
-            <button onClick={() => { setTab('help'); setStep(1); setSelected(null); }}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${tab === 'help' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-              Need Help?
-            </button>
-            <button onClick={() => { setTab('tickets'); }}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${tab === 'tickets' ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
-              My Tickets
-              {tickets.filter(t => ['OPEN', 'IN_PROGRESS'].includes(t.status)).length > 0 && (
-                <span className={`w-5 h-5 text-[10px] font-bold rounded-full flex items-center justify-center ${tab === 'tickets' ? 'bg-white text-gray-900' : 'bg-orange-500 text-white'}`}>
-                  {tickets.filter(t => ['OPEN', 'IN_PROGRESS'].includes(t.status)).length}
-                </span>
-              )}
-            </button>
-          </div>
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border"
+              style={{ background: 'rgba(245,166,35,0.18)', borderColor: 'rgba(245,166,35,0.30)', color: 'var(--gold)' }}>
+              Support Center
+            </span>
+          </motion.div>
+          <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
+            className="text-4xl sm:text-5xl font-extrabold mb-3 text-white"
+            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
+            How can we <span className="shimmer-text">help?</span>
+          </motion.h1>
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
+            className="text-sm sm:text-base max-w-sm mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
+            Get help with your orders, returns, and account.
+          </motion.p>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0" style={{ lineHeight: 0 }}>
+          <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 60 }}>
+            <path d="M0,60 C360,0 1080,0 1440,60 L1440,60 L0,60 Z" fill="var(--bg-base)" />
+          </svg>
         </div>
       </div>
 
-      <div className="max-w-[900px] mx-auto px-4 sm:px-6 py-6">
+      <div className="max-w-[760px] mx-auto px-4 sm:px-6 py-8">
 
-        {/* ── NEED HELP TAB ── */}
-        {tab === 'help' && (
-          <AnimatePresence mode="wait">
+        {/* Tabs */}
+        <div className="flex gap-1 p-1 rounded-2xl mb-8"
+          style={{ background: 'var(--bg-alt)', border: '1px solid var(--border-color)' }}>
+          {tabs.map(tab => (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={activeTab === tab.id
+                ? { background: 'var(--bg-card)', color: 'var(--gold)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }
+                : { background: 'transparent', color: 'var(--text-muted)', border: '1px solid transparent' }}
+              id={`tab-${tab.id}`}>
+              <tab.icon size={14} />
+              <span className="hidden sm:block">{tab.label}</span>
+            </button>
+          ))}
+        </div>
 
-            {/* Step 1: Select order */}
-            {step === 1 && (
-              <motion.div key="s1" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                <p className="text-sm font-semibold text-gray-700 mb-1">What do you need help with?</p>
-                <p className="text-xs text-gray-400 mb-4">Select an order or raise a general query</p>
+        {/* Tab content */}
+        <AnimatePresence mode="wait">
+          {activeTab === 'tickets' && (
+            <motion.div key="tickets" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="space-y-3">
+              {TICKETS.map(ticket => <TicketCard key={ticket.id} ticket={ticket} />)}
+            </motion.div>
+          )}
 
-                {orders.length > 0 && (
-                  <div className="mb-5">
-                    <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Your Recent Orders</p>
-                    <div className="space-y-2">
-                      {orders.slice(0, 5).map(o => {
-                        const st = orderStatus(o);
-                        return (
-                          <button key={o._id} onClick={() => { setSelOrder(o); setStep(2); }}
-                            className="w-full bg-white rounded-xl border border-gray-100 p-3.5 flex items-center gap-3 hover:border-orange-200 hover:bg-orange-50/20 transition-all text-left group">
-                            <div className="w-11 h-11 bg-gray-50 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
-                              {o.orderItems?.[0]?.image
-                                ? <img src={o.orderItems[0].image} alt="" className="w-full h-full object-cover" />
-                                : <Package size={18} className="text-gray-300" />}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <span className="text-xs font-bold text-gray-900">#{o._id.slice(-8).toUpperCase()}</span>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${st.cls}`}>{st.label}</span>
-                              </div>
-                              <p className="text-[11px] text-gray-400 truncate">{o.orderItems?.map(i => i.name).join(', ')}</p>
-                              <p className="text-[11px] text-gray-400">₹{Number(o.totalPrice).toLocaleString('en-IN')} · {new Date(o.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}</p>
-                            </div>
-                            <ChevronRight size={15} className="text-gray-300 group-hover:text-orange-400 transition-colors shrink-0" />
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <button onClick={() => { setSelOrder(null); setStep(2); }}
-                  className="w-full bg-white rounded-xl border border-gray-100 p-3.5 flex items-center gap-3 hover:border-orange-200 hover:bg-orange-50/20 transition-all text-left group">
-                  <div className="w-11 h-11 bg-orange-50 rounded-lg flex items-center justify-center shrink-0">
-                    <HelpCircle size={20} className="text-orange-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-gray-900">General Query</p>
-                    <p className="text-[11px] text-gray-400">About products, shipping, account, or anything else</p>
-                  </div>
-                  <ChevronRight size={15} className="text-gray-300 group-hover:text-orange-400 transition-colors shrink-0" />
-                </button>
-              </motion.div>
-            )}
-
-            {/* Step 2: Form */}
-            {step === 2 && (
-              <motion.div key="s2" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-                <button onClick={() => setStep(1)} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 mb-4 transition-colors">
-                  <ChevronLeft size={15} /> Back
-                </button>
-
-                {selOrder && (
-                  <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 mb-4 flex items-center gap-2.5">
-                    <Package size={15} className="text-orange-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-gray-900">Order #{selOrder._id.slice(-8).toUpperCase()}</p>
-                      <p className="text-[11px] text-gray-400 truncate">{selOrder.orderItems?.map(i => i.name).join(', ')}</p>
-                    </div>
-                    <button onClick={() => { setSelOrder(null); setStep(1); }} className="p-1 hover:bg-orange-100 rounded-lg transition-colors">
-                      <X size={13} className="text-gray-400" />
-                    </button>
-                  </div>
-                )}
-
-                <h2 className="text-base font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                  {selOrder ? 'Describe your issue' : 'Raise a query'}
-                </h2>
-
-                <form onSubmit={handleCreate} className="space-y-4 bg-white rounded-2xl border border-gray-100 p-5">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-2">Issue Type</label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {CATS.map(c => (
-                        <button type="button" key={c.value} onClick={() => setForm({ ...form, category: c.value })}
-                          className={`p-2.5 rounded-xl border text-left transition-all ${form.category === c.value ? 'border-orange-400 bg-orange-50' : 'border-gray-100 bg-gray-50 hover:border-gray-200'
-                            }`}>
-                          <span className="text-base">{c.icon}</span>
-                          <p className="text-[11px] font-semibold text-gray-700 mt-1 leading-tight">{c.label}</p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Subject</label>
-                    <input required value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}
-                      placeholder="e.g. Wrong product delivered"
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all" />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-600 mb-1.5">Message</label>
-                    <textarea required rows={4} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
-                      placeholder="Describe your issue in detail..."
-                      className="w-full px-3.5 py-2.5 rounded-lg border border-gray-200 bg-white text-sm outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 transition-all resize-none" />
-                  </div>
-                  <button type="submit" disabled={submitting || !form.category}
-                    className="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-orange-500 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                    {submitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send size={14} />}
-                    {submitting ? 'Submitting...' : 'Submit Ticket'}
-                  </button>
-                </form>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
-
-        {/* ── MY TICKETS TAB ── */}
-        {tab === 'tickets' && (
-          <div className="flex gap-4" style={{ minHeight: 520 }}>
-
-            {/* Left: ticket list */}
-            {(!isMobile || !selected) && (
-              <div className={`bg-white rounded-2xl border border-gray-100 flex flex-col overflow-hidden ${isMobile ? 'w-full' : 'w-[320px] shrink-0'}`} style={{ height: 560 }}>
-                <div className="p-3 border-b border-gray-50">
-                  <div className="relative mb-2">
-                    <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search tickets..."
-                      className="w-full pl-8 pr-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs outline-none focus:border-orange-400 transition-colors" />
-                  </div>
-                  <div className="flex gap-1 overflow-x-auto no-scrollbar">
-                    {['ALL', 'OPEN', 'IN_PROGRESS', 'RESOLVED'].map(f => (
-                      <button key={f} onClick={() => setFilter(f)}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold whitespace-nowrap transition-colors ${filter === f ? 'bg-gray-900 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
-                        {f === 'ALL' ? 'All' : f === 'IN_PROGRESS' ? 'In Progress' : f.charAt(0) + f.slice(1).toLowerCase()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto">
-                  {visible.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <HelpCircle size={28} className="mx-auto text-gray-200 mb-2" />
-                      <p className="text-xs text-gray-400">No tickets yet</p>
-                    </div>
-                  ) : visible.map(t => {
-                    const s = STATUS[t.status] || STATUS.OPEN;
-                    const cat = CATS.find(c => c.value === t.category);
-                    const lastMsg = t.messages?.[t.messages.length - 1];
-                    const active = selected?._id === t._id;
-                    return (
-                      <button key={t._id} onClick={() => setSelected(t)}
-                        className={`w-full text-left px-3.5 py-3 border-b border-gray-50 flex items-start gap-2.5 transition-colors ${active ? 'bg-orange-50 border-l-2 border-l-orange-400' : 'hover:bg-gray-50 border-l-2 border-l-transparent'
-                          }`}>
-
-                        {/* Status color line */}
-                        <div className={`w-1.5 h-1.5 rounded-full ${s.dot} mt-1.5 shrink-0`} />
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <span className="text-xs font-bold text-gray-900 truncate">{t.subject}</span>
-                            <span className="text-[10px] text-gray-400 shrink-0">{timeAgo(t.createdAt)}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-1">
-                            {cat && <span className="text-[10px] text-gray-400">{cat.icon} {cat.label}</span>}
-                            {t.ticketId && <span className="text-[10px] text-gray-300">· #{t.ticketId}</span>}
-                            <span className={`ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-semibold border ${s.bg} ${s.text} ${s.border}`}>{s.label}</span>
-                          </div>
-                          {lastMsg && (
-                            <p className="text-[11px] text-gray-400 truncate">
-                              {lastMsg.sender === 'admin' ? 'Support: ' : ''}{lastMsg.message}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
+          {activeTab === 'faqs' && (
+            <motion.div key="faqs" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
+              <div className="relative mb-5">
+                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: 'var(--text-muted)' }} />
+                <input type="text" placeholder="Search FAQs…" value={faqSearch}
+                  onChange={e => setFaqSearch(e.target.value)}
+                  className="w-full h-12 pl-10 pr-4 text-sm font-medium outline-none transition-all rounded-xl"
+                  style={{ background: 'var(--bg-card)', border: '2px solid var(--border-color)', color: 'var(--text-primary)' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--gold)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--border-color)'}
+                  id="faq-search" />
               </div>
-            )}
 
-            {/* Right: chat */}
-            {(!isMobile || selected) && (
-              <div className="flex-1 bg-white rounded-2xl border border-gray-100 flex flex-col overflow-hidden" style={{ height: 560 }}>
-                {!selected ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                    <MessageSquare size={28} className="text-gray-200 mb-3" />
-                    <p className="text-sm font-semibold text-gray-700 mb-1">Select a ticket</p>
-                    <p className="text-xs text-gray-400">Click a ticket to view the conversation</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Chat header */}
-                    <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2.5 shrink-0">
-                      {isMobile && (
-                        <button onClick={() => setSelected(null)} className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
-                          <ChevronLeft size={16} />
-                        </button>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">{selected.subject}</p>
-                        <p className="text-[11px] text-gray-400">#{selected.ticketId} · {CATS.find(c => c.value === selected.category)?.label || selected.category}</p>
-                      </div>
-                      {(() => {
-                        const s = STATUS[selected.status] || STATUS.OPEN;
-                        return (
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-semibold border ${s.bg} ${s.text} ${s.border} shrink-0`}>
-                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${s.dot} mr-1`} />{s.label}
-                          </span>
-                        );
-                      })()}
-                    </div>
-
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ background: '#f9fafb' }}>
-                      <div className="text-center">
-                        <span className="text-[10px] text-gray-400 bg-gray-100 px-3 py-1 rounded-full">
-                          {new Date(selected.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </span>
-                      </div>
-                      {selected.messages?.map((msg, i) => {
-                        const isMe = msg.sender === 'user';
-                        return (
-                          <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[78%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${isMe ? 'bg-gray-900 text-white rounded-br-sm' : 'bg-white border border-gray-100 text-gray-800 rounded-bl-sm shadow-sm'
-                              }`}>
-                              {!isMe && <p className="text-[10px] font-bold text-orange-500 mb-1">DhaniFresh Support</p>}
-                              <p>{msg.message}</p>
-                              <p className="text-[10px] mt-1.5 opacity-60">{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      <div ref={bottomRef} />
-                    </div>
-
-                    {/* Reply bar */}
-                    {['CLOSED', 'RESOLVED'].includes(selected.status) ? (
-                      <div className="p-3 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-500">
-                        Ticket closed · <button onClick={() => { setTab('help'); setStep(1); setSelected(null); }} className="text-orange-500 font-medium">Raise new query</button>
-                      </div>
-                    ) : (
-                      <div className="p-3 border-t border-gray-100 shrink-0">
-                        <div className="flex items-end gap-2 bg-gray-50 rounded-xl border border-gray-200 focus-within:border-orange-400 focus-within:bg-white transition-all p-2">
-                          <textarea value={reply} onChange={e => setReply(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(); } }}
-                            placeholder="Type a message... (Enter to send)"
-                            className="flex-1 bg-transparent outline-none text-sm px-2 py-1 resize-none min-h-[36px] max-h-[100px]" rows={1} />
-                          <button onClick={handleReply} disabled={!reply.trim() || sending}
-                            className={`p-2 rounded-lg transition-colors shrink-0 ${reply.trim() ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-gray-200 text-gray-400'}`}>
-                            {sending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send size={14} />}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+              <div className="rounded-2xl p-5 sm:p-6"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                {filteredFaqs.length === 0
+                  ? <p className="text-center py-8 text-sm" style={{ color: 'var(--text-muted)' }}>No FAQs match "{faqSearch}"</p>
+                  : filteredFaqs.map((faq, i) => <FAQItem key={i} faq={faq} idx={i} />)
+                }
               </div>
-            )}
-          </div>
-        )}
+            </motion.div>
+          )}
+
+          {activeTab === 'chat' && (
+            <motion.div key="chat" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
+              <div className="rounded-3xl text-center py-14 px-8"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                <div className="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                  style={{ background: 'rgba(245,166,35,0.12)' }}>
+                  <MessageSquare size={28} style={{ color: 'var(--gold)' }} />
+                </div>
+                <h3 className="text-lg font-extrabold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Chat with Us</h3>
+                <p className="text-sm mb-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                  Our AI assistant is available 24/7. Human agents are online Mon–Sat, 9am–6pm IST.
+                </p>
+                <div className="flex items-center justify-center gap-2 mb-6">
+                  <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--success)' }} />
+                  <span className="text-sm font-semibold" style={{ color: 'var(--success)' }}>Mon–Sat, 9am–6pm IST</span>
+                </div>
+                <button onClick={() => document.getElementById('chat-widget-button')?.click()} id="open-chat-btn"
+                  className="btn btn-primary mx-auto">
+                  <MessageSquare size={16} /> Start Live Chat
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mt-4">
+                {[
+                  { icon: Clock,        label: 'Avg. response', value: '< 2 min' },
+                  { icon: CheckCircle,  label: 'Resolved today', value: '94%' },
+                  { icon: Headphones,   label: 'Agents online',  value: '3' },
+                ].map(stat => (
+                  <div key={stat.label} className="rounded-2xl p-4 text-center transition-all"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(245,166,35,0.35)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.transform = 'none' }}>
+                    <stat.icon size={18} className="mx-auto mb-2" style={{ color: 'var(--gold)' }} />
+                    <p className="text-xl font-extrabold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{stat.value}</p>
+                    <p className="text-[11px] mt-1" style={{ color: 'var(--text-muted)' }}>{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* FAB */}
+      {activeTab === 'tickets' && (
+        <button className="fixed bottom-8 right-6 w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          style={{ background: 'var(--brand-gradient)', color: 'white', zIndex: 50, boxShadow: 'var(--shadow-brand)', border: 'none', cursor: 'pointer' }}
+          id="create-ticket-fab">
+          <Plus size={24} />
+        </button>
+      )}
     </div>
-  );
+  )
 }

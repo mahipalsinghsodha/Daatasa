@@ -5,39 +5,83 @@ const Order   = require('../models/Order');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const dbCheck = require('../middleware/dbCheck');
+const mongoose = require('mongoose');
 
-// Get all products with optional category filter
+// Whitelist of fields that clients may set on a product
+const ALLOWED_PRODUCT_FIELDS = [
+  'name', 'description', 'price', 'mrp', 'image', 'images', 'category',
+  'stock', 'weight', 'featured', 'isActive', 'tags'
+];
+
+const pickAllowed = (body) => {
+  const data = {};
+  for (const field of ALLOWED_PRODUCT_FIELDS) {
+    if (Object.prototype.hasOwnProperty.call(body, field)) {
+      data[field] = body[field];
+    }
+  }
+  return data;
+};
+
+// Get products with server-side pagination, sort, and search
 router.get('/', dbCheck, async (req, res) => {
   try {
-    const { category, featured, search } = req.query;
+    const {
+      category, featured, search,
+      page    = 1,
+      limit   = 12,
+      sort    = 'default',
+      all,          // admin flag: include inactive
+    } = req.query;
+
     const query = {};
 
-    if (category) {
-      query.category = category;
+    // ── Active filter (skip for admin "all" flag) ──────────────────────────
+    if (all !== 'true') {
+      query.isActive = { $ne: false };
     }
 
-    if (req.query.all !== 'true') {
-      query.isActive = { $ne: false }; // Supports old docs without isActive 
+    if (category) query.category = category;
+    if (featured === 'true') query.featured = true;
+
+    // ── Search: prefer $text index (fast), fall back to $regex only if needed
+    if (search && search.trim()) {
+      // $text uses the defined text index on name + description
+      query.$text = { $search: search.trim() };
     }
 
-    if (featured === 'true') {
-      query.featured = true;
-    }
+    // ── Sort ──────────────────────────────────────────────────────────────
+    const sortMap = {
+      default:    { createdAt: -1 },
+      price_asc:  { price: 1 },
+      price_desc: { price: -1 },
+      rating:     { rating: -1 },
+      newest:     { createdAt: -1 },
+    };
+    const mongoSort = sortMap[sort] || { createdAt: -1 };
 
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
-    }
+    // ── Pagination ────────────────────────────────────────────────────────
+    const pageNum   = Math.max(1, parseInt(page)  || 1);
+    const limitNum  = Math.min(48, Math.max(1, parseInt(limit) || 12)); // cap at 48
+    const skip      = (pageNum - 1) * limitNum;
 
-    const products = await Product.find(query).sort({ createdAt: -1 });
-    res.json(products);
+    const [products, total] = await Promise.all([
+      Product.find(query).sort(mongoSort).skip(skip).limit(limitNum).lean(),
+      Product.countDocuments(query),
+    ]);
+
+    res.json({
+      products,
+      total,
+      page:  pageNum,
+      pages: Math.ceil(total / limitNum),
+      limit: limitNum,
+    });
   } catch (error) {
     console.error('Error fetching products:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: error.message || 'Error fetching products',
-      error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 });
@@ -65,7 +109,8 @@ router.get('/:id', dbCheck, async (req, res) => {
 // Create product (Admin with 'products' permission or Superadmin)
 router.post('/', auth, auth.admin, auth.hasPermission('products'), async (req, res) => {
   try {
-    const product = new Product(req.body);
+    const safeData = pickAllowed(req.body);
+    const product = new Product(safeData);
     await product.save();
     
     await logAction(req, 'CREATE_PRODUCT', 'PRODUCT', product._id, {
@@ -88,15 +133,16 @@ router.put('/:id', auth, auth.admin, auth.hasPermission('products'), async (req,
       return res.status(404).json({ message: 'Product not found' });
     }
 
+    const safeData = pickAllowed(req.body);
     const product = await Product.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      safeData,
       { new: true, runValidators: true }
     );
 
     await logAction(req, 'UPDATE_PRODUCT', 'PRODUCT', product._id, {
       name: product.name,
-      changes: req.body // simplified for now
+      changes: safeData
     });
 
     res.json(product);

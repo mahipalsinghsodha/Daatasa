@@ -11,5 +11,10 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  optimizeDeps: {
+    force: true
   }
 })
+
+// Triggering Vite restart to clear optimize deps cache!!

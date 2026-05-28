@@ -1,99 +1,237 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiInstagram, FiFacebook, FiTwitter, FiMail, FiPhone, FiMapPin } from 'react-icons/fi'
+import { FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiMail, FiPhone, FiMapPin, FiSend, FiArrowRight } from 'react-icons/fi'
 
-const Footer = () => {
+const NAV_COLS = [
+  {
+    title: 'Explore Us',
+    links: [
+      { label: 'About Us',        to: '/about'    },
+      { label: 'All Products',    to: '/products' },
+      { label: 'How It Works',    to: '/support'  },
+      { label: 'News & Articles', to: '/support'  },
+      { label: 'Contact Us',      to: '/contact'  },
+    ],
+  },
+  {
+    title: 'Quick Links',
+    links: [
+      { label: 'Privacy Policy',     to: '/privacy-policy' },
+      { label: 'Terms & Conditions', to: '/terms'          },
+      { label: 'Disclaimer',         to: '/refund-policy'  },
+      { label: 'Support',            to: '/support'        },
+      { label: 'FAQ',                to: '/faq'            },
+    ],
+  },
+]
+
+const SOCIALS = [
+  { Icon: FiFacebook,  label: 'Facebook',  href: '#' },
+  { Icon: FiTwitter,   label: 'Twitter',   href: '#' },
+  { Icon: FiInstagram, label: 'Instagram', href: '#' },
+  { Icon: FiLinkedin,  label: 'LinkedIn',  href: '#' },
+]
+
+const CONTACT_ITEMS = [
+  { Icon: FiMapPin, text: '99 Brooklyn New Street, Mumbai, India' },
+  { Icon: FiMail,   text: 'support@dhanifresh.com',  href: 'mailto:support@dhanifresh.com' },
+  { Icon: FiPhone,  text: '+91 (100) 234-5678',      href: 'tel:+911002345678' },
+]
+
+export default function Footer() {
+  const [email, setEmail] = useState('')
+  const [subState, setSubState] = useState('idle')
+  const year = new Date().getFullYear()
+
+  const handleSubscribe = (e) => {
+    e.preventDefault()
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) return
+    setSubState('success')
+  }
+
   return (
-    <footer className="bg-gray-900 text-gray-400">
-      {/* Main footer */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-10">
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 mb-12">
+    <footer style={{ background: 'var(--bg-navy)', position: 'relative', overflow: 'hidden' }} role="contentinfo">
 
-          {/* Brand */}
-          <div className="md:col-span-4">
-            <Link to="/" className="inline-flex items-center gap-2 mb-5">
-              <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white font-black text-sm">D</div>
-              <span className="font-extrabold text-lg text-white" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                Dhani<span className="text-orange-400">Fresh</span>
+      {/* Decorative blobs */}
+      <div className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none opacity-10"
+        style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.5) 0%, transparent 70%)', filter: 'blur(80px)', transform: 'translate(-30%, -30%)' }} />
+      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none opacity-10"
+        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)', filter: 'blur(70px)', transform: 'translate(30%, 30%)' }} />
+
+      {/* Gradient top border */}
+      <div className="absolute top-0 left-0 right-0 h-px"
+        style={{ background: 'linear-gradient(90deg, transparent, rgba(245,166,35,0.60), rgba(27,47,110,0.40), rgba(245,166,35,0.60), transparent)' }} />
+
+      {/* Dot pattern */}
+      <div className="absolute inset-0 opacity-[0.03]"
+        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+      {/* Wave separator at top */}
+      <div style={{ position: 'relative', zIndex: 1 }}>
+        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg"
+          style={{ display: 'block', width: '100%', height: '60px', marginTop: '-1px' }}
+          preserveAspectRatio="none">
+          <path d="M0 60 C360 0 1080 0 1440 60 L1440 0 L0 0 Z" fill="var(--bg-alt)" />
+        </svg>
+      </div>
+
+      {/* Main Footer Content */}
+      <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-12">
+
+          {/* Contact Column */}
+          <div className="lg:col-span-3">
+            {/* Logo */}
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-7 group">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110"
+                style={{ background: 'var(--gold)', boxShadow: '0 4px 16px rgba(245,166,35,0.45)' }}>
+                <span className="text-xl">🫙</span>
+              </div>
+              <span className="font-extrabold text-xl text-white leading-none" style={{ fontFamily: 'var(--font-display)' }}>
+                Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
               </span>
             </Link>
-            <p className="text-sm leading-relaxed mb-6 max-w-xs">
-              Premium quality Desi Ghee from the finest farms in India. Handcrafted using traditional Bilona methods for unmatched purity and taste.
-            </p>
-            {/* Social */}
-            <div className="flex items-center gap-3">
-              {[FiInstagram, FiFacebook, FiTwitter].map((Icon, i) => (
-                <a key={i} href="#" className="w-9 h-9 bg-white/5 hover:bg-orange-500 text-gray-400 hover:text-white rounded-lg flex items-center justify-center transition-all border border-white/10 hover:border-orange-500">
-                  <Icon size={16} />
+
+            <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
+              Contact
+            </h4>
+
+            <ul className="space-y-4">
+              {CONTACT_ITEMS.map(({ Icon, text, href }) => (
+                <li key={text} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }}>
+                    <Icon size={13} style={{ color: 'var(--gold)' }} />
+                  </div>
+                  {href
+                    ? <a href={href} className="text-sm transition-colors leading-relaxed"
+                        style={{ color: 'rgba(255,255,255,0.70)' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#FFFFFF'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.70)'}
+                      >{text}</a>
+                    : <span className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.70)' }}>{text}</span>
+                  }
+                </li>
+              ))}
+            </ul>
+
+            {/* Social Icons */}
+            <div className="flex items-center gap-2.5 mt-7">
+              {SOCIALS.map(({ Icon, label, href }) => (
+                <a key={label} href={href} aria-label={label}
+                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-250"
+                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.65)', border: '1px solid rgba(255,255,255,0.10)' }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'var(--gold)'
+                    e.currentTarget.style.color = 'var(--navy)'
+                    e.currentTarget.style.borderColor = 'var(--gold)'
+                    e.currentTarget.style.transform = 'translateY(-3px)'
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(245,166,35,0.35)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
+                    e.currentTarget.style.color = 'rgba(255,255,255,0.65)'
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
+                    e.currentTarget.style.transform = 'none'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}>
+                  <Icon size={15} />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Links */}
-          <div className="md:col-span-2">
-            <h4 className="text-sm font-semibold text-white mb-5 uppercase tracking-wider">Shop</h4>
-            <ul className="space-y-3">
-              <li><Link to="/products" className="text-sm hover:text-white transition-colors">All Products</Link></li>
-              <li><Link to="/products?category=a2" className="text-sm hover:text-white transition-colors">A2 Ghee</Link></li>
-              <li><Link to="/products?category=cow" className="text-sm hover:text-white transition-colors">Cow Ghee</Link></li>
-              <li><Link to="/products?category=buffalo" className="text-sm hover:text-white transition-colors">Buffalo Ghee</Link></li>
-            </ul>
+          {/* Nav columns */}
+          <div className="lg:col-span-6 grid grid-cols-2 gap-8">
+            {NAV_COLS.map(col => (
+              <div key={col.title}>
+                <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
+                  {col.title}
+                </h4>
+                <ul className="space-y-3">
+                  {col.links.map(link => (
+                    <li key={link.to}>
+                      <Link to={link.to}
+                        className="text-sm transition-colors duration-200 leading-relaxed flex items-center gap-2 group"
+                        style={{ color: 'rgba(255,255,255,0.68)' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#FFFFFF'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.68)'}>
+                        <FiArrowRight size={12} className="shrink-0 transition-transform group-hover:translate-x-1"
+                          style={{ color: 'var(--gold)', opacity: 0.7 }} />
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
 
-          <div className="md:col-span-2">
-            <h4 className="text-sm font-semibold text-white mb-5 uppercase tracking-wider">Company</h4>
-            <ul className="space-y-3">
-              <li><Link to="/about" className="text-sm hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="text-sm hover:text-white transition-colors">Contact</Link></li>
-              <li><Link to="/faq" className="text-sm hover:text-white transition-colors">FAQ</Link></li>
-            </ul>
-          </div>
+          {/* Newsletter Column */}
+          <div className="lg:col-span-3">
+            <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-4" style={{ color: 'var(--gold)' }}>
+              Newsletter
+            </h4>
+            <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.68)' }}>
+              Get the latest updates via email. Don't miss it. Unsubscribe anytime.
+            </p>
 
-          <div className="md:col-span-2">
-            <h4 className="text-sm font-semibold text-white mb-5 uppercase tracking-wider">Legal</h4>
-            <ul className="space-y-3">
-              <li><Link to="/privacy-policy" className="text-sm hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link to="/terms" className="text-sm hover:text-white transition-colors">Terms & Conditions</Link></li>
-              <li><Link to="/refund-policy" className="text-sm hover:text-white transition-colors">Refund Policy</Link></li>
-            </ul>
-          </div>
-
-          {/* Contact */}
-          <div className="md:col-span-2">
-            <h4 className="text-sm font-semibold text-white mb-5 uppercase tracking-wider">Contact</h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-2.5">
-                <FiMail size={14} className="mt-0.5 shrink-0 text-orange-400" />
-                <span className="text-sm">support@dhanifresh.com</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <FiPhone size={14} className="mt-0.5 shrink-0 text-orange-400" />
-                <span className="text-sm">+91 98765 43210</span>
-              </li>
-              <li className="flex items-start gap-2.5">
-                <FiMapPin size={14} className="mt-0.5 shrink-0 text-orange-400" />
-                <span className="text-sm">Mumbai, Maharashtra</span>
-              </li>
-            </ul>
+            {subState === 'success' ? (
+              <div className="px-4 py-4 rounded-xl flex items-center gap-3"
+                style={{ background: 'rgba(56,161,105,0.15)', border: '1px solid rgba(56,161,105,0.30)' }}>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--success)' }}>
+                  <span className="text-white text-sm">✓</span>
+                </div>
+                <p className="text-sm font-semibold" style={{ color: '#68D391' }}>
+                  You're subscribed! Check your inbox.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubscribe}>
+                <div className="relative mb-3">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="Your Email"
+                    className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.92)',
+                      color: 'var(--navy)',
+                      border: '2px solid transparent',
+                      paddingRight: '16px',
+                    }}
+                    onFocus={e => e.currentTarget.style.borderColor = 'var(--gold)'}
+                    onBlur={e => e.currentTarget.style.borderColor = 'transparent'}
+                  />
+                </div>
+                <button type="submit"
+                  className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+                  style={{
+                    background: 'var(--gold)',
+                    color: 'var(--navy)',
+                    boxShadow: '0 6px 20px rgba(245,166,35,0.40)',
+                    border: 'none',
+                    cursor: 'pointer',
+                  }}>
+                  <FiSend size={14} />
+                  Subscribe Now
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-white/8 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-gray-500">
-            &copy; {new Date().getFullYear()} DhaniFresh Ghee. All rights reserved.
+        <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-2"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+          <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.45)' }}>
+            DhaniFresh Ghee — © Copyright {year} by{' '}
+            <span style={{ color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>DhaniFresh Pvt. Ltd.</span>
+            {' '}All rights reserved.
           </p>
-          <div className="flex items-center gap-5 text-xs text-gray-500">
-            <span>Pan India Delivery</span>
-            <span className="w-1 h-1 rounded-full bg-gray-600" />
-            <span>100% Secure Payments</span>
-            <span className="w-1 h-1 rounded-full bg-gray-600" />
-            <span>FSSAI Certified</span>
-          </div>
         </div>
       </div>
     </footer>
   )
 }
-
-export default Footer

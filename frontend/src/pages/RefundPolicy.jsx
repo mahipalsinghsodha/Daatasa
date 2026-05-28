@@ -1,49 +1,52 @@
-import { FiRefreshCcw } from 'react-icons/fi'
+import PolicyPage, { PolicySection, PolicyBullet, PolicyCallout } from '../components/PolicyPage'
+
+const date = new Date().toLocaleDateString('en-IN', { month:'long', year:'numeric' })
+const TOC = ['Cancellation Policy','Returns & Refunds','Refund Processing','How to Request a Return']
 
 export default function RefundPolicy() {
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      <div className="bg-[#0f172a] pt-20 pb-32 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-red-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
-        <div className="relative z-10 max-w-xl mx-auto px-4">
-          <span className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/20 text-red-400 text-[11px] font-bold tracking-wider uppercase rounded-full border border-red-500/20 mb-5">
-            <FiRefreshCcw size={12} /> Legal Compliance
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-            Refund & <span className="text-red-500">Cancellation</span>
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base max-w-md mx-auto">
-            Last Updated: {new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}
-          </p>
+    <PolicyPage icon="↩️" accentClass="from-red-400 to-rose-400" tag="Legal"
+      title="Refund & Cancellation Policy"
+      subtitle="We want every purchase to be perfect. Here's what happens if it isn't."
+      lastUpdated={date} toc={TOC}>
+
+      <PolicySection id="section-1" title="Cancellation Policy">
+        <p>Orders can be cancelled before they are dispatched. Once an order is shipped, it cannot be cancelled.</p>
+        <PolicyCallout type="info">To request cancellation, email <strong>support@dhanifresh.com</strong> with your Order ID as soon as possible.</PolicyCallout>
+      </PolicySection>
+
+      <PolicySection id="section-2" title="Returns & Refunds">
+        <p>Due to the consumable nature of our products, we accept returns only if:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet color="text-red-500">The product was damaged or tampered during transit</PolicyBullet>
+          <PolicyBullet color="text-red-500">The wrong product was delivered</PolicyBullet>
+          <PolicyBullet color="text-red-500">The product is expired at the time of delivery</PolicyBullet>
+        </ul>
+        <PolicyCallout type="warning">Return requests must be raised within <strong>7 days</strong> of delivery with photographic evidence.</PolicyCallout>
+      </PolicySection>
+
+      <PolicySection id="section-3" title="Refund Processing">
+        <p>Once your return request is approved:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet>Refunds are processed to the original payment method</PolicyBullet>
+          <PolicyBullet>Online payments: credited within 5–7 business days</PolicyBullet>
+          <PolicyBullet>COD orders: credited to your bank account within 7–10 business days</PolicyBullet>
+        </ul>
+        <PolicyCallout type="success">For Razorpay payments, refunds appear in your account within 3–5 working days.</PolicyCallout>
+      </PolicySection>
+
+      <PolicySection id="section-4" title="How to Request a Return">
+        <p>Contact our support team with:</p>
+        <ul className="mt-3 space-y-2 list-none">
+          <PolicyBullet>Your order number (found in your confirmation email)</PolicyBullet>
+          <PolicyBullet>Clear photographs of the damaged / incorrect product</PolicyBullet>
+          <PolicyBullet>A brief description of the issue</PolicyBullet>
+        </ul>
+        <div className="mt-4 inline-block p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+          <p className="text-sm font-bold text-slate-900">📧 support@dhanifresh.com</p>
+          <p className="text-xs text-slate-500 mt-0.5">We respond within 24 hours, Mon–Sat</p>
         </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 -mt-20 relative z-10">
-        <div className="bg-white rounded-3xl border border-gray-100 p-8 sm:p-12 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-gray-600 space-y-8 text-[15px] leading-relaxed">
-          
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>1. Cancellation Policy</h2>
-            <p>Orders can be cancelled before they are dispatched. Once an order is shipped, it cannot be cancelled. To request a cancellation, please email support@dhanifresh.com with your Order ID.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>2. Returns and Refunds</h2>
-            <p>Due to the consumable nature of our products, we only accept returns if:</p>
-            <ul className="list-disc pl-5 mt-2 space-y-1 text-gray-500">
-              <li>The product was damaged in transit</li>
-              <li>The wrong product was delivered</li>
-              <li>The product is expired at the time of delivery</li>
-            </ul>
-            <p className="mt-4">Return requests must be raised within 7 days of delivery. Approved refunds will be credited to the original method of payment within 5-7 business days.</p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-bold text-gray-900 mb-4" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>3. How to Request a Return</h2>
-            <p>Please contact our support team with your order number and photographs of the product in question. Our team will verify the claim and initiate a return pickup if applicable.</p>
-          </section>
-
-        </div>
-      </div>
-    </div>
+      </PolicySection>
+    </PolicyPage>
   )
 }

@@ -1,174 +1,285 @@
-import { useState } from 'react'
+// pages/Login.jsx — Premium Immersive Design
+import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi'
 import { motion } from 'framer-motion'
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react'
+import { FiShield, FiTruck, FiAward } from 'react-icons/fi'
+import { toast } from 'react-toastify'
+import { Helmet } from 'react-helmet-async'
 
-const GoogleIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-  </svg>
-)
+const FloatingInput = ({ id, label, type = 'text', value, onChange, icon: Icon, rightElement, autoComplete, required }) => {
+  const [focused, setFocused] = useState(false)
+  const hasValue = value.length > 0
+  const isLifted = focused || hasValue
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        {Icon && (
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200"
+            style={{ color: focused ? 'var(--gold)' : 'var(--text-muted)' }}>
+            <Icon size={16} />
+          </div>
+        )}
+        <input
+          id={id}
+          type={type}
+          value={value}
+          onChange={onChange}
+          autoComplete={autoComplete}
+          required={required}
+          placeholder=" "
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          className="w-full rounded-xl text-[14px] font-medium outline-none transition-all"
+          style={{
+            paddingTop: '22px', paddingBottom: '8px',
+            paddingLeft: Icon ? '42px' : '14px',
+            paddingRight: rightElement ? '44px' : '14px',
+            background: focused ? '#FEFEFE' : '#F7F9FC',
+            border: `2px solid ${focused ? 'var(--gold)' : '#E2E8F0'}`,
+            color: 'var(--navy)',
+            boxShadow: focused ? '0 0 0 4px rgba(245,166,35,0.12), 0 2px 8px rgba(245,166,35,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
+            height: '58px',
+            borderRadius: '14px',
+          }}
+        />
+        {rightElement && (
+          <div className="absolute right-3.5 top-1/2 -translate-y-1/2">{rightElement}</div>
+        )}
+      </div>
+      <label htmlFor={id}
+        className="absolute pointer-events-none transition-all duration-200"
+        style={{
+          left: Icon ? '42px' : '14px',
+          top: isLifted ? '8px' : '50%',
+          transform: isLifted ? 'none' : 'translateY(-50%)',
+          fontSize: isLifted ? '11px' : '14px',
+          fontWeight: isLifted ? '700' : '500',
+          color: focused ? 'var(--gold)' : 'var(--text-muted)',
+          letterSpacing: isLifted ? '0.04em' : '0',
+        }}
+      >
+        {label}
+      </label>
+    </div>
+  )
+}
+
+const TRUST_BADGES = [
+  { emoji: '🔬', label: 'FSSAI Certified', icon: <FiAward size={16} /> },
+  { emoji: '🧪', label: 'Lab Tested',      icon: <FiShield size={16} /> },
+  { emoji: '🚚', label: 'Pan India',        icon: <FiTruck size={16} /> },
+]
 
 const Login = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPass, setShowPass] = useState(false)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const { login, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const from = location.state?.from || '/'
 
-  // Where to go after login — defaults to home (or /admin for admins)
-  const from = location.state?.from || null
+  const [email,    setEmail]    = useState('')
+  const [password, setPassword] = useState('')
+  const [showPass, setShowPass] = useState(false)
+  const [loading,  setLoading]  = useState(false)
 
-  const handleGoogleLogin = () => {
-    // Store the intended destination so we can restore it after OAuth
-    if (from) sessionStorage.setItem('loginRedirect', from)
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-    const w = 500, h = 600
-    const left = window.screen.width / 2 - w / 2
-    const top = window.screen.height / 2 - h / 2
-    const popup = window.open(`${apiUrl}/api/auth/google`, 'Google Login', `width=${w},height=${h},top=${top},left=${left}`)
-    const allowedOrigin = new URL(apiUrl).origin
-    const handler = (event) => {
-      if (event.origin !== allowedOrigin) return
-      const token = event.data?.token
-      if (token) {
-        localStorage.setItem('token', token)
-        window.removeEventListener('message', handler)
-        const redirect = sessionStorage.getItem('loginRedirect') || '/'
-        sessionStorage.removeItem('loginRedirect')
-        window.location.href = redirect
-      }
-    }
-    window.addEventListener('message', handler)
-    const timer = setInterval(() => {
-      if (!popup || popup.closed) { clearInterval(timer); window.removeEventListener('message', handler) }
-    }, 500)
-  }
+  useEffect(() => { if (user) navigate(from, { replace: true }) }, [user])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError('')
+    if (!email.trim() || !password) { toast.error('Please fill all fields'); return }
     setLoading(true)
     try {
-      const data = await login(email, password)
-      const isAdmin = data.user.role === 'admin' || data.user.role === 'superadmin'
-      // Redirect back to where they were, or admin/home as fallback
-      navigate(from || (isAdmin ? '/admin' : '/'), { replace: true })
+      await login(email.trim(), password)
+      toast.success('Welcome back! 👋')
+      navigate(from, { replace: true })
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password. Please try again.')
-    } finally {
-      setLoading(false)
-    }
+      toast.error(err?.response?.data?.message || 'Invalid email or password')
+    } finally { setLoading(false) }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: '#f8f9fa' }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
-      >
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="w-9 h-9 bg-orange-500 rounded-lg flex items-center justify-center text-white font-black text-sm shadow-sm">D</div>
-            <span className="font-extrabold text-xl text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-              Dhani<span className="text-orange-500">Fresh</span>
+    <div className="min-h-screen flex" style={{ background: '#EAF5FB' }}>
+      <Helmet>
+        <title>Login — DhaniFresh</title>
+        <meta name="description" content="Log in to your DhaniFresh account to shop pure Bilona ghee." />
+      </Helmet>
+
+      {/* ── Left Panel (Navy Immersive) ── */}
+      <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] relative overflow-hidden flex-col items-center justify-center p-12"
+        style={{ background: 'var(--gradient-hero)' }}>
+
+        {/* Background blobs */}
+        <div className="absolute top-10 left-10 w-72 h-72 rounded-full pointer-events-none animate-blob"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.35) 0%, transparent 70%)', filter: 'blur(60px)', opacity: 0.5 }} />
+        <div className="absolute bottom-10 right-10 w-56 h-56 rounded-full pointer-events-none animate-blob-delay"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.20) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0.5 }} />
+        {/* Dot pattern */}
+        <div className="absolute inset-0 opacity-[0.05]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 text-center max-w-md w-full"
+        >
+          {/* Logo */}
+          <Link to="/" className="inline-flex items-center gap-3 mb-14">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
+              style={{ background: 'var(--gold)', boxShadow: '0 8px 24px rgba(245,166,35,0.55)' }}>
+              <span className="text-2xl">🫙</span>
+            </div>
+            <span className="text-2xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
+              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
             </span>
           </Link>
-          <h1 className="text-2xl font-extrabold text-gray-900 mb-1" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>Welcome back</h1>
-          <p className="text-sm text-gray-500">Sign in to your account</p>
-        </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
-
-          {/* Error */}
-          {error && (
-            <div className="mb-5 px-4 py-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600">
-              {error}
+          {/* Floating hero visual */}
+          <div className="relative mb-10 inline-block">
+            <div className="w-40 h-40 rounded-3xl flex items-center justify-center mx-auto"
+              style={{
+                background: 'rgba(255,255,255,0.10)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                backdropFilter: 'blur(12px)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+              }}>
+              <div className="text-7xl animate-float-slow">🐄</div>
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1.5">Email Address</label>
-              <div className="relative">
-                <FiMail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-200 bg-white focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 outline-none text-sm text-gray-800 transition-all placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Password</label>
-                <Link to="/forgot-password" className="text-xs font-medium text-orange-500 hover:text-orange-600">Forgot password?</Link>
-              </div>
-              <div className="relative">
-                <FiLock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                <input
-                  type={showPass ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-11 py-3 rounded-lg border border-gray-200 bg-white focus:border-orange-400 focus:ring-2 focus:ring-orange-400/20 outline-none text-sm text-gray-800 transition-all placeholder:text-gray-400"
-                />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                  {showPass ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2"
-            >
-              {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <FiArrowRight size={16} />}
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-100" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-white px-3 text-xs text-gray-400">or continue with</span>
-            </div>
+            {/* Ring glow */}
+            <div className="absolute -inset-4 rounded-[32px] pointer-events-none"
+              style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.25) 0%, transparent 70%)', filter: 'blur(16px)' }} />
           </div>
 
-          <button
-            type="button"
-            onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-sm font-medium text-gray-700 transition-all shadow-sm"
-          >
-            <GoogleIcon /> Continue with Google
-          </button>
-        </div>
+          <h2 className="text-3xl font-extrabold text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>Welcome Back!</h2>
+          <p style={{ color: 'rgba(255,255,255,0.65)' }} className="text-base leading-relaxed mb-10">
+            Log in to access your account and enjoy fresh, pure Bilona ghee delivered to your door.
+          </p>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Don't have an account?{' '}
-          <Link to="/register" className="font-semibold text-orange-500 hover:text-orange-600">Sign up</Link>
-        </p>
-      </motion.div>
+          {/* Trust badges */}
+          <div className="grid grid-cols-3 gap-3">
+            {TRUST_BADGES.map(b => (
+              <div key={b.label} className="rounded-2xl py-4 px-3 text-center transition-all duration-200"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.14)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
+                <div className="text-2xl mb-1.5">{b.emoji}</div>
+                <div className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.72)' }}>{b.label}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ── Right Panel (Form) ── */}
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full max-w-[420px]"
+        >
+          {/* Mobile logo */}
+          <Link to="/" className="flex lg:hidden items-center gap-2.5 mb-8 justify-center">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{ background: 'var(--navy)', boxShadow: 'var(--shadow-brand)' }}>
+              <span className="text-xl">🫙</span>
+            </div>
+            <span className="text-xl font-extrabold" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
+              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
+            </span>
+          </Link>
+
+          {/* Card */}
+          <div className="rounded-3xl p-8 sm:p-10"
+            style={{
+              background: '#FFFFFF',
+              boxShadow: '0 24px 80px rgba(27,47,110,0.14), 0 4px 20px rgba(27,47,110,0.08)',
+              border: '1px solid #E8EFF8',
+            }}>
+            <div className="mb-8">
+              <h1 className="text-2xl font-extrabold mb-1.5" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>Sign In</h1>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                New here?{' '}
+                <Link to="/register" style={{ color: 'var(--gold)', fontWeight: 700 }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--navy)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--gold)'}>
+                  Create an account
+                </Link>
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <FloatingInput
+                id="login-email" label="Email address" type="email"
+                value={email} onChange={e => setEmail(e.target.value)}
+                icon={Mail} autoComplete="email" required
+              />
+              <FloatingInput
+                id="login-password" label="Password" type={showPass ? 'text' : 'password'}
+                value={password} onChange={e => setPassword(e.target.value)}
+                icon={Lock} autoComplete="current-password" required
+                rightElement={
+                  <button type="button" onClick={() => setShowPass(v => !v)}
+                    style={{ color: 'var(--text-muted)' }}
+                    className="hover:text-[var(--navy)] transition-colors p-1">
+                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                }
+              />
+
+              <div className="flex items-center justify-end">
+                <Link to="/forgot-password" className="text-xs font-semibold transition-colors"
+                  style={{ color: 'var(--gold)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--navy)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--gold)'}>
+                  Forgot password?
+                </Link>
+              </div>
+
+              <button type="submit" disabled={loading}
+                className="w-full h-13 rounded-xl font-extrabold text-[15px] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] mt-2"
+                style={{
+                  height: '52px',
+                  background: 'var(--brand-gradient)',
+                  color: '#FFFFFF',
+                  boxShadow: '0 6px 24px rgba(27,47,110,0.35)',
+                  borderRadius: '14px',
+                }}>
+                {loading
+                  ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  : <><ArrowRight size={16} /> Sign In</>
+                }
+              </button>
+            </form>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 my-6">
+              <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
+              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Or continue with</span>
+              <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
+            </div>
+
+            {/* Social proof */}
+            <div className="flex items-center justify-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+              <div className="flex -space-x-1.5">
+                {['#1B2F6E','#F5A623','#38A169','#3182CE'].map((c, i) => (
+                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white" style={{ background: c }} />
+                ))}
+              </div>
+              <span>Join <strong style={{ color: 'var(--navy)' }}>5,000+</strong> happy customers</span>
+            </div>
+
+            <div className="mt-6 pt-6 text-center" style={{ borderTop: '1px solid var(--border-color)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Don't have an account?{' '}
+                <Link to="/register" style={{ color: 'var(--gold)', fontWeight: 700 }}>Sign up free</Link>
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   )
 }

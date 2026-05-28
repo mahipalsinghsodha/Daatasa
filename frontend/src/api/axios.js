@@ -1,53 +1,107 @@
-import axios from "axios";
-import { toast } from "react-toastify";
+// frontend/src/api/axios.js
+// Axios instance with:
+//   ✅ 401 auto-refresh interceptor with retry queue
+//   ✅ Token stored in module memory (not localStorage)
+//   ✅ Dispatches 'auth:logout' event when refresh fails
+
+import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true, // optional (only if you use cookies/auth)
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  withCredentials: true, // Required for httpOnly refresh token cookie
+  timeout: 15000,
 });
 
-// ── Auto-attach token to every request ────────────────────────────────────────
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+// ─── In-memory token store ────────────────────────────────────────────────────
+// This module is a singleton, so the token persists across components
+// without being accessible from browser devtools/localStorage
+let _accessToken = null;
+
+export const setAccessToken = (token) => {
+  _accessToken = token;
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  } else {
+    delete api.defaults.headers.common['Authorization'];
   }
-  return config;
-});
+};
 
-// ── Global error handler — show API error messages as toasts ──────────────────
+export const getAccessToken = () => _accessToken;
+
+// ─── Request Interceptor ─────────────────────────────────────────────────────
+api.interceptors.request.use(
+  (config) => {
+    // Always attach latest token from memory
+    if (_accessToken && !config.headers['Authorization']) {
+      config.headers['Authorization'] = `Bearer ${_accessToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// ─── Response Interceptor (401 → auto-refresh → retry) ───────────────────────
+let isRefreshing = false;
+let failedQueue  = []; // Queue of { resolve, reject } for requests waiting on refresh
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
+  failedQueue = [];
+};
+
 api.interceptors.response.use(
-  (response) => response, // pass through successful responses
-  (error) => {
-    // Extract the error message from the API response
-    const message =
-      error.response?.data?.message ||
-      error.response?.data?.error ||
-      error.message ||
-      "Something went wrong";
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-    // Don't toast for cancelled requests or network errors during navigation
-    if (axios.isCancel(error)) {
-      return Promise.reject(error);
+    // Only intercept 401 (Unauthorized) errors
+    // Skip: already retried, refresh endpoint itself, login/register endpoints
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes('/api/auth/refresh') &&
+      !originalRequest.url?.includes('/api/auth/login') &&
+      !originalRequest.url?.includes('/api/auth/register')
+    ) {
+      if (isRefreshing) {
+        // Queue this request to retry once refresh completes
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then((token) => {
+          originalRequest.headers['Authorization'] = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Attempt token refresh using httpOnly cookie
+        const res = await api.post('/api/auth/refresh');
+        const { token } = res.data;
+
+        setAccessToken(token);
+        processQueue(null, token);
+
+        originalRequest.headers['Authorization'] = `Bearer ${token}`;
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Refresh failed — force logout
+        processQueue(refreshError, null);
+        setAccessToken(null);
+
+        // Dispatch global logout event (AuthContext listens to this)
+        window.dispatchEvent(new CustomEvent('auth:forced_logout'));
+
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
-    // Don't toast for stock issue responses (409) — handled by Checkout modal
-    if (error.response?.status === 409 && error.response?.data?.allItems) {
-      return Promise.reject(error);
-    }
-
-    // Show the error in a toast (avoid duplicates for the same message)
-    toast.error(message, {
-      toastId: message, // prevents duplicate toasts with same message
-      autoClose: 4000,
-    });
-
-    // Still reject so individual catch blocks can handle specific logic
     return Promise.reject(error);
   }
 );
 
-export default api;
+export default api;

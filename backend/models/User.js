@@ -18,13 +18,15 @@ const addressSchema = new mongoose.Schema({
 const userSchema = new mongoose.Schema({
   name:     { type: String, required: true, trim: true },
   email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true, minlength: 6 },
+  password: { type: String, minlength: 6, select: false },
   role:     { type: String, enum: ['user', 'admin', 'superadmin'], default: 'user' },
   permissions: [{ type: String }], // e.g., ['products', 'orders', 'users']
   phone:    String,
+  avatar:   String, // Cloudinary URL for profile photo
   addresses:[addressSchema],
-  // Add to models/User.js inside userSchema:
-isBlocked: { type: Boolean, default: false },
+
+  isBlocked: { type: Boolean, default: false },
+
   // Legacy single address for backward compat
   address: {
     street: String, city: String, state: String, zipCode: String, country: String,
@@ -36,6 +38,15 @@ isBlocked: { type: Boolean, default: false },
   resetPasswordFingerprint: { type: String, select: false }, // SHA-256 hash of IP + User-Agent
 
   tokenVersion: { type: Number, default: 0 },
+
+  // ── Refresh Token Rotation ─────────────────────────────────────────────────
+  // Store hashed refresh tokens for multi-device support + rotation
+  refreshTokens: [{
+    tokenHash: { type: String, select: false },
+    expiresAt: Date,
+    deviceInfo: String, // User-Agent snippet for display
+  }],
+
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
 
 }, { timestamps: true });
@@ -61,7 +72,8 @@ userSchema.pre('save', function (next) {
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
-    this.password = await bcrypt.hash(this.password, 10);
+    // saltRounds = 12 (production standard)
+    this.password = await bcrypt.hash(this.password, 12);
     next();
   } catch (error) { next(error); }
 });
@@ -69,6 +81,12 @@ userSchema.pre('save', async function (next) {
 /* ── Instance methods ────────────────────────────────────────────── */
 userSchema.methods.comparePassword = async function (candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
+};
+
+/* ── Clean expired refresh tokens ───────────────────────────────── */
+userSchema.methods.cleanExpiredRefreshTokens = function () {
+  const now = new Date();
+  this.refreshTokens = (this.refreshTokens || []).filter(t => t.expiresAt > now);
 };
 
 /* ── Virtual: default address ───────────────────────────────────── */

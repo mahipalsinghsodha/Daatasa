@@ -60,30 +60,45 @@ const AdminCoupons = () => {
   const filtered = coupons.filter(c => c.code.toLowerCase().includes(search.toLowerCase()) || (c.description || '').toLowerCase().includes(search.toLowerCase()))
 
   if (!hasPermission('coupons')) return <RestrictedAccess title="Access Restricted" message="You don't have permission to manage coupons." />
-  if (loading) return <div className="min-h-[60vh] flex items-center justify-center" style={{ background: '#f8f9fa' }}><div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>
+  if (loading) return <div className="min-h-[60vh] flex items-center justify-center" style={{ background: 'var(--bg-base)' }}><div className="w-8 h-8 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin" /></div>
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: '#f8f9fa' }}>
-      <div className="bg-white border-b border-gray-100">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
+
+      {/* ── Premium Admin Header ── */}
+      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="absolute top-0 right-0 w-56 h-56 rounded-full pointer-events-none opacity-10"
+          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)' }} />
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between gap-4 mb-4">
             <div>
-              <span className="inline-block px-3 py-1 bg-orange-100 text-orange-700 text-xs font-semibold rounded-full border border-orange-200 mb-3">Admin</span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif', letterSpacing: '-0.025em' }}>Manage Coupons</h1>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border mb-3"
+                style={{ background: 'rgba(245,197,24,0.18)', color: 'var(--gold)', borderColor: 'rgba(245,197,24,0.35)' }}>
+                <FiTag size={10} /> Admin Panel
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-white"
+                style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>Manage Coupons</h1>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-                <FiSearch size={14} className="text-gray-400" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…" className="bg-transparent outline-none text-sm w-36 placeholder:text-gray-400" />
+              <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.14)' }}>
+                <FiSearch size={14} style={{ color: 'rgba(255,255,255,0.55)' }} />
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
+                  className="bg-transparent outline-none text-sm w-36" style={{ color: '#FFF' }} />
               </div>
-              <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg shadow-sm transition-all">
+              <button onClick={openAdd}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105"
+                style={{ background: 'var(--gold)', color: 'var(--navy)', border: 'none', cursor: 'pointer', boxShadow: '0 4px 14px rgba(245,166,35,0.45)' }}>
                 <FiPlus size={15} /> Add Coupon
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <span>{coupons.length} total</span>
-            <span className="text-green-600 font-semibold">{coupons.filter(c => c.isActive).length} active</span>
+          <div className="flex items-center gap-4 text-sm">
+            <span style={{ color: 'rgba(255,255,255,0.60)' }}>{coupons.length} total</span>
+            <span className="font-bold" style={{ color: '#6EE7B7' }}>{coupons.filter(c => c.isActive).length} active</span>
           </div>
         </div>
       </div>
