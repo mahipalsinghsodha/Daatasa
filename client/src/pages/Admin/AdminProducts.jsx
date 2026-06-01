@@ -1,0 +1,344 @@
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  FiPlus, FiSearch, FiBox, FiTrash2, FiSave,
+  FiToggleLeft, FiToggleRight, FiArrowLeft, FiTag
+} from 'react-icons/fi'
+import api from '../../api/axios'
+import { toast } from 'react-toastify'
+import CustomDropdown from '../../components/CustomDropdown'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
+import RestrictedAccess from '../../components/RestrictedAccess'
+
+const WEIGHT_OPTIONS = ['250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg']
+
+const AdminProducts = () => {
+  const navigate = useNavigate()
+  const { hasPermission } = useAuth()
+  const [products, setProducts] = useState([])
+  const [categories, setCategories] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [form, setForm] = useState({})
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (hasPermission('products')) fetchData()
+  }, [hasPermission])
+
+  const fetchData = async () => {
+    try {
+      const [pRes, cRes] = await Promise.all([api.get('/api/products?all=true'), api.get('/api/categories')])
+      setProducts(pRes.data.products)
+      setCategories(cRes.data)
+    } catch {
+      toast.error('Failed to load products')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSelect = (prod) => {
+    setSelectedProduct(prod)
+    setForm({
+      name: prod.name,
+      description: prod.description,
+      price: prod.price,
+      mrp: prod.mrp ?? '',
+      stock: prod.stock,
+      category: prod.category,
+      weight: prod.weight || '',
+      isActive: prod.isActive ?? true,
+    })
+  }
+
+  const handleSave = async () => {
+    if (!form.name || !form.price || !form.category) return toast.error('Name, price, and category are required');
+    if (form.mrp && Number(form.mrp) < Number(form.price)) return toast.error('MRP must be greater than or equal to price');
+    if (!window.confirm(`Save changes to "${form.name}"?`)) return
+    setSaving(true)
+    try {
+      await api.put(`/api/products/${selectedProduct._id}`, form)
+      toast.success('Product updated successfully')
+      fetchData()
+    } catch (e) {
+      toast.error(e.response?.data?.message || 'Failed to save changes')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this product permanently?')) return
+    try {
+      await api.delete(`/api/products/${id}`)
+      toast.success('Product deleted')
+      fetchData()
+      if (selectedProduct?._id === id) setSelectedProduct(null)
+    } catch {
+      toast.error('Failed to delete product')
+    }
+  }
+
+  const filtered = products.filter(p =>
+    p.name.toLowerCase().includes(search.toLowerCase()) ||
+    (p.category || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const categoryOptions = categories.map(c => ({
+    value: c.slug,
+    label: c.name,
+    icon: c.image ? <img src={c.image} alt={c.name} style={{ width: 16, height: 16, borderRadius: 4, objectFit: 'cover' }} /> : <span style={{ fontSize: 14 }}>{c.emoji || '🏷️'}</span>
+  }))
+
+  if (!hasPermission('products')) return (
+    <RestrictedAccess title="Access Restricted" message="You don't have permission to manage products." />
+  )
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+
+      {/* ── Premium Admin Header ── */}
+      <div style={{ flexShrink: 0, position: 'relative', overflow: 'hidden', background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: 224, height: 224, borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0.1, pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.03, backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '22px 22px' }} />
+
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: 1280, margin: '0 auto', padding: '24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: 'rgba(245,166,35,0.20)', border: '1px solid rgba(245,166,35,0.35)' }}>
+              <FiBox size={18} style={{ color: 'var(--gold)' }} />
+            </div>
+            <div>
+              <h1 style={{ fontSize: 20, fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)', margin: 0 }}>Manage Products</h1>
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', margin: 0, marginTop: 2 }}>{products.length} products in catalogue</p>
+            </div>
+          </div>
+          <button onClick={() => navigate('/admin/add-product')}
+            className="btn btn-primary"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, fontSize: 14, fontWeight: 700, transition: 'all 0.2s', cursor: 'pointer', background: 'var(--gold)', color: 'var(--navy)', border: 'none', boxShadow: '0 4px 14px rgba(245,166,35,0.45)' }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+            <FiPlus size={15} /> Add Product
+          </button>
+        </div>
+      </div>
+
+      {/* Split Layout */}
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+
+        {/* LEFT: Product List */}
+        <div className={selectedProduct ? 'hidden lg:flex' : 'flex'} style={{ width: '100%', maxWidth: 380, background: 'var(--bg-surface)', borderRight: '1px solid var(--border-color)', flexDirection: 'column', flexShrink: 0, display: selectedProduct ? 'none' : 'flex' }}>
+          {/* Search */}
+          <div style={{ padding: 16, borderBottom: '1px solid var(--border-color)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-alt)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-input)', padding: '10px 12px' }}>
+              <FiSearch size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Search products…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-primary)', width: '100%', fontFamily: 'var(--font)' }}
+              />
+            </div>
+          </div>
+
+          {/* List */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+            {loading ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '80px 0' }}>
+                <div className="w-6 h-6 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border-color)', borderTopColor: 'var(--brand-secondary)' }} />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div style={{ padding: '64px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: 14 }}>No products found</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {filtered.map(p => {
+                  const isActive = selectedProduct?._id === p._id
+                  return (
+                    <div
+                      key={p._id}
+                      onClick={() => handleSelect(p)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 'var(--radius-card)', cursor: 'pointer', transition: 'all 0.2s', border: '1px solid',
+                        ...(isActive ? { background: 'rgba(245,166,35,0.08)', borderColor: 'rgba(245,166,35,0.25)' } : { background: 'transparent', borderColor: 'transparent' }),
+                        opacity: p.isActive === false ? 0.6 : 1
+                      }}
+                      onMouseEnter={e => { if(!isActive) e.currentTarget.style.background = 'var(--bg-alt)' }}
+                      onMouseLeave={e => { if(!isActive) e.currentTarget.style.background = 'transparent' }}
+                    >
+                      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-alt)', flexShrink: 0 }}>
+                        <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: isActive ? 'var(--brand-secondary)' : 'var(--text-primary)', margin: 0 }}>{p.name}</p>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>₹{p.price?.toLocaleString('en-IN')}</span>
+                          {p.weight && <span style={{ fontSize: 10, background: 'rgba(245,166,35,0.1)', color: 'var(--brand-secondary)', border: '1px solid rgba(245,166,35,0.2)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{p.weight}</span>}
+                          {p.isActive === false && <span style={{ fontSize: 10, background: 'var(--bg-alt)', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Inactive</span>}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Edit Panel */}
+        <div className={!selectedProduct ? 'hidden lg:flex' : 'flex'} style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', flexDirection: 'column', display: !selectedProduct ? 'none' : 'flex' }}>
+          <AnimatePresence mode="wait">
+            {!selectedProduct ? (
+              <motion.div
+                key="empty"
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}
+              >
+                <div style={{ width: 64, height: 64, background: 'var(--bg-alt)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                  <FiBox size={24} style={{ color: 'var(--border-color)' }} />
+                </div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-muted)' }}>Select a product to edit</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                key={selectedProduct._id}
+                initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                style={{ width: '100%', maxWidth: 640, margin: '0 auto' }}
+              >
+                {/* Mobile Back */}
+                <button onClick={() => setSelectedProduct(null)} className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', marginBottom: 16, transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
+                  <FiArrowLeft size={14} /> Back to products
+                </button>
+
+                {/* Product Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ width: 64, height: 64, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-color)', background: 'var(--bg-alt)', flexShrink: 0 }}>
+                      <img src={selectedProduct.image} alt={selectedProduct.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div>
+                      <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', margin: 0 }}>{selectedProduct.name}</h2>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'rgba(49,130,206,0.08)', color: 'var(--info)', border: '1px solid rgba(49,130,206,0.25)', borderRadius: 99, fontSize: 11, fontWeight: 700 }}>
+                          <FiTag size={10} /> {selectedProduct.category}
+                        </span>
+                        <span style={{ padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 700, border: '1px solid', ...(form.isActive ? { background: 'rgba(56,161,105,0.08)', color: 'var(--success)', borderColor: 'rgba(56,161,105,0.25)' } : { background: 'rgba(229,62,62,0.08)', color: 'var(--danger)', borderColor: 'rgba(229,62,62,0.25)' }) }}>
+                          {form.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete(selectedProduct._id)} style={{ padding: 10, color: 'var(--text-muted)', background: 'transparent', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'rgba(229,62,62,0.1)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}>
+                    <FiTrash2 size={18} />
+                  </button>
+                </div>
+
+                {/* Edit Form */}
+                <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product Name</label>
+                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
+                      onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category</label>
+                    <CustomDropdown
+                      options={categoryOptions}
+                      value={form.category}
+                      onChange={val => setForm({ ...form, category: val })}
+                      placeholder="Select category"
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price (₹)</label>
+                      <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
+                        onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>MRP (₹)</label>
+                      <input type="number" value={form.mrp} onChange={e => setForm({ ...form, mrp: e.target.value })} placeholder="Optional" style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
+                        onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Stock Quantity</label>
+                      <input type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
+                        onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Weight / Size</label>
+                      <select
+                        value={form.weight || ''}
+                        onChange={e => setForm({ ...form, weight: e.target.value })}
+                        style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)', cursor: 'pointer' }}
+                        onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                      >
+                        <option value="" disabled>Select weight</option>
+                        {WEIGHT_OPTIONS.map(w => (
+                          <option key={w} value={w}>{w}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</label>
+                    <textarea
+                      value={form.description}
+                      onChange={e => setForm({ ...form, description: e.target.value })}
+                      rows={4}
+                      style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)', resize: 'none' }}
+                      onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
+                    />
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'var(--bg-alt)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-alt)'}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = !form.isActive;
+                        if (window.confirm(`Mark product as ${next ? 'ACTIVE' : 'INACTIVE'}? ${next ? 'Customers will see it.' : 'It will be hidden from the store.'}`)) {
+                          setForm({ ...form, isActive: next })
+                        }
+                      }}
+                      style={{ display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                    >
+                      {form.isActive
+                        ? <FiToggleRight size={28} style={{ color: 'var(--success)' }} />
+                        : <FiToggleLeft size={28} style={{ color: 'var(--text-muted)' }} />
+                      }
+                    </button>
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Product Visibility</p>
+                      <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: 0, marginTop: 2 }}>{form.isActive ? 'Visible to customers in the store' : 'Hidden from the store'}</p>
+                    </div>
+                  </label>
+
+                  <div style={{ display: 'flex', gap: 12, paddingTop: 16, borderTop: '1px solid var(--border-color)' }}>
+                    <button onClick={() => setSelectedProduct(null)} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+                      Cancel
+                    </button>
+                    <button onClick={handleSave} disabled={saving} className="btn btn-primary" style={{ flex: 2, justifyContent: 'center', opacity: saving ? 0.7 : 1 }}>
+                      {saving ? <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgba(255,255,255,0.3)', borderTopColor: '#fff' }} /> : <FiSave size={15} />}
+                      {saving ? 'Saving…' : 'Save Changes'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default AdminProducts

@@ -37,7 +37,7 @@ services:
   # ─── Backend API ─────────────────────────────────────────────────────────────
   backend:
     build:
-      context: ./backend
+      context: ./server
       dockerfile: Dockerfile
     container_name: ghee_backend
     restart: unless-stopped
@@ -49,20 +49,20 @@ services:
       MONGODB_URI: mongodb://mongodb:27017/ghee-ecommerce
       REDIS_URL: redis://redis:6379
     env_file:
-      - ./backend/.env
+      - ./server/.env
     depends_on:
       mongodb:
         condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
-      - ./backend:/app
+      - ./server:/app
       - /app/node_modules
 
   # ─── Frontend (Vite preview) ──────────────────────────────────────────────
   frontend:
     build:
-      context: ./frontend
+      context: ./client
       dockerfile: Dockerfile
     container_name: ghee_frontend
     restart: unless-stopped
