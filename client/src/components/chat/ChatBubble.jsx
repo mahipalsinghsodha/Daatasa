@@ -118,6 +118,16 @@ export default function ChatBubble({ message, currentUserId, onQuickReply }) {
               </div>
             )}
           </div>
+        ) : messageType === 'IMAGE' ? (
+          <div style={{
+            background: isUser ? 'var(--brand-gradient)' : isBot ? 'var(--bg-alt)' : 'var(--bg-surface)',
+            borderRadius: isUser ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+            padding: '4px',
+            boxShadow: isUser ? 'var(--shadow-brand)' : 'var(--shadow-sm)',
+            border: !isUser && !isBot ? '1.5px solid var(--border-color)' : 'none',
+          }}>
+            <img src={content} alt="Attachment" style={{ maxWidth: '240px', maxHeight: '300px', borderRadius: '14px', objectFit: 'cover', display: 'block' }} />
+          </div>
         ) : (
           /* ── Regular text bubble ────────────────────────────────────────── */
           <div style={{

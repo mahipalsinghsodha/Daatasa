@@ -1,30 +1,42 @@
 // frontend/src/api/axios.js
 // Axios instance with:
 //   ✅ 401 auto-refresh interceptor with retry queue
-//   ✅ Token stored in module memory (not localStorage)
+//   ✅ Token and refresh token stored in localStorage
 //   ✅ Dispatches 'auth:logout' event when refresh fails
 
 import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:5000'),
-  withCredentials: true, // Required for httpOnly refresh token cookie
+  withCredentials: true,
   timeout: 15000,
 });
 
 // ─── In-memory token store ────────────────────────────────────────────────────
 // This module is a singleton, so the token persists across components
 // without being accessible from browser devtools/localStorage
-let _accessToken = null;
+let _accessToken = localStorage.getItem('accessToken');
 
 export const setAccessToken = (token) => {
   _accessToken = token;
   if (token) {
+    localStorage.setItem('accessToken', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
+    localStorage.removeItem('accessToken');
     delete api.defaults.headers.common['Authorization'];
   }
 };
+
+export const setRefreshToken = (token) => {
+  if (token) {
+    localStorage.setItem('refreshToken', token);
+  } else {
+    localStorage.removeItem('refreshToken');
+  }
+};
+
+export const getRefreshToken = () => localStorage.getItem('refreshToken');
 
 export const getAccessToken = () => _accessToken;
 
@@ -32,7 +44,8 @@ let refreshPromise = null;
 
 export const refreshAuthToken = () => {
   if (!refreshPromise) {
-    refreshPromise = api.post('/api/auth/refresh').finally(() => {
+    const refreshToken = getRefreshToken();
+    refreshPromise = api.post('/api/auth/refresh', { refreshToken }).finally(() => {
       refreshPromise = null;
     });
   }
@@ -90,9 +103,10 @@ api.interceptors.response.use(
       try {
         // Attempt token refresh using shared singleton promise
         const res = await refreshAuthToken();
-        const { token } = res.data;
+        const { token, refreshToken } = res.data;
 
         setAccessToken(token);
+        if (refreshToken) setRefreshToken(refreshToken);
         processQueue(null, token);
 
         originalRequest.headers['Authorization'] = `Bearer ${token}`;
@@ -101,6 +115,7 @@ api.interceptors.response.use(
         // Refresh failed — force logout
         processQueue(refreshError, null);
         setAccessToken(null);
+        setRefreshToken(null);
 
         // Dispatch global logout event (AuthContext listens to this)
         window.dispatchEvent(new CustomEvent('auth:forced_logout'));

@@ -1,10 +1,10 @@
 // frontend/src/context/AuthContext.jsx
-// ✅ Access token stored in memory (not localStorage)
-// ✅ On app init: calls /api/auth/refresh to restore session from httpOnly cookie
+// ✅ Access token and refresh token stored in localStorage
+// ✅ On app init: restores session using stored tokens
 // ✅ Listens to auth:forced_logout event from Axios interceptor
 
 import { createContext, useState, useEffect, useContext, useCallback } from 'react'
-import api, { setAccessToken, getAccessToken, refreshAuthToken } from '../api/axios'
+import api, { setAccessToken, getAccessToken, refreshAuthToken, setRefreshToken, getRefreshToken } from '../api/axios'
 
 const AuthContext = createContext()
 
@@ -20,17 +20,22 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // ── On mount: restore session from httpOnly refresh token cookie ──────────
+  // ── On mount: restore session from stored tokens ──────────
   useEffect(() => {
     const initAuth = async () => {
       try {
-        // This calls /api/auth/refresh via singleton promise
-        const res = await refreshAuthToken()
-        setAccessToken(res.data.token)
-        setUser(res.data.user)
+        if (getAccessToken()) {
+          const res = await api.get('/api/auth/me')
+          setUser(res.data)
+        } else if (getRefreshToken()) {
+          const res = await refreshAuthToken()
+          setAccessToken(res.data.token)
+          if (res.data.refreshToken) setRefreshToken(res.data.refreshToken)
+          setUser(res.data.user)
+        }
       } catch {
-        // No valid cookie → user is a guest, that's fine
         setAccessToken(null)
+        setRefreshToken(null)
       } finally {
         setLoading(false)
       }
@@ -44,6 +49,7 @@ export const AuthProvider = ({ children }) => {
     const handleForcedLogout = () => {
       setUser(null)
       setAccessToken(null)
+      setRefreshToken(null)
     }
     window.addEventListener('auth:forced_logout', handleForcedLogout)
     return () => window.removeEventListener('auth:forced_logout', handleForcedLogout)
@@ -62,8 +68,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post('/api/auth/login', { email, password })
-    // Access token stored in memory via setAccessToken
     setAccessToken(res.data.token)
+    if (res.data.refreshToken) setRefreshToken(res.data.refreshToken)
     setUser(res.data.user)
     await flushPendingCartItem()
     return res.data
@@ -72,6 +78,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     const res = await api.post('/api/auth/register', { name, email, password })
     setAccessToken(res.data.token)
+    if (res.data.refreshToken) setRefreshToken(res.data.refreshToken)
     setUser(res.data.user)
     await flushPendingCartItem()
     return res.data
@@ -92,12 +99,13 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Pass Authorization header so backend can remove the specific refresh token
-      await api.post('/api/auth/logout')
+      // Pass refreshToken so backend can remove the specific session
+      await api.post('/api/auth/logout', { refreshToken: getRefreshToken() })
     } catch {
       // Non-fatal — clear client state regardless
     } finally {
       setAccessToken(null)
+      setRefreshToken(null)
       setUser(null)
     }
   }
@@ -108,6 +116,7 @@ export const AuthProvider = ({ children }) => {
     } catch { /* non-fatal */ }
     finally {
       setAccessToken(null)
+      setRefreshToken(null)
       setUser(null)
     }
   }
