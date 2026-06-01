@@ -55,4 +55,18 @@ router.post('/', auth, auth.admin, upload.single('image'), async (req, res) => {
     }
 });
 
+// POST /api/upload/chat
+// For chat image uploads (doesn't require admin, works for users, maybe even guests if no auth is passed, but we should probably just allow it loosely for chat support)
+// For guests, we can't use auth middleware. So we will make it open but rate-limited or at least without auth required, since they are asking for help.
+router.post('/chat', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+        res.json({ url: req.file.path });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 module.exports = router;

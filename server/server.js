@@ -9,6 +9,7 @@ const mongoSanitize = require("express-mongo-sanitize");
 const rateLimit = require("express-rate-limit");
 const cookieParser = require("cookie-parser");
 const http = require("http");
+const path = require("path");
 const startOrderCleanup = require('./services/orderCleanup');
 const MongoStore = require('connect-mongo');
 const dbCheck = require('./middleware/dbCheck');
@@ -161,6 +162,21 @@ app.use('/api/chat', require('./routes/chatRoutes'));
 // Dynamic sitemap — accessible at GET /sitemap.xml (no /api prefix, for search engines)
 app.use('/sitemap.xml', require('./routes/sitemapRoute'));
 
+/*
+=====================
+SERVE FRONTEND (PRODUCTION)
+=====================
+*/
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../client/dist')));
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../client/dist/index.html'));
+  });
+} else {
+  app.get('/', (req, res) => {
+    res.send('API is running in development mode...');
+  });
+}
 
 /*
 =====================
@@ -190,11 +206,12 @@ app.use((err, req, res, next) => {
 
 /*
 =====================
-404
+404 API ROUTE
 =====================
 */
 
-app.use((req, res) => {
+// If the request starts with /api and reaches here, it's a 404
+app.use('/api', (req, res) => {
   res.status(404).json({
     message: "Route not found",
   });

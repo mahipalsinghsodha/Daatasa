@@ -56,6 +56,14 @@ const chatSessionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  agentActions: [
+    {
+      adminId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      adminName: String,
+      action: { type: String, enum: ['ACCEPTED', 'REJECTED'] },
+      timestamp: { type: Date, default: Date.now }
+    }
+  ],
   // Count how many bot messages — used for frustration detection
   botMessageCount: { type: Number, default: 0 },
   // Count same-topic complaints for frustration detection

@@ -53,21 +53,7 @@ const makeRefreshToken = (user) => jwt.sign(
   { expiresIn: '7d' }
 );
 
-/** Set refresh token as httpOnly cookie (path restricted to refresh endpoint) */
-const setRefreshCookie = (res, token) => {
-  res.cookie('refreshToken', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
-    path: '/', // Allow cookie to be sent with any request (interceptor needs it)
-  });
-};
-
-/** Clear refresh token cookie */
-const clearRefreshCookie = (res) => {
-  res.clearCookie('refreshToken', { path: '/' });
-};
+/** Removed cookie helpers as we are using session/local storage now */
 
 /** Public user object — never expose password/reset tokens/refresh hashes */
 const safeUser = (u) => ({
@@ -130,8 +116,7 @@ router.post('/register', authLimiter, dbCheck, [
     user.refreshTokens = activeTokens;
     await user.save({ validateBeforeSave: false });
 
-    setRefreshCookie(res, refreshToken);
-    res.status(201).json({ token: accessToken, user: safeUser(user) });
+    res.status(201).json({ token: accessToken, refreshToken, user: safeUser(user) });
   } catch (error) {
     if (error.name === 'ValidationError')
       return res.status(400).json({ message: Object.values(error.errors).map(e => e.message).join(', ') });
@@ -187,8 +172,7 @@ router.post('/login', authLimiter, dbCheck, [
     user.refreshTokens = activeTokens;
     await user.save({ validateBeforeSave: false });
 
-    setRefreshCookie(res, refreshToken);
-    res.json({ token: accessToken, user: safeUser(user) });
+    res.json({ token: accessToken, refreshToken, user: safeUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Login failed' });
   }
@@ -199,11 +183,9 @@ router.post('/login', authLimiter, dbCheck, [
 /*  Reads httpOnly cookie → verifies → issues new access + rotated refresh    */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/refresh', async (req, res) => {
-  console.log('[DEBUG] /refresh called. Cookies:', req.cookies);
-  const incomingRefresh = req.cookies?.refreshToken;
+  const incomingRefresh = req.body.refreshToken;
   if (!incomingRefresh) {
-    console.log('[DEBUG] No refresh token found in cookies');
-    return res.status(401).json({ message: 'No refresh token' });
+    return res.status(401).json({ message: 'No refresh token provided' });
   }
 
   try {
@@ -216,7 +198,6 @@ router.post('/refresh', async (req, res) => {
     if (!user) return res.status(401).json({ message: 'User not found' });
     if (user.isBlocked) return res.status(403).json({ message: 'Account suspended' });
     if (decoded.version !== user.tokenVersion) {
-      clearRefreshCookie(res);
       return res.status(401).json({ message: 'Token revoked' });
     }
 
@@ -228,7 +209,6 @@ router.post('/refresh', async (req, res) => {
       // Token not in DB — possible theft/reuse attack; invalidate ALL sessions
       user.refreshTokens = [];
       await user.save({ validateBeforeSave: false });
-      clearRefreshCookie(res);
       return res.status(401).json({ message: 'Refresh token reuse detected. Please login again.' });
     }
 
@@ -246,10 +226,8 @@ router.post('/refresh', async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     const accessToken = makeAccessToken(user);
-    setRefreshCookie(res, newRefreshToken);
-    res.json({ token: accessToken, user: safeUser(user) });
+    res.json({ token: accessToken, refreshToken: newRefreshToken, user: safeUser(user) });
   } catch (err) {
-    clearRefreshCookie(res);
     res.status(401).json({ message: 'Invalid or expired refresh token. Please login again.' });
   }
 });
@@ -259,7 +237,7 @@ router.post('/refresh', async (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/logout', async (req, res) => {
   try {
-    const incomingRefresh = req.cookies?.refreshToken;
+    const incomingRefresh = req.body.refreshToken;
 
     // If we have an auth header, use it to get user and increment tokenVersion
     const token = req.header('Authorization')?.replace('Bearer ', '');
@@ -278,10 +256,8 @@ router.post('/logout', async (req, res) => {
       } catch { /* ignore invalid token on logout */ }
     }
 
-    clearRefreshCookie(res);
     res.json({ message: 'Logged out successfully' });
   } catch (error) {
-    clearRefreshCookie(res);
     res.status(500).json({ message: 'Logout failed' });
   }
 });
@@ -295,7 +271,6 @@ router.post('/logout-all', auth, async (req, res) => {
       $inc: { tokenVersion: 1 },
       $set: { refreshTokens: [] }
     });
-    clearRefreshCookie(res);
     res.json({ message: 'Logged out from all devices' });
   } catch (error) {
     res.status(500).json({ message: 'Logout failed' });

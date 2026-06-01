@@ -4,6 +4,8 @@
 const { v4: uuidv4 }  = require('crypto');
 const ChatSession = require('../models/ChatSession');
 const ChatMessage = require('../models/ChatMessage');
+const Notification = require('../models/Notification');
+const User = require('../models/User');
 const { handleBotMessage } = require('./aiBot');
 
 // Helper: generate short unique session ID
@@ -27,6 +29,11 @@ function registerChatHandlers(io, socket) {
     try {
       const { guestName, guestEmail, category = 'OTHER', orderId } = data;
 
+      let validOrderId = null;
+      if (orderId && require('mongoose').Types.ObjectId.isValid(orderId)) {
+        validOrderId = orderId;
+      }
+
       const sessionId = generateSessionId();
       const session   = await ChatSession.create({
         sessionId,
@@ -35,7 +42,7 @@ function registerChatHandlers(io, socket) {
         guestEmail: socket.user?.email || guestEmail,
         status:     'BOT_HANDLING',
         category,
-        orderId:    orderId || null,
+        orderId:    validOrderId,
       });
 
       // Join the session room
@@ -59,7 +66,7 @@ function registerChatHandlers(io, socket) {
       socket.emit('chat:message', welcomeMessage);
 
       // If order category, try to auto-fetch order info via bot
-      if (category === 'ORDER' && orderId && socket.user) {
+      if (category === 'ORDER' && validOrderId && socket.user) {
         setTimeout(() => {
           handleBotMessage(session, '', io, socket, 'auto_fetch_order').catch(console.error);
         }, 500);
@@ -195,7 +202,17 @@ function registerChatHandlers(io, socket) {
 
       const session = await ChatSession.findOneAndUpdate(
         { sessionId, status: { $ne: 'CLOSED' } },
-        { agentId: socket.user._id, status: 'ACTIVE' },
+        { 
+          agentId: socket.user._id, 
+          status: 'ACTIVE',
+          $push: {
+            agentActions: {
+              adminId: socket.user._id,
+              adminName: socket.user.name,
+              action: 'ACCEPTED',
+            }
+          }
+        },
         { new: true }
       );
       if (!session) return;
@@ -216,6 +233,23 @@ function registerChatHandlers(io, socket) {
       io.to(`session:${sessionId}`).emit('chat:message', sysMsg);
       io.to('admin_room').emit('admin:session_update', { sessionId, status: 'ACTIVE', agentId: socket.user._id });
 
+      // Notify the user if they are logged in
+      if (session.userId) {
+        try {
+          const notification = await Notification.create({
+            user: session.userId,
+            type: 'CHAT_REPLY',
+            title: 'Agent Joined Chat',
+            message: `${socket.user.name} has joined your support chat.`,
+            link: '/support',
+            metadata: { sessionId },
+          });
+          io.to(`user:${session.userId}`).emit('notification', notification);
+        } catch (err) {
+          console.error('[Chat] Failed to create join notification:', err);
+        }
+      }
+
       // Load message history for the agent
       const messages = await ChatMessage.find({ sessionId })
         .sort({ createdAt: 1 })
@@ -224,6 +258,38 @@ function registerChatHandlers(io, socket) {
       socket.emit('chat:history', { sessionId, messages, status: 'ACTIVE' });
     } catch (error) {
       console.error('[Chat] agent:join_session error:', error);
+    }
+  });
+
+  /* ── AGENT: Reject a session ────────────────────────────────────────────── */
+  socket.on('agent:reject_session', async ({ sessionId }) => {
+    try {
+      if (!socket.user || !['admin', 'superadmin'].includes(socket.user.role)) return;
+
+      const session = await ChatSession.findOneAndUpdate(
+        { sessionId, status: 'WAITING' }, // only if it's still waiting
+        {
+          $push: {
+            agentActions: {
+              adminId: socket.user._id,
+              adminName: socket.user.name,
+              action: 'REJECTED',
+            }
+          }
+        },
+        { new: true }
+      );
+      if (!session) return;
+
+      // Broadcast to admins that this specific admin rejected it
+      // Other admins still see it in WAITING state, but maybe UI grays it out for the rejecting admin
+      io.to('admin_room').emit('admin:session_rejected', { 
+        sessionId, 
+        adminId: socket.user._id 
+      });
+      
+    } catch (error) {
+      console.error('[Chat] agent:reject_session error:', error);
     }
   });
 
@@ -280,6 +346,24 @@ function registerChatHandlers(io, socket) {
       });
       io.to(`session:${sessionId}`).emit('chat:message', sysMsg);
       io.to('admin_room').emit('admin:session_update', { sessionId, status: 'CLOSED' });
+
+      // Notify user if logged in
+      const sessionData = await ChatSession.findOne({ sessionId });
+      if (sessionData && sessionData.userId) {
+        try {
+          const notification = await Notification.create({
+            user: sessionData.userId,
+            type: 'CHAT_REPLY',
+            title: 'Support Chat Resolved',
+            message: `Your chat was resolved by ${socket.user.name}. ${resolution ? `Note: ${resolution}` : ''}`,
+            link: '/support',
+            metadata: { sessionId },
+          });
+          io.to(`user:${sessionData.userId}`).emit('notification', notification);
+        } catch (err) {
+          console.error('[Chat] Failed to create resolve notification:', err);
+        }
+      }
     } catch (error) {
       console.error('[Chat] agent:close_session error:', error);
     }
@@ -317,6 +401,27 @@ async function escalateToHuman(io, socket, session, reason = 'User requested hum
 
     io.to('admin_room').emit('admin:new_session', sessionData);
     io.to('admin_room').emit('admin:queue_count', { count: waitingCount });
+
+    // Notify all admins of the new escalation
+    try {
+      const admins = await User.find({ role: { $in: ['admin', 'superadmin'] } }).select('_id');
+      const notifications = admins.map(admin => ({
+        user: admin._id,
+        type: 'SYSTEM',
+        title: 'New Support Request',
+        message: `A user is requesting human support in the queue.`,
+        link: '/admin',
+        metadata: { sessionId: session.sessionId },
+      }));
+      if (notifications.length > 0) {
+        const createdNotifications = await Notification.insertMany(notifications);
+        createdNotifications.forEach(notif => {
+          io.to(`user:${notif.user}`).emit('notification', notif);
+        });
+      }
+    } catch (err) {
+      console.error('[Chat] Failed to create admin escalation notification:', err);
+    }
   } catch (error) {
     console.error('[Chat] escalateToHuman error:', error);
   }
