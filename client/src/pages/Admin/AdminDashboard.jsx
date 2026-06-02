@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import {
   FiPlus, FiPackage, FiShoppingBag, FiAlertCircle, FiTag,
   FiUsers, FiShield, FiActivity, FiBarChart2, FiTrendingUp,
-  FiArrowRight, FiBox, FiSettings, FiZap, FiStar, FiLock
+  FiArrowRight, FiBox, FiSettings, FiZap, FiStar, FiLock, FiMail, FiRefreshCw
 } from 'react-icons/fi'
 import api from '../../api/axios'
 import { motion } from 'framer-motion'
@@ -297,7 +297,9 @@ const AdminDashboard = () => {
           <SectionCard title="Management" icon={FiSettings} delay={0.15}>
             {hasPermission('products')   && <QuickCard title="Manage Products"   desc="Add, edit, or remove products"         icon={FiPackage}    to="/admin/products"      delay={0.20} />}
             {hasPermission('orders')     && <QuickCard title="Manage Orders"     desc="View and update order status"          icon={FiShoppingBag}to="/admin/orders"        delay={0.25} />}
+            {hasPermission('products')   && <QuickCard title="Subscriptions"     desc="Manage auto-renewing orders"           icon={FiRefreshCw}  to="/admin/subscriptions" delay={0.28} />}
             {hasPermission('users')      && <QuickCard title="Manage Users"      desc="View users, block/unblock accounts"    icon={FiUsers}      to="/admin/users"         delay={0.30} />}
+            {isSuperAdmin                && <QuickCard title="Newsletters"       desc="Manage subscribers and emails"         icon={FiMail}       to="/admin/newsletters"   delay={0.32} />}
             {hasPermission('coupons')    && <QuickCard title="Manage Coupons"    desc="Create and manage discount codes"      icon={FiTag}        to="/admin/coupons"       delay={0.35} />}
             {hasPermission('categories') && <QuickCard title="Manage Categories" desc="Organize product categories"          icon={FiBox}        to="/admin/categories"    delay={0.40} />}
           </SectionCard>

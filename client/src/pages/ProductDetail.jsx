@@ -59,6 +59,7 @@ const ProductDetail = () => {
   const { fetchCartCount } = useCart()
 
   const [product,    setProduct]    = useState(null)
+  const [plans,      setPlans]      = useState([])
   const [related,    setRelated]    = useState([])
   const [addresses,  setAddresses]  = useState([])
   const [loading,    setLoading]    = useState(true)
@@ -100,11 +101,22 @@ const ProductDetail = () => {
         }))
       }
 
-      // Fetch related products (same category)
+      // Fetch related products and plans
       try {
-        const relRes = await api.get(`/api/products?category=${prod.category}`, { signal: controller.signal })
+        const [relRes, plansRes] = await Promise.all([
+          api.get(`/api/products?category=${prod.category}`, { signal: controller.signal }),
+          api.get('/api/subscriptions/plans', { signal: controller.signal })
+        ])
         setRelated((relRes.data || []).filter(p => p._id !== prod._id).slice(0, 4))
-      } catch {}
+        
+        // Filter plans for this product
+        if (plansRes.data?.data) {
+          const productPlans = plansRes.data.data.filter(plan => 
+            plan.product?._id === prod._id || plan.product === prod._id
+          )
+          setPlans(productPlans)
+        }
+      } catch (e) { console.error('Error fetching related/plans', e) }
 
       // Fetch saved addresses for delivery info + review eligibility
       if (user) {
@@ -564,6 +576,33 @@ const ProductDetail = () => {
                   >
                     Buy Now
                   </button>
+
+                  {/* ── Subscriptions ── */}
+                  {plans.length > 0 && (
+                    <div className="pt-4 border-t border-gray-100 mt-4">
+                      <p className="text-xs font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <RefreshCw size={14} className="text-amber-500" /> Subscribe & Save
+                      </p>
+                      <div className="space-y-2">
+                        {plans.map(plan => (
+                          <button
+                            key={plan._id}
+                            onClick={() => navigate('/checkout-subscription', { state: { planId: plan._id } })}
+                            className="w-full text-left p-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-between group"
+                          >
+                            <div>
+                              <p className="text-sm font-bold text-amber-900">{plan.name}</p>
+                              <p className="text-xs text-amber-700 capitalize">Delivered every {plan.interval} {plan.period}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-amber-900">₹{plan.price.toLocaleString('en-IN')}</p>
+                              <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   <p className="text-center text-xs text-gray-400 pt-1">
                     <CheckCircle size={11} className="inline mr-1 text-green-500" />

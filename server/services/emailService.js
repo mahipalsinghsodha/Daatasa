@@ -354,6 +354,32 @@ const sendShippingUpdateEmail = async ({ to, userName, orderId, trackingNumber, 
   });
 };
 
+// ── 10. NEWSLETTER / PROMOTIONAL EMAIL ─────────────────────────────────────────
+const sendNewsletterEmail = async ({ to, subject, message }) => {
+  const body = `
+    <h2 style="${h2Style}">${subject}</h2>
+    <div style="${pStyle} margin-bottom: 24px; white-space: pre-wrap;">
+      ${message}
+    </div>
+    
+    ${btn('Shop Special Offers', `${CLIENT_URL()}/products`)}
+    
+    <div style="margin-top: 32px; font-size: 11px; color: #94A3B8; text-align: center;">
+      You are receiving this email because you subscribed to DhaniFresh newsletters.
+    </div>
+  `;
+
+  // General elegant farm/ghee background for newsletters
+  const heroImg = 'https://images.unsplash.com/photo-1606859191214-25806e8e2423?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: subject,
+    html: wrap(body, heroImg),
+  });
+};
+
 module.exports = {
   sendCancelEmail,
   sendBlockEmail,
@@ -364,4 +390,5 @@ module.exports = {
   sendContactAutoReply,
   sendWelcomeEmail,
   sendShippingUpdateEmail,
+  sendNewsletterEmail,
 };

@@ -215,67 +215,143 @@ exports.razorpayWebhook = async (req, res) => {
       const orderId     = paymentInfo.notes?.orderId;
 
       if (!orderId) {
-        console.warn('WEBHOOK: No orderId in payment notes');
-        return res.status(200).send('OK');
+        console.warn('WEBHOOK: No orderId in payment notes, might be a subscription payment');
+        // Let it fall through, it might be handled by subscription.charged
+      } else {
+        const order = await Order.findById(orderId);
+
+        if (!order) {
+          console.warn(`WEBHOOK: Order ${orderId} not found`);
+        } else {
+          // ✅ Idempotent — if already paid (by frontend verify), skip cleanly
+          if (order.paymentStatus !== 'PENDING') {
+            console.log(`WEBHOOK: Order ${orderId} already processed (${order.paymentStatus}), skipping`);
+          } else {
+            // Mark as paid
+            order.isPaid         = true;
+            order.paidAt         = new Date();
+            order.paymentStatus  = 'PAID';
+
+            if (!order.invoiceNumber) {
+              const year   = new Date().getFullYear();
+              const ts     = Date.now().toString(36).toUpperCase();
+              const suffix = order._id.toString().slice(-4).toUpperCase();
+              order.invoiceNumber = `INV-${year}-${ts}${suffix}`;
+            }
+
+            order.paymentInfo = {
+              razorpay_order_id:   paymentInfo.order_id,
+              razorpay_payment_id: paymentInfo.id,
+              razorpay_signature:  'WEBHOOK_VERIFIED',
+            };
+
+            await order.save();
+
+            // Clear cart
+            await Cart.findOneAndUpdate({ user: order.user }, { items: [] });
+
+            // Increment coupon usage
+            if (order.coupon?.code) {
+              await Coupon.findOneAndUpdate({ code: order.coupon.code }, { $inc: { usedCount: 1 } });
+            }
+
+            console.log(`WEBHOOK: Order ${orderId} marked PAID via webhook`);
+
+            // Send success email (non-fatal)
+            try {
+              const { sendOrderSuccessEmail } = require('../services/emailService');
+              const populatedOrder = await order.populate('user', 'name email');
+              await sendOrderSuccessEmail({
+                to:            populatedOrder.user.email,
+                userName:      populatedOrder.user.name,
+                orderId:       order._id.toString(),
+                totalPrice:    order.totalPrice,
+                paymentMethod: 'Online Payment',
+                items:         order.orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
+              });
+            } catch (emailErr) {
+              console.error('WEBHOOK EMAIL ERROR (non-fatal):', emailErr);
+            }
+          }
+        }
       }
-
-      const order = await Order.findById(orderId);
-
-      if (!order) {
-        console.warn(`WEBHOOK: Order ${orderId} not found`);
-        return res.status(200).send('OK'); // Still 200 so Razorpay doesn't retry
+    }
+    
+    // ── SUBSCRIPTION WEBHOOKS ─────────────────────────────────────────
+    if (event === 'subscription.charged') {
+      const subEntity = payload.payload.subscription.entity;
+      const paymentEntity = payload.payload.payment.entity;
+      
+      const userId = subEntity.notes?.userId;
+      const planDbId = subEntity.notes?.planDbId;
+      
+      if (userId && planDbId) {
+        const UserSubscription = require('../models/UserSubscription');
+        const SubscriptionPlan = require('../models/SubscriptionPlan');
+        
+        const userSub = await UserSubscription.findOne({ razorpaySubscriptionId: subEntity.id });
+        const plan = await SubscriptionPlan.findById(planDbId).populate('product');
+        
+        if (userSub && plan && plan.product) {
+          // Update subscription status
+          userSub.paidCount = subEntity.paid_count;
+          userSub.status = subEntity.status;
+          // Calculate next billing date
+          if (subEntity.charge_at) {
+            userSub.nextBillingDate = new Date(subEntity.charge_at * 1000);
+          }
+          await userSub.save();
+          
+          // GENERATE A NEW ORDER!
+          // We must check if an order for this payment already exists to be idempotent
+          const existingOrder = await Order.findOne({ 'paymentInfo.razorpay_payment_id': paymentEntity.id });
+          
+          if (!existingOrder) {
+            const newOrder = new Order({
+              user: userId,
+              orderItems: [{
+                product: plan.product._id,
+                name: plan.product.name + ' (Subscription)',
+                image: plan.product.images?.[0] || plan.product.image,
+                price: plan.price,
+                quantity: 1
+              }],
+              shippingAddress: userSub.shippingAddress,
+              paymentMethod: 'Online',
+              paymentStatus: 'PAID',
+              isPaid: true,
+              paidAt: new Date(),
+              itemsPrice: plan.price,
+              taxPrice: 0, // Simplified
+              shippingPrice: 0, // Assuming free shipping for subs
+              totalPrice: plan.price,
+              paymentInfo: {
+                razorpay_order_id: subEntity.id, // we map sub_id to order_id for record
+                razorpay_payment_id: paymentEntity.id,
+                razorpay_signature: 'SUBSCRIPTION_AUTO_DEDUCT'
+              }
+            });
+            
+            const year   = new Date().getFullYear();
+            const ts     = Date.now().toString(36).toUpperCase();
+            newOrder.invoiceNumber = `INV-${year}-${ts}SUB`;
+            
+            await newOrder.save();
+            console.log(`WEBHOOK: Auto-generated subscription order ${newOrder._id} for user ${userId}`);
+          }
+        }
       }
-
-      // ✅ Idempotent — if already paid (by frontend verify), skip cleanly
-      if (order.paymentStatus !== 'PENDING') {
-        console.log(`WEBHOOK: Order ${orderId} already processed (${order.paymentStatus}), skipping`);
-        return res.status(200).send('OK');
-      }
-
-      // Mark as paid
-      order.isPaid         = true;
-      order.paidAt         = new Date();
-      order.paymentStatus  = 'PAID';
-
-      if (!order.invoiceNumber) {
-        const year   = new Date().getFullYear();
-        const ts     = Date.now().toString(36).toUpperCase();
-        const suffix = order._id.toString().slice(-4).toUpperCase();
-        order.invoiceNumber = `INV-${year}-${ts}${suffix}`;
-      }
-
-      order.paymentInfo = {
-        razorpay_order_id:   paymentInfo.order_id,
-        razorpay_payment_id: paymentInfo.id,
-        razorpay_signature:  'WEBHOOK_VERIFIED',
-      };
-
-      await order.save();
-
-      // Clear cart
-      await Cart.findOneAndUpdate({ user: order.user }, { items: [] });
-
-      // Increment coupon usage
-      if (order.coupon?.code) {
-        await Coupon.findOneAndUpdate({ code: order.coupon.code }, { $inc: { usedCount: 1 } });
-      }
-
-      console.log(`WEBHOOK: Order ${orderId} marked PAID via webhook`);
-
-      // Send success email (non-fatal)
-      try {
-        const { sendOrderSuccessEmail } = require('../services/emailService');
-        const populatedOrder = await order.populate('user', 'name email');
-        await sendOrderSuccessEmail({
-          to:            populatedOrder.user.email,
-          userName:      populatedOrder.user.name,
-          orderId:       order._id.toString(),
-          totalPrice:    order.totalPrice,
-          paymentMethod: 'Online Payment',
-          items:         order.orderItems.map(i => ({ name: i.name, quantity: i.quantity, price: i.price }))
-        });
-      } catch (emailErr) {
-        console.error('WEBHOOK EMAIL ERROR (non-fatal):', emailErr);
+    }
+    
+    if (event === 'subscription.cancelled' || event === 'subscription.halted') {
+      const subEntity = payload.payload.subscription.entity;
+      const UserSubscription = require('../models/UserSubscription');
+      
+      const userSub = await UserSubscription.findOne({ razorpaySubscriptionId: subEntity.id });
+      if (userSub) {
+        userSub.status = subEntity.status;
+        await userSub.save();
+        console.log(`WEBHOOK: Subscription ${subEntity.id} status updated to ${subEntity.status}`);
       }
     }
 

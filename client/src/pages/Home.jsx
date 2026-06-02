@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import { motion, AnimatePresence } from 'framer-motion'
+import { toast } from 'react-toastify'
 import ProductCard from '../components/ProductCard'
 import { FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, FiAward, FiCheck, FiPhone, FiZap, FiPlay, FiPause, FiX, FiChevronLeft, FiChevronRight, FiClock, FiMaximize2, FiImage } from 'react-icons/fi'
 
@@ -186,6 +187,26 @@ const Home = () => {
   const videoRef = useRef(null)
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
   const [videoModalSource, setVideoModalSource] = useState('local')
+
+  // Newsletter State
+  const [email, setEmail] = useState('')
+  const [subscribing, setSubscribing] = useState(false)
+
+  const handleSubscribe = async (e) => {
+    e.preventDefault()
+    if (!email.trim()) return toast.error('Please enter your email')
+    
+    try {
+      setSubscribing(true)
+      const res = await api.post('/api/subscribers/subscribe', { email })
+      toast.success(res.data.message || 'Successfully subscribed!')
+      setEmail('')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to subscribe')
+    } finally {
+      setSubscribing(false)
+    }
+  }
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {
@@ -1080,6 +1101,61 @@ const Home = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ══════════ NEWSLETTER ══════════ */}
+      <section style={{ background: '#FFFFFF', padding: '40px 0 60px' }}>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fadeUp(0)} 
+            className="rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto"
+            style={{ 
+              background: 'var(--bg-alt)', 
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--shadow-card)'
+            }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                 style={{ background: 'rgba(245,166,35,0.15)', color: 'var(--gold)' }}>
+              <FiZap size={28} />
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold mb-3" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
+              Join the DhaniFresh Family
+            </h2>
+            <p className="text-sm sm:text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>
+              Subscribe to our newsletter to receive exclusive offers, health tips, and early access to our premium organic products.
+            </p>
+            
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row max-w-md mx-auto gap-3">
+              <input 
+                type="email" 
+                placeholder="Enter your email address" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="flex-1 px-5 py-3.5 rounded-xl text-sm outline-none transition-all"
+                style={{ 
+                  background: 'var(--bg-base)', 
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)'
+                }}
+                onFocus={(e) => e.target.style.borderColor = 'var(--gold)'}
+                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+              />
+              <button 
+                type="submit" 
+                disabled={subscribing}
+                className="px-8 py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 flex items-center justify-center min-w-[140px]"
+                style={{ 
+                  background: 'var(--brand-gradient)', 
+                  color: 'white', 
+                  boxShadow: 'var(--shadow-brand)',
+                  opacity: subscribing ? 0.7 : 1,
+                  cursor: subscribing ? 'not-allowed' : 'pointer'
+                }}>
+                {subscribing ? 'Subscribing...' : 'Subscribe'}
+              </button>
+            </form>
+          </motion.div>
+        </div>
+      </section>
 
       {/* ══════════ CTA BANNER ══════════ */}
       <section style={{ background: '#EAF5FB', paddingBottom: '80px' }}>

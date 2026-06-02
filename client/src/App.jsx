@@ -14,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import WhatsAppButton from './components/WhatsAppButton'
 import { useThemeStore } from './store/theme'
 import NotificationDrawer from './components/NotificationDrawer'
+import ChatWidget from './components/chat/ChatWidget'
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
@@ -42,19 +43,23 @@ const RefundPolicy    = lazy(() => import('./pages/RefundPolicy'))
 const ShippingPolicy  = lazy(() => import('./pages/ShippingPolicy'))
 const FAQ             = lazy(() => import('./pages/FAQ'))
 
+const CheckoutSubscription = lazy(() => import('./pages/CheckoutSubscription'))
+
 // Admin pages
-const AdminDashboard  = lazy(() => import('./pages/Admin/AdminDashboard'))
-const AddProduct      = lazy(() => import('./pages/Admin/AddProduct'))
-const ManageOrders    = lazy(() => import('./pages/Admin/ManageOrders'))
-const AdminSupport    = lazy(() => import('./pages/Admin/AdminSupport'))
-const AdminCoupons    = lazy(() => import('./pages/Admin/AdminCoupons'))
-const AdminUsers      = lazy(() => import('./pages/Admin/AdminUsers'))
-const AdminCategories = lazy(() => import('./pages/Admin/AdminCategories'))
-const AdminProducts   = lazy(() => import('./pages/Admin/AdminProducts'))
-const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement'))
-const AuditLogs       = lazy(() => import('./pages/Admin/AuditLogs'))
-const AdminAnalytics  = lazy(() => import('./pages/Admin/AdminAnalytics'))
-const AdminSettings   = lazy(() => import('./pages/Admin/AdminSettings'))
+const AdminDashboard  = lazy(() => import('./pages/admin/AdminDashboard'))
+const AddProduct      = lazy(() => import('./pages/admin/AddProduct'))
+const ManageOrders    = lazy(() => import('./pages/admin/ManageOrders'))
+const AdminSupport    = lazy(() => import('./pages/admin/AdminSupport'))
+const AdminCoupons    = lazy(() => import('./pages/admin/AdminCoupons'))
+const AdminUsers      = lazy(() => import('./pages/admin/AdminUsers'))
+const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'))
+const AdminProducts   = lazy(() => import('./pages/admin/AdminProducts'))
+const AdminManagement = lazy(() => import('./pages/admin/AdminManagement'))
+const AuditLogs       = lazy(() => import('./pages/admin/AuditLogs'))
+const AdminAnalytics  = lazy(() => import('./pages/admin/AdminAnalytics'))
+const AdminSettings   = lazy(() => import('./pages/admin/AdminSettings'))
+const AdminNewsletters= lazy(() => import('./pages/admin/AdminNewsletters'))
+const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'))
 
 // ─── Guest-Only Route ─────────────────────────────────────────────────────────
 function GuestRoute({ children }) {
@@ -118,8 +123,8 @@ function AnimatedRoutes() {
             <Route path="/search"                 element={<SearchResults />} />
             <Route path="/products/:id"           element={<ProductDetail />} />
             <Route path="/cart"                   element={<Cart />} />
+            <Route path="/checkout-subscription"  element={<ProtectedRoute><CheckoutSubscription /></ProtectedRoute>} />
             <Route path="/contact"                element={<Contact />} />
-            <Route path="/support"                element={<Support />} />
 
             {/* ── Static ── */}
             <Route path="/about"                  element={<AboutUs />} />
@@ -140,6 +145,7 @@ function AnimatedRoutes() {
             <Route path="/orders"   element={<ProtectedRoute><Orders /></ProtectedRoute>} />
             <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} /> {/* ✅ P1 */}
+            <Route path="/support"  element={<ProtectedRoute><Support /></ProtectedRoute>} />
 
             {/* ── Admin ── */}
             <Route path="/admin"                  element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
@@ -149,6 +155,8 @@ function AnimatedRoutes() {
             <Route path="/products/edit/:id"      element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
             <Route path="/admin/orders"           element={<ProtectedRoute adminOnly><ManageOrders /></ProtectedRoute>} />
             <Route path="/admin/support"          element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
+            <Route path="/admin/newsletters"      element={<ProtectedRoute adminOnly><AdminNewsletters /></ProtectedRoute>} />
+            <Route path="/admin/subscriptions"    element={<ProtectedRoute adminOnly><AdminSubscriptions /></ProtectedRoute>} />
             <Route path="/admin/coupons"          element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
             <Route path="/admin/users"            element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/analytics"        element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
@@ -166,6 +174,22 @@ function AnimatedRoutes() {
       </motion.main>
     </AnimatePresence>
   )
+}
+
+// ─── Chat Widget (logged-in normal users only) ────────────────────────────────
+function ChatWidgetWrapper() {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  // Don't show while loading auth
+  if (loading) return null
+  // Don't show for guests (not logged in) — they can use /support page
+  if (!user) return null
+  // Don't show on admin pages
+  if (location.pathname.startsWith('/admin')) return null
+  // Don't show for admin/superadmin users
+  if (user.role === 'admin' || user.role === 'superadmin') return null
+  // Only show for normal logged-in customers
+  return <ChatWidget />
 }
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -207,6 +231,7 @@ function App() {
                 <Footer />
                 <WhatsAppButton />
                 <NotificationDrawer />
+                <ChatWidgetWrapper />
               </div>
             </Router>
           </CartProvider>

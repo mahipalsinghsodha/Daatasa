@@ -131,7 +131,7 @@ const Navbar = () => {
                   { to: '/', label: 'Home' },
                   { to: '/products', label: 'Products' },
                   { to: '/about', label: 'About Us' },
-                  { to: '/support', label: 'Help' },
+                  ...(user ? [{ to: '/support', label: 'Help' }] : []),
                   { to: '/contact', label: 'Contact' },
                 ].map(({ to, label }) => (
                   <Link key={to} to={to} className={navLinkCls(to)}>
@@ -152,8 +152,10 @@ const Navbar = () => {
                 {[
                   { to: '/admin', label: 'Dashboard' },
                   ...(hasPermission('products') ? [{ to: '/admin/products', label: 'Products' }] : []),
+                  ...(hasPermission('products') ? [{ to: '/admin/subscriptions', label: 'Subscriptions' }] : []),
                   ...(hasPermission('orders') ? [{ to: '/admin/orders', label: 'Orders' }] : []),
                   ...(hasPermission('users') ? [{ to: '/admin/users', label: 'Users' }] : []),
+                  ...(user?.role === 'superadmin' ? [{ to: '/admin/newsletters', label: 'Newsletters' }] : []),
                   { to: '/admin/analytics', label: 'Analytics' },
                 ].map(({ to, label }) => (
                   <Link key={to} to={to} className={navLinkCls(to)}>
@@ -496,7 +498,7 @@ const Navbar = () => {
                       { to: '/', label: 'Home' },
                       { to: '/products', label: 'Products' },
                       { to: '/about', label: 'About Us' },
-                      { to: '/support', label: 'Help' },
+                      ...(user ? [{ to: '/support', label: 'Help' }] : []),
                       { to: '/contact', label: 'Contact' },
                     ].map(({ to, label }, i) => (
                       <motion.div

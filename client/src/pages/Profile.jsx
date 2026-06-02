@@ -7,7 +7,7 @@ import {
   FiX, FiHome, FiBriefcase, FiStar, FiSearch,
   FiChevronRight, FiPackage, FiLogOut, FiCheck,
   FiAlertCircle, FiPhone, FiMail, FiChevronDown,
-  FiFileText
+  FiFileText, FiRefreshCw, FiClock
 } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
@@ -113,6 +113,7 @@ const Profile = () => {
   const [name, setName]           = useState('')
   const [phone, setPhone]         = useState('')
   const [profLoading, setProfLoading] = useState(false)
+  const [subscriptions, setSubscriptions] = useState([])
 
   const [addresses, setAddresses] = useState([])
   const [showForm, setShowForm]   = useState(false)
@@ -127,8 +128,18 @@ const Profile = () => {
       setName(user.name || '')
       setPhone(user.phone || '')
       fetchAddresses()
+      fetchSubscriptions()
     }
   }, [user])
+
+  const fetchSubscriptions = async () => {
+    try {
+      const res = await api.get('/api/subscriptions/my')
+      setSubscriptions(res.data.data || [])
+    } catch (err) {
+      console.error(err)
+    }
+  }
 
   const fetchAddresses = async () => {
     try {
@@ -285,6 +296,7 @@ const Profile = () => {
             <div className="rounded-2xl overflow-hidden shadow-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
               {[
                 { label: 'My Orders', icon: FiPackage, to: '/orders' },
+                { label: 'My Subscriptions', icon: FiRefreshCw, action: () => document.getElementById('subscriptions-section').scrollIntoView({ behavior: 'smooth' }) },
                 { label: 'Sign Out', icon: FiLogOut, danger: true, action: () => { logout(); navigate('/') } },
               ].map((item, i) => (
                 <button
@@ -628,6 +640,61 @@ const Profile = () => {
                   )
                 )}
               </AnimatePresence>
+            </div>
+
+            {/* ── Subscriptions ── */}
+            <div id="subscriptions-section" className="rounded-2xl p-6 lg:p-8 shadow-sm" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <FiRefreshCw size={18} style={{ color: 'var(--gold)' }} /> My Subscriptions
+                </h2>
+              </div>
+              
+              {subscriptions.length === 0 ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-gray-500">You don't have any active subscriptions.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {subscriptions.map(sub => (
+                    <div key={sub._id} className="p-4 rounded-xl border border-gray-100 bg-gray-50 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+                      <div className="flex gap-4 items-center">
+                        <img src={sub.plan?.product?.image || sub.plan?.product?.images?.[0]} alt="" className="w-16 h-16 object-contain bg-white rounded-lg p-1 border border-gray-100" />
+                        <div>
+                          <p className="font-bold text-gray-900">{sub.plan?.name}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">₹{sub.plan?.price} / {sub.plan?.period}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${sub.status === 'active' || sub.status === 'authenticated' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                              {sub.status.toUpperCase()}
+                            </span>
+                            {sub.nextBillingDate && sub.status === 'active' && (
+                              <span className="text-[11px] text-gray-500 flex items-center gap-1">
+                                <FiClock size={10} /> Next bill: {new Date(sub.nextBillingDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {sub.status === 'active' && (
+                        <button 
+                          onClick={async () => {
+                            if(window.confirm('Are you sure you want to cancel this subscription?')) {
+                              try {
+                                await api.post('/api/subscriptions/cancel', { subscriptionId: sub._id });
+                                toast.success('Subscription cancelled');
+                                fetchSubscriptions();
+                              } catch(e) { toast.error('Failed to cancel'); }
+                            }
+                          }}
+                          className="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-lg hover:bg-red-100 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
