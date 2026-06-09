@@ -9,6 +9,27 @@ const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const { sendShippingUpdateEmail } = require('../services/emailService');
 const { invalidateAnalytics } = require('../utils/cache');
+const Notification = require('../models/Notification');
+const { getIO } = require('../socket');
+
+async function pushStatusAndNotify(order, status, note, updatedBy, notificationData) {
+  order.statusHistory.push({ status, note, updatedBy, updatedAt: new Date() });
+  if (notificationData && (order.user._id || order.user)) {
+    const notif = new Notification({
+      user: order.user._id || order.user,
+      ...notificationData
+    });
+    await notif.save();
+    try {
+      const io = getIO();
+      io.to(`user:${notif.user}`).emit('notification', notif);
+    } catch (err) {}
+  }
+  try {
+    const io = getIO();
+    io.to(`order:${order._id}`).emit('orderStatusUpdated', order);
+  } catch (err) {}
+}
 
 // ========================================================================
 // CREATE ORDER - IMPROVED FLOW
@@ -174,7 +195,13 @@ router.post('/', auth, async (req, res) => {
       coupon: appliedCoupon,
       gstRate: gstRatePct,
       isPaid: false,
-      paymentStatus: 'PENDING'
+      paymentStatus: 'PENDING',
+      statusHistory: [{
+        status: 'PENDING',
+        note: 'Order placed',
+        updatedBy: req.user._id,
+        updatedAt: new Date()
+      }]
     };
 
 
@@ -197,6 +224,12 @@ router.post('/', auth, async (req, res) => {
       // 8️⃣ FOR COD - CONFIRM IMMEDIATELY
       if (paymentMethod === 'COD') {
         order.paymentStatus = 'COD_CONFIRMED';
+        order.statusHistory.push({
+          status: 'COD_CONFIRMED',
+          note: 'Order confirmed (Cash on Delivery)',
+          updatedBy: req.user._id,
+          updatedAt: new Date()
+        });
         
         // Generate unique invoice number using timestamp + order ID suffix (race-condition safe)
         const year = new Date().getFullYear();
@@ -556,6 +589,12 @@ router.put('/:id/status', auth, auth.admin, auth.hasPermission('orders'), async 
       if (isPaid) {
         order.paidAt = new Date();
         order.paymentStatus = 'PAID';
+        await pushStatusAndNotify(order, 'PAID', 'Marked as paid by admin', req.user._id, {
+          type: 'ORDER_CONFIRMED',
+          title: 'Payment Confirmed',
+          message: `Payment for order ${order.invoiceNumber || 'verified'} has been confirmed.`,
+          link: `/orders/${order._id}`
+        });
       }
     }
 
@@ -563,6 +602,12 @@ router.put('/:id/status', auth, auth.admin, auth.hasPermission('orders'), async 
       order.isDelivered = isDelivered;
       if (isDelivered) {
         order.deliveredAt = new Date();
+        await pushStatusAndNotify(order, 'DELIVERED', 'Marked as delivered by admin', req.user._id, {
+          type: 'ORDER_DELIVERED',
+          title: 'Order Delivered',
+          message: `Your order has been delivered successfully.`,
+          link: `/orders/${order._id}`
+        });
       }
     }
 
@@ -596,6 +641,12 @@ router.put('/:id/pay', auth, auth.admin, auth.hasPermission('orders'), async (re
     order.isPaid = true;
     order.paidAt = new Date();
     order.paymentStatus = 'PAID';
+    await pushStatusAndNotify(order, 'PAID', 'Marked as paid by admin', req.user._id, {
+      type: 'ORDER_CONFIRMED',
+      title: 'Payment Confirmed',
+      message: `Payment for order ${order.invoiceNumber || 'verified'} has been confirmed.`,
+      link: `/orders/${order._id}`
+    });
     await order.save();
 
     await logAction(req, 'MARK_ORDER_PAID', 'ORDER', order._id);
@@ -622,6 +673,12 @@ router.put('/:id/deliver', auth, auth.admin, auth.hasPermission('orders'), async
 
     order.isDelivered = true;
     order.deliveredAt = new Date();
+    await pushStatusAndNotify(order, 'DELIVERED', 'Marked as delivered by admin', req.user._id, {
+      type: 'ORDER_DELIVERED',
+      title: 'Order Delivered',
+      message: `Your order has been delivered successfully.`,
+      link: `/orders/${order._id}`
+    });
     await order.save();
 
     await logAction(req, 'MARK_ORDER_DELIVERED', 'ORDER', order._id);
@@ -654,6 +711,12 @@ router.put('/:id/ship', auth, auth.admin, auth.hasPermission('orders'), async (r
 
     order.trackingNumber = trackingNumber;
     order.shippingProvider = shippingProvider;
+    await pushStatusAndNotify(order, 'SHIPPED', `Shipped via ${shippingProvider} (Tracking: ${trackingNumber})`, req.user._id, {
+      type: 'ORDER_SHIPPED',
+      title: 'Order Shipped',
+      message: `Your order has been shipped via ${shippingProvider}. Tracking No: ${trackingNumber}`,
+      link: `/orders/${order._id}`
+    });
     await order.save();
 
     await logAction(req, 'SHIP_ORDER', 'ORDER', order._id, { trackingNumber, shippingProvider });
@@ -697,9 +760,21 @@ router.put('/bulk/update', auth, auth.admin, auth.hasPermission('orders'), async
           order.isPaid = true;
           order.paidAt = new Date();
           order.paymentStatus = 'PAID';
+          await pushStatusAndNotify(order, 'PAID', 'Marked as paid by admin (Bulk)', req.user._id, {
+            type: 'ORDER_CONFIRMED',
+            title: 'Payment Confirmed',
+            message: `Payment for order ${order.invoiceNumber || 'verified'} has been confirmed.`,
+            link: `/orders/${order._id}`
+          });
         } else if (action === 'deliver') {
           order.isDelivered = true;
           order.deliveredAt = new Date();
+          await pushStatusAndNotify(order, 'DELIVERED', 'Marked as delivered by admin (Bulk)', req.user._id, {
+            type: 'ORDER_DELIVERED',
+            title: 'Order Delivered',
+            message: `Your order has been delivered successfully.`,
+            link: `/orders/${order._id}`
+          });
         }
         return order.save();
       }
@@ -793,6 +868,12 @@ router.post('/:id/cancel', auth, async (req, res) => {
     order.cancelledAt = new Date();
     order.cancelledBy = (req.user.role === 'admin' || req.user.role === 'superadmin') ? 'admin' : 'user';
     if (refundInfo) order.refundInfo = refundInfo;
+    await pushStatusAndNotify(order, 'CANCELLED', `Cancelled. Reason: ${reason || 'None'}`, req.user._id, {
+      type: 'ORDER_CANCELLED',
+      title: 'Order Cancelled',
+      message: `Your order has been cancelled. Reason: ${reason || 'Not specified'}`,
+      link: `/orders/${order._id}`
+    });
     await order.save();
 
     if (isAdmin) {
@@ -850,6 +931,12 @@ router.post('/:id/return-request', auth, async (req, res) => {
       requestedAt: new Date(),
       status: 'PENDING'
     };
+    await pushStatusAndNotify(order, 'RETURN_REQUESTED', `Return requested. Reason: ${reason || 'None'}`, req.user._id, {
+      type: 'SYSTEM',
+      title: 'Return Requested',
+      message: `Your return request has been submitted and is pending approval.`,
+      link: `/orders/${order._id}`
+    });
     await order.save();
     res.json({ message: 'Return request submitted successfully', order });
   } catch (error) {

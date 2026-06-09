@@ -107,7 +107,7 @@ const FloatingSelect = ({ id, label, value, onChange, required, children, icon: 
 }
 
 const Profile = () => {
-  const { user, setUser, logout } = useAuth()
+  const { user, updateUser, logout } = useAuth()
   const navigate = useNavigate()
 
   const [name, setName]           = useState('')
@@ -148,18 +148,17 @@ const Profile = () => {
     } catch {}
   }
 
-  const handleUpdateProfile = async (e) => {
+  const handleProfileSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
+    setProfLoading(true)
     try {
-      const res = await api.put('/api/auth/profile', formData)
+      const res = await api.put('/api/auth/profile', { name, phone })
       updateUser({ name: res.data.name, phone: res.data.phone })
       toast.success('Profile updated successfully')
-      setIsEditing(false)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update profile')
     } finally {
-      setLoading(false)
+      setProfLoading(false)
     }
   }
 

@@ -52,6 +52,13 @@ refundInfo: {
     default: 'PENDING'
   },
 
+  statusHistory: [{
+    status: String,
+    note: String,
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    updatedAt: Date
+  }],
+
   // Razorpay payment info
   paymentInfo: {
     razorpay_order_id: String,

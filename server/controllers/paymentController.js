@@ -3,6 +3,8 @@ const razorpay = require('../config/razorpay');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
+const Notification = require('../models/Notification');
+const { getIO } = require('../socket');
 
 /**
  * CREATE RAZORPAY ORDER
@@ -118,6 +120,9 @@ exports.verifyPayment = async (req, res) => {
     order.isPaid = true;
     order.paidAt = Date.now();
     order.paymentStatus = 'PAID';
+    order.statusHistory.push({ status: 'PAID', note: 'Payment verified successfully (Online)', updatedBy: req.user._id, updatedAt: new Date() });
+    try { const notif = new Notification({ user: order.user._id, type: 'ORDER_CONFIRMED', title: 'Payment Confirmed', message: 'Your online payment has been confirmed.', link: `/orders/${order._id}` }); await notif.save(); getIO().to(`user:${notif.user}`).emit('notification', notif); } catch(e) {}
+    try { getIO().to(`order:${order._id}`).emit('orderStatusUpdated', order); } catch(e) {}
     
     // Generate invoice number
     if (!order.invoiceNumber) {
@@ -231,6 +236,9 @@ exports.razorpayWebhook = async (req, res) => {
             order.isPaid         = true;
             order.paidAt         = new Date();
             order.paymentStatus  = 'PAID';
+            order.statusHistory.push({ status: 'PAID', note: 'Payment captured via Webhook', updatedBy: order.user, updatedAt: new Date() });
+            try { const notif = new Notification({ user: order.user, type: 'ORDER_CONFIRMED', title: 'Payment Confirmed', message: 'Your online payment has been verified via webhook.', link: `/orders/${order._id}` }); await notif.save(); getIO().to(`user:${notif.user}`).emit('notification', notif); } catch(e) {}
+            try { getIO().to(`order:${order._id}`).emit('orderStatusUpdated', order); } catch(e) {}
 
             if (!order.invoiceNumber) {
               const year   = new Date().getFullYear();

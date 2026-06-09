@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { toast } from 'react-toastify'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,6 +11,8 @@ import {
 } from 'react-icons/fi'
 import api from '../api/axios'
 import { useCart } from '../context/CartContext'
+import OrderTimeline from '../components/OrderTimeline'
+import { useSocket } from '../hooks/useSocket'
 
 const getStatus = (order) => {
   if (order.isDelivered) return { label: 'Delivered', cls: 'badge-success', icon: FiCheckCircle }
@@ -367,6 +369,10 @@ const buildInvoiceHTML = (inv, order) => {
 
 const Orders = () => {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
+  const highlightId = searchParams.get('highlight')
+  const { socket } = useSocket()
+  const listRef = useRef(null)
   const navigate = useNavigate()
   const { fetchCartCount } = useCart()
   const [orders,        setOrders]        = useState([])
@@ -383,6 +389,36 @@ const Orders = () => {
   const [reviewedIds,   setReviewedIds]   = useState(new Set())
 
   useEffect(() => { if (user) fetchOrders() }, [user])
+
+  useEffect(() => {
+    if (highlightId && !loading && orders.length > 0) {
+      const el = document.getElementById(`order-${highlightId}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setExpanded(highlightId)
+      }
+    }
+  }, [highlightId, loading, orders.length])
+
+  useEffect(() => {
+    if (!socket || !orders.length) return
+    
+    // Join all order rooms
+    orders.forEach(o => {
+      socket.emit('joinOrderRoom', o._id)
+    })
+
+    const handleStatusUpdate = (updatedOrder) => {
+      setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o))
+      toast.success(`Order #${updatedOrder._id.slice(-8).toUpperCase()} status updated!`)
+    }
+
+    socket.on('orderStatusUpdated', handleStatusUpdate)
+
+    return () => {
+      socket.off('orderStatusUpdated', handleStatusUpdate)
+    }
+  }, [socket, orders.length])
 
   const fetchOrders = async () => {
     try {
@@ -583,6 +619,7 @@ const Orders = () => {
               return (
                 <motion.div
                   key={o._id}
+                  id={`order-${o._id}`}
                   initial={{ y: 16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: i * 0.04 }}
@@ -705,78 +742,7 @@ const Orders = () => {
                                   <FiTruck size={13} className="text-[var(--gold)]" /> Order Tracking
                                 </h4>
 
-                                {/* Progress bar */}
-                                {!['CANCELLED', 'FAILED'].includes(o.paymentStatus) && (() => {
-                                  const steps = [1, 2, 3, 4]
-                                  const current = o.isDelivered ? 4 : (o.isPaid || o.paymentStatus === 'COD_CONFIRMED') ? 2 : 1
-                                  return (
-                                    <div className="flex items-center gap-0 mb-5">
-                                      {steps.map((s, i) => (
-                                        <div key={s} className="flex items-center flex-1">
-                                          <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-[10px] font-bold shrink-0 transition-all"
-                                            style={s <= current
-                                              ? { background: 'var(--brand-gradient)', borderColor: 'transparent', color: '#FFFFFF', boxShadow: 'var(--shadow-brand)', fontFamily: 'var(--font-display)' }
-                                              : { background: '#F8FAFC', borderColor: '#E2E8F0', color: '#94A3B8', fontFamily: 'var(--font-display)' }
-                                            }>
-                                            {s <= current ? '✓' : s}
-                                          </div>
-                                          {i < steps.length - 1 && (
-                                            <div className="flex-1 h-0.5" style={{ background: s < current ? 'var(--brand-primary)' : '#E2E8F0' }} />
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )
-                                })()}
-
-                                <div className="relative ml-3 space-y-5 pb-2" style={{ borderLeft: '2px dashed #E2E8F0' }}>
-                                  <div className="relative pl-6">
-                                    <div className="absolute w-3.5 h-3.5 rounded-full border-4 border-white -left-[8px] top-1 shadow-sm"
-                                      style={{ background: 'var(--navy)' }} />
-                                    <p className="text-sm font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>Order Placed</p>
-                                    <p className="text-xs text-slate-500 font-medium">{new Date(o.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                                  </div>
-                                  {(o.isPaid || o.paymentStatus === 'COD_CONFIRMED') && !['CANCELLED', 'FAILED'].includes(o.paymentStatus) && (
-                                    <div className="relative pl-6">
-                                      <div className="absolute w-3.5 h-3.5 rounded-full border-4 border-white -left-[8px] top-1 shadow-sm"
-                                        style={{ background: 'var(--navy)' }} />
-                                      <p className="text-sm font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>{o.isPaid ? 'Payment Confirmed' : 'Order Confirmed (COD)'}</p>
-                                      <p className="text-xs text-slate-500 font-medium">{o.isPaid ? new Date(o.paidAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'Your order is being prepared'}</p>
-                                    </div>
-                                  )}
-                                  {(o.isPaid || o.paymentStatus === 'COD_CONFIRMED') && !o.isDelivered && !['CANCELLED', 'FAILED'].includes(o.paymentStatus) && (
-                                    <div className="relative pl-6">
-                                      <div className="absolute w-3.5 h-3.5 rounded-full border-4 border-white -left-[8px] top-1 shadow-sm animate-pulse"
-                                        style={{ background: 'var(--info)' }} />
-                                      <p className="text-sm font-bold text-sky-600" style={{ fontFamily: 'var(--font-display)' }}>In Transit</p>
-                                      <p className="text-xs text-slate-500 font-medium">Your package is on its way</p>
-                                    </div>
-                                  )}
-                                  {o.isDelivered && (
-                                    <div className="relative pl-6">
-                                      <div className="absolute w-3.5 h-3.5 rounded-full border-4 border-white -left-[8px] top-1 shadow-sm"
-                                        style={{ background: 'var(--success)' }} />
-                                      <p className="text-sm font-bold text-emerald-600" style={{ fontFamily: 'var(--font-display)' }}>Delivered ✓</p>
-                                      <p className="text-xs text-slate-500 font-medium">{new Date(o.deliveredAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-                                    </div>
-                                  )}
-                                  {['CANCELLED', 'FAILED'].includes(o.paymentStatus) && (
-                                    <div className="relative pl-6">
-                                      <div className="absolute w-3.5 h-3.5 rounded-full border-4 border-white -left-[8px] top-1 shadow-sm"
-                                        style={{ background: 'var(--danger)' }} />
-                                      <p className="text-sm font-bold text-red-600" style={{ fontFamily: 'var(--font-display)' }}>Cancelled / Failed</p>
-                                      <p className="text-xs text-slate-500 font-medium">{o.cancelReason || 'Order cancelled'}</p>
-                                    </div>
-                                  )}
-                                  {o.returnRequest && (
-                                    <div className="relative pl-6">
-                                      <div className="absolute w-3.5 h-3.5 rounded-full border-4 border-white -left-[8px] top-1 shadow-sm"
-                                        style={{ background: '#8B5CF6' }} />
-                                      <p className="text-sm font-bold text-violet-600" style={{ fontFamily: 'var(--font-display)' }}>Return {o.returnRequest.status}</p>
-                                      <p className="text-xs text-slate-500 font-medium">{o.returnRequest.reason}</p>
-                                    </div>
-                                  )}
-                                </div>
+                                <OrderTimeline order={o} />
                               </div>
 
                               {/* Delivery Address */}
