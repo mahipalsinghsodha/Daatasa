@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { MessageCircle } from 'lucide-react'
+import { FaWhatsapp } from 'react-icons/fa'
 
 // You can configure this to your actual support number
 const WHATSAPP_NUMBER = '7665306403' // Replace with actual number
@@ -19,7 +19,7 @@ const WhatsAppButton = () => {
       style={{ background: '#25D366' }} // Official WhatsApp Green
       title="Chat with us on WhatsApp"
     >
-      <MessageCircle size={30} strokeWidth={2} />
+      <FaWhatsapp size={32} />
       
       {/* Pulse effect */}
       <span className="absolute w-full h-full rounded-full border-2 border-[#25D366] opacity-0 animate-[ping_2s_ease-in-out_infinite]" />

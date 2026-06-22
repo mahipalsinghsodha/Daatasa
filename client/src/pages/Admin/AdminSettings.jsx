@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { FiPercent, FiTruck, FiSave, FiToggleLeft, FiToggleRight, FiAlertCircle } from 'react-icons/fi'
+import { FiPercent, FiTruck, FiSave, FiToggleLeft, FiToggleRight, FiAlertCircle, FiMapPin } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
 
@@ -51,10 +51,12 @@ const AdminSettings = () => {
     gstEnabled: true,
     freeShippingThreshold: 500,
     shippingCharge: 50,
+    serviceablePincodes: [],
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+  const [pincodeInput, setPincodeInput] = useState('')
 
   useEffect(() => { fetchSettings() }, [])
 
@@ -62,6 +64,7 @@ const AdminSettings = () => {
     try {
       const res = await api.get('/api/settings')
       setSettings(res.data)
+      setPincodeInput(res.data.serviceablePincodes?.join(', ') || '')
     } catch { toast.error('Failed to load settings') }
     finally { setLoading(false) }
   }
@@ -78,9 +81,16 @@ const AdminSettings = () => {
   const handleSave = async () => {
     if (!validate()) return
     setSaving(true)
+    
+    // Process pincodes
+    const parsedPincodes = pincodeInput.split(',')
+      .map(p => p.trim())
+      .filter(p => p.length > 0)
+      
     try {
-      const res = await api.patch('/api/settings', settings)
+      const res = await api.patch('/api/settings', { ...settings, serviceablePincodes: parsedPincodes })
       setSettings(res.data.settings)
+      setPincodeInput(res.data.settings.serviceablePincodes?.join(', ') || '')
       toast.success('Settings saved successfully!')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save settings')
@@ -192,6 +202,35 @@ const AdminSettings = () => {
                 helpText="Fixed charge for orders below the free shipping threshold."
                 error={errors.shippingCharge}
               />
+            </div>
+          </div>
+
+          {/* ── Pincode Settings ── */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-alt)' }}>
+              <h2 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', margin: 0 }}>Serviceable Pincodes</h2>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Limit delivery to specific ZIP codes</p>
+            </div>
+            <div style={{ padding: 24 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Allowed Pincodes (comma separated)
+              </label>
+              <div style={{
+                display: 'flex', borderRadius: 'var(--radius-input)',
+                border: '1.5px solid var(--border-color)', overflow: 'hidden',
+              }}>
+                <div style={{ padding: '12px', background: 'var(--bg-alt)', borderRight: '1.5px solid var(--border-color)', color: 'var(--text-muted)', display: 'flex', alignItems: 'flex-start' }}>
+                  <FiMapPin size={15} style={{ marginTop: 2 }} />
+                </div>
+                <textarea
+                  value={pincodeInput}
+                  onChange={e => setPincodeInput(e.target.value)}
+                  placeholder="e.g. 110001, 400001, 560001"
+                  rows={4}
+                  style={{ flex: 1, padding: '12px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', background: 'var(--bg-surface)', border: 'none', resize: 'vertical' }}
+                />
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>Leave empty to allow delivery to all pincodes globally.</p>
             </div>
           </div>
 

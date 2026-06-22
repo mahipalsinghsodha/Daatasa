@@ -66,7 +66,7 @@ app.set('trust proxy', 1);
 
 // Limit requests from same API
 const limiter = rateLimit({
-  max: 300,
+  max: process.env.NODE_ENV === 'production' ? 100 : 5000,
   windowMs: 15 * 60 * 1000, // 15 minutes
   message: 'Too many requests from this IP, please try again in 15 minutes!'
 });
@@ -260,6 +260,7 @@ const startServer = async () => {
 
   // Start background jobs
   startOrderCleanup();
+  require('./cron')();
 
   const PORT = process.env.PORT || 5000;
 

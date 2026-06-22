@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiPlus, FiSearch, FiBox, FiTrash2, FiSave,
-  FiToggleLeft, FiToggleRight, FiArrowLeft, FiTag
+  FiToggleLeft, FiToggleRight, FiArrowLeft, FiTag, FiUpload
 } from 'react-icons/fi'
 import api from '../../api/axios'
 import { toast } from 'react-toastify'
@@ -23,6 +23,7 @@ const AdminProducts = () => {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
+  const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     if (hasPermission('products')) fetchData()
@@ -82,6 +83,30 @@ const AdminProducts = () => {
     }
   }
 
+  const handleImportCSV = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('file', file)
+    setImporting(true)
+    try {
+      const res = await api.post('/api/products/import/csv', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      toast.success(`Import complete! ${res.data.successCount} imported. ${res.data.errorCount} failed.`)
+      if (res.data.errors?.length) {
+        console.error('Import Errors:', res.data.errors)
+        toast.warning('Check console for import errors')
+      }
+      fetchData()
+    } catch {
+      toast.error('Failed to import CSV')
+    } finally {
+      setImporting(false)
+      e.target.value = '' // reset
+    }
+  }
+
   const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     (p.category || '').toLowerCase().includes(search.toLowerCase())
@@ -115,13 +140,22 @@ const AdminProducts = () => {
               <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', margin: 0, marginTop: 2 }}>{products.length} products in catalogue</p>
             </div>
           </div>
-          <button onClick={() => navigate('/admin/add-product')}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, fontSize: 14, fontWeight: 700, transition: 'all 0.2s', cursor: 'pointer', background: 'var(--gold)', color: 'var(--navy)', border: 'none', boxShadow: '0 4px 14px rgba(245,166,35,0.45)' }}
-            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
-            <FiPlus size={15} /> Add Product
-          </button>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, fontSize: 14, fontWeight: 700, transition: 'all 0.2s', background: 'rgba(255,255,255,0.15)', color: '#FFF' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+              {importing ? <div className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" /> : <FiUpload size={15} />}
+              <span className="hidden sm:inline">{importing ? 'Importing...' : 'Import CSV'}</span>
+              <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCSV} disabled={importing} />
+            </label>
+            <button onClick={() => navigate('/admin/add-product')}
+              className="btn btn-primary"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, fontSize: 14, fontWeight: 700, transition: 'all 0.2s', cursor: 'pointer', background: 'var(--gold)', color: 'var(--navy)', border: 'none', boxShadow: '0 4px 14px rgba(245,166,35,0.45)' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+              <FiPlus size={15} /> Add Product
+            </button>
+          </div>
         </div>
       </div>
 

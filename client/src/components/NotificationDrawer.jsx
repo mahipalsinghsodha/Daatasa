@@ -64,7 +64,7 @@ const NotifItem = ({ notif, onMarkRead }) => {
 const DEMO_NOTIFICATIONS = [
   {
     _id: '1', type: 'ORDER_DELIVERED', title: 'Order Delivered!',
-    message: 'Your order #84021 has been delivered. Enjoy your pure A2 ghee!',
+    message: 'Your order #84021 has been delivered. Enjoy your pure Tharparkar ghee!',
     isRead: false, createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
   },
   {
@@ -90,14 +90,8 @@ export default function NotificationDrawer() {
     setNotifications, markRead, markAllRead,
   } = useNotificationStore()
 
-  // Load demo notifications on first open
-  useEffect(() => {
-    if (isDrawerOpen && notifications.length === 0) {
-      setNotifications(DEMO_NOTIFICATIONS)
-    }
-  }, [isDrawerOpen]) // eslint-disable-line
-
-  // Group by Today / Yesterday / Earlier
+  // Notifications are fetched via the store/api or Socket.io. 
+  // No demo notifications should be loaded.
   const groups = notifications.reduce((acc, n) => {
     const d = new Date(n.createdAt || Date.now())
     const now = new Date()

@@ -7,6 +7,11 @@ const { logAction } = require('../utils/logger');
 const dbCheck = require('../middleware/dbCheck');
 const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
+const multer = require('multer');
+const csv = require('csv-parser');
+const fs = require('fs');
+
+const upload = multer({ dest: 'uploads/' });
 
 // Validation middleware for product creation/updates
 const validateProduct = [
@@ -116,6 +121,76 @@ router.get('/:id', dbCheck, async (req, res) => {
       error: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
+});
+
+// ========================================================================
+// ADMIN: BULK IMPORT PRODUCTS (CSV)
+// ========================================================================
+router.post('/import/csv', auth, auth.admin, auth.hasPermission('products'), upload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+  const results = [];
+  let successCount = 0;
+  let errorCount = 0;
+  const errors = [];
+
+  fs.createReadStream(req.file.path)
+    .pipe(csv())
+    .on('data', (data) => results.push(data))
+    .on('end', async () => {
+      try {
+        for (const [index, row] of results.entries()) {
+          try {
+            // Validate required fields
+            if (!row.name || !row.price || !row.category) {
+              throw new Error('Missing required fields (name, price, category)');
+            }
+
+            const productData = {
+              name: row.name.trim(),
+              description: row.description?.trim() || '',
+              price: Number(row.price),
+              mrp: row.mrp ? Number(row.mrp) : undefined,
+              category: row.category.trim(),
+              stock: row.stock ? parseInt(row.stock, 10) : 0,
+              weight: row.weight?.trim() || '500g',
+              isActive: row.isActive ? row.isActive.toLowerCase() === 'true' : true,
+              featured: row.featured ? row.featured.toLowerCase() === 'true' : false,
+              image: row.image?.trim() || '',
+            };
+
+            // Check if product exists (by name)
+            const existing = await Product.findOne({ name: productData.name });
+            if (existing) {
+              await Product.updateOne({ _id: existing._id }, productData);
+            } else {
+              await Product.create(productData);
+            }
+            successCount++;
+          } catch (err) {
+            errorCount++;
+            errors.push(`Row ${index + 2}: ${err.message}`);
+          }
+        }
+
+        // Clean up file
+        fs.unlinkSync(req.file.path);
+
+        res.json({
+          message: 'Import complete',
+          successCount,
+          errorCount,
+          errors: errors.slice(0, 10) // Send up to 10 errors
+        });
+      } catch (err) {
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        res.status(500).json({ message: 'Failed to process CSV data' });
+      }
+    })
+    .on('error', (error) => {
+      if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      res.status(500).json({ message: 'Failed to parse CSV file', error: error.message });
+    });
 });
 
 // Create product (Admin with 'products' permission or Superadmin)

@@ -86,7 +86,7 @@ const Products = () => {
         <title>{selectedCategory && selectedCategory !== 'all'
           ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Ghee — DhaniFresh`
           : 'Buy Pure Desi Ghee Online — DhaniFresh'}</title>
-        <meta name="description" content="Shop premium Bilona Desi Ghee online. Cow ghee, buffalo ghee, A2 ghee and more. FSSAI certified. Free shipping above ₹500. Pan India delivery." />
+        <meta name="description" content="Shop premium Bilona Desi Ghee online. Traditional Tharparkar cow ghee crafted in our Rajasthan village. FSSAI certified. Free shipping above ₹500. Pan India delivery." />
         <link rel="canonical" href="https://dhanifresh.in/products" />
       </Helmet>
 
@@ -150,7 +150,7 @@ const Products = () => {
             </div>
 
             {/* Search + Sort */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
               {/* Search */}
               <div className="relative group">
                 <FiSearch
@@ -164,7 +164,7 @@ const Products = () => {
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '12px' }}
-                  className="pl-9 pr-4 py-2 text-sm outline-none focus:ring-0 transition-all placeholder:text-[var(--text-muted)] w-44"
+                  className="pl-9 pr-4 py-2 text-sm outline-none focus:ring-0 transition-all placeholder:text-[var(--text-muted)] w-full sm:w-44"
                 />
                 {searchTerm && (
                   <button
@@ -184,7 +184,7 @@ const Products = () => {
                   value={sort}
                   onChange={e => { setSort(e.target.value); setPage(1) }}
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '12px' }}
-                  className="pl-9 pr-8 py-2 text-sm outline-none transition-all cursor-pointer appearance-none"
+                  className="pl-9 pr-8 py-2 text-sm outline-none transition-all cursor-pointer appearance-none w-full sm:w-auto"
                 >
                   {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
                 </select>

@@ -34,6 +34,10 @@ const settingsSchema = new mongoose.Schema(
       type: Number,
       default: 50,
     },
+    serviceablePincodes: {
+      type: [String],
+      default: [], // empty means all pincodes are serviceable
+    },
 
     // ── Meta ─────────────────────────────────────────────────────────────
     updatedBy: {

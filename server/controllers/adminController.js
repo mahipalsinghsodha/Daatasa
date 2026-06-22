@@ -6,6 +6,8 @@ const Coupon  = require('../models/Coupon');
 const { logAction } = require('../utils/logger');
 const { getCache, setCache, invalidateAnalytics } = require('../utils/cache');
 const bcrypt  = require('bcryptjs');
+const Notification = require('../models/Notification');
+const { getIO } = require('../socket');
 
 exports.getActivityLogs = async (req, res) => {
   try {
@@ -57,6 +59,134 @@ exports.deleteAdmin = async (req, res) => {
     await logAction(req, 'DELETE_ADMIN', 'USER', req.params.id, { name: target.name });
     res.json({ message: 'Admin removed' });
   } catch (e) { res.status(500).json({ message: e.message }); }
+};
+
+exports.getReturnRequests = async (req, res) => {
+  try {
+    const orders = await Order.find({ 'returnRequest.status': { $exists: true } })
+      .populate('user', 'name email')
+      .populate('orderItems.product')
+      .sort({ 'returnRequest.requestedAt': -1 });
+    res.json(orders);
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
+};
+
+exports.approveReturnRequest = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order.returnRequest || order.returnRequest.status !== 'PENDING') {
+      return res.status(400).json({ message: 'No pending return request for this order' });
+    }
+
+    const { status } = req.body; // 'APPROVED' or 'REJECTED'
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    order.returnRequest.status = status;
+
+    if (status === 'APPROVED') {
+      // Trigger Razorpay refund if paid online
+      let refundInfo = null;
+      const isOnlinePaid =
+        order.paymentStatus === 'PAID' &&
+        order.paymentMethod === 'Online' &&
+        order.paymentInfo?.razorpay_payment_id;
+
+      if (isOnlinePaid) {
+        try {
+          const razorpay = require('../config/razorpay');
+          const refund = await razorpay.payments.refund(
+            order.paymentInfo.razorpay_payment_id,
+            {
+              amount: Math.round(order.totalPrice * 100),
+              speed: 'normal',
+              notes: { orderId: order._id.toString(), reason: 'Return Approved' },
+            }
+          );
+          refundInfo = {
+            refund_id: refund.id,
+            status: refund.status,
+            amount: order.totalPrice,
+            initiatedAt: new Date(),
+          };
+        } catch (refundErr) {
+          console.error('RAZORPAY REFUND ERROR:', refundErr);
+          return res.status(500).json({
+            message: 'Refund initiation failed. Please contact support.',
+          });
+        }
+      }
+
+      // Restore stock
+      for (const item of order.orderItems) {
+        await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+      }
+
+      order.paymentStatus = 'RETURN_APPROVED';
+      if (refundInfo) order.refundInfo = refundInfo;
+
+      order.statusHistory.push({
+        status: 'RETURN_APPROVED',
+        note: 'Return approved by admin',
+        updatedBy: req.user._id,
+        updatedAt: new Date()
+      });
+
+      // Notify User
+      if (order.user) {
+        const notif = new Notification({
+          user: order.user,
+          type: 'RETURN_APPROVED',
+          title: 'Return Approved',
+          message: `Your return request for order #${order._id.toString().slice(-8).toUpperCase()} has been approved.`,
+          link: `/orders/${order._id}`
+        });
+        await notif.save();
+        try {
+          const io = getIO();
+          io.to(`user:${order.user}`).emit('notification', notif);
+          io.to(`order:${order._id}`).emit('orderStatusUpdated', order);
+        } catch (err) {}
+      }
+    } else {
+      // REJECTED
+      order.statusHistory.push({
+        status: 'RETURN_REJECTED',
+        note: 'Return rejected by admin',
+        updatedBy: req.user._id,
+        updatedAt: new Date()
+      });
+      if (order.user) {
+        const notif = new Notification({
+          user: order.user,
+          type: 'SYSTEM',
+          title: 'Return Rejected',
+          message: `Your return request for order #${order._id.toString().slice(-8).toUpperCase()} has been rejected.`,
+          link: `/orders/${order._id}`
+        });
+        await notif.save();
+        try {
+          const io = getIO();
+          io.to(`user:${order.user}`).emit('notification', notif);
+          io.to(`order:${order._id}`).emit('orderStatusUpdated', order);
+        } catch (err) {}
+      }
+    }
+
+    await order.save();
+    await logAction(req, `RETURN_${status}`, 'ORDER', order._id, { status });
+
+    await order.populate('user', 'name email');
+    await order.populate('orderItems.product');
+
+    res.json({ message: `Return request ${status.toLowerCase()}`, order });
+  } catch (e) {
+    res.status(500).json({ message: e.message });
+  }
 };
 
 /**

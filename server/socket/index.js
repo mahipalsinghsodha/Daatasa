@@ -74,6 +74,13 @@ function initSocketServer(httpServer) {
 
     registerChatHandlers(io, socket);
 
+    socket.on('joinOrderRoom', (orderId) => {
+      if (socket.user) {
+        socket.join(`order:${orderId}`);
+        console.log(`[Socket] User ${userId} joined room order:${orderId}`);
+      }
+    });
+
     socket.on('disconnect', (reason) => {
       console.log(`[Socket] ${role} disconnected: ${userId} — reason: ${reason}`);
     });

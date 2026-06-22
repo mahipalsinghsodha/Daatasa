@@ -39,7 +39,7 @@ const Terms = () => (
     </PolicySection>
 
     <PolicySection id="section-5" title="Governing Law">
-      <p>These Terms shall be governed and construed in accordance with the laws of <strong style={{ color: 'var(--text-primary)' }}>India</strong>. Any disputes shall be subject to the exclusive jurisdiction of courts in Mumbai, Maharashtra.</p>
+      <p>These Terms shall be governed and construed in accordance with the laws of <strong style={{ color: 'var(--text-primary)' }}>India</strong>. Any disputes shall be subject to the exclusive jurisdiction of courts in Jodhpur, Rajasthan.</p>
     </PolicySection>
 
     <PolicySection id="section-6" title="Contact Us">

@@ -184,8 +184,8 @@ export default function Contact() {
           {/* Contact Info */}
           <div className="md:col-span-2 space-y-3">
             <ContactRow icon={Mail}   label="Email"   value="support@dhanifresh.com" href="mailto:support@dhanifresh.com" />
-            <ContactRow icon={Phone}  label="Phone"   value="+91 98765 43210"          href="tel:+919876543210" />
-            <ContactRow icon={MapPin} label="Address" value="123 Gandhi Nagar, Jaipur, Rajasthan 302015" />
+            <ContactRow icon={Phone}  label="Phone"   value="+91 7665306403"          href="tel:+917665306403" />
+            <ContactRow icon={MapPin} label="Address" value="Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan" />
 
             {/* Business Hours */}
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
@@ -212,6 +212,20 @@ export default function Contact() {
                 <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--success)' }} />
                 <span className="text-[12px] font-semibold" style={{ color: 'var(--success)' }}>Currently open</span>
               </div>
+            </div>
+
+            {/* Map */}
+            <div className="rounded-2xl overflow-hidden mt-3" style={{ border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+              <iframe 
+                src="https://maps.google.com/maps?q=26.3217375,70.6166729&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                width="100%" 
+                height="220" 
+                style={{ border: 0, display: 'block' }} 
+                allowFullScreen="" 
+                loading="lazy" 
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Location Map"
+              ></iframe>
             </div>
           </div>
         </div>

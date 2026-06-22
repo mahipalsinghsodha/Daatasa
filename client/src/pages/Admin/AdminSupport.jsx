@@ -50,7 +50,10 @@ export default function AdminSupport() {
   const [search, setSearch] = useState("");
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 1024);
   const [loading, setLoading] = useState(true);
+  const [isUserTyping, setIsUserTyping] = useState(false);
+  const typingTimerRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
 
   // Responsive layout
   useEffect(() => {
@@ -106,16 +109,22 @@ export default function AdminSupport() {
       }
     };
 
+    const handleUserTyping = ({ isTyping }) => {
+      setIsUserTyping(isTyping);
+    };
+
     on('admin:new_session', handleNewSession);
     on('admin:session_update', handleSessionUpdate);
     on('admin:session_rejected', handleSessionUpdate);
     on('chat:message', handleMessage);
+    on('chat:user_typing', handleUserTyping);
 
     return () => {
       off('admin:new_session', handleNewSession);
       off('admin:session_update', handleSessionUpdate);
       off('admin:session_rejected', handleSessionUpdate);
       off('chat:message', handleMessage);
+      off('chat:user_typing', handleUserTyping);
     };
   }, [hasPermission, on, off, connect, selected?.sessionId]);
 
@@ -134,14 +143,29 @@ export default function AdminSupport() {
   }, [selected?.sessionId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const handleSend = (e) => {
     if (e) e.preventDefault();
     if (!inputText.trim() || !selected) return;
     emit('agent:message', { sessionId: selected.sessionId, content: inputText, messageType: 'TEXT' });
+    emit('agent:typing', { sessionId: selected.sessionId, isTyping: false });
     setInputText("");
+  };
+
+  const handleInputChange = (e) => {
+    setInputText(e.target.value);
+    if (!selected) return;
+    
+    emit('agent:typing', { sessionId: selected.sessionId, isTyping: true });
+    
+    clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      emit('agent:typing', { sessionId: selected.sessionId, isTyping: false });
+    }, 2000);
   };
 
   const handleAccept = () => {
@@ -259,7 +283,7 @@ export default function AdminSupport() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 2 }}>
                       <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
-                      <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{timeAgo(s.createdAt)}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-muted)', flexShrink: 0 }}>{timeAgo(s.lastMessageAt || s.createdAt)}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 600 }}>{s.category}</span>
@@ -303,6 +327,11 @@ export default function AdminSupport() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>{selected.userId?.name || selected.guestName || 'Guest'}</span>
                         <StatusDot status={selected.status} />
+                        {isUserTyping && (
+                          <span style={{ fontSize: 11, color: 'var(--brand-secondary)', fontStyle: 'italic', fontWeight: 600, animation: 'pulse 1.5s infinite' }}>
+                            typing...
+                          </span>
+                        )}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
                         {selected.userId?.email || selected.guestEmail} · {selected.category}
@@ -335,7 +364,7 @@ export default function AdminSupport() {
                 )}
 
                 {/* Messages */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--bg-base)' }}>
+                <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--bg-base)' }}>
                   {messages.map((m, idx) => (
                     <ChatBubble key={m._id || idx} message={m} currentUserId={selected.userId?._id || 'guest'} />
                   ))}
@@ -348,7 +377,7 @@ export default function AdminSupport() {
                     <form onSubmit={handleSend} style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
                       <textarea
                         placeholder="Type a message..."
-                        value={inputText} onChange={e => setInputText(e.target.value)}
+                        value={inputText} onChange={handleInputChange}
                         onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                         style={{ flex: 1, padding: '12px 16px', borderRadius: '12px', border: '1.5px solid var(--border-color)', background: 'var(--bg-alt)', outline: 'none', fontSize: 14, color: 'var(--text-primary)', resize: 'none', minHeight: 44, maxHeight: 120 }}
                         rows={1}

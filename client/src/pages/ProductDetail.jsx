@@ -61,6 +61,7 @@ const ProductDetail = () => {
   const [product,    setProduct]    = useState(null)
   const [plans,      setPlans]      = useState([])
   const [related,    setRelated]    = useState([])
+  const [reviews, setReviews] = useState([])
   const [addresses,  setAddresses]  = useState([])
   const [loading,    setLoading]    = useState(true)
   const [quantity,   setQuantity]   = useState(1)
@@ -70,6 +71,7 @@ const ProductDetail = () => {
   const [reviewComment, setReviewComment] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
   const [hasReviewed, setHasReviewed] = useState(false)
+  const [eligibleOrderId, setEligibleOrderId] = useState(null)
   const [estPin, setEstPin] = useState('')
   const [estLoading, setEstLoading] = useState(false)
   const [estState, setEstState] = useState(null)
@@ -101,13 +103,15 @@ const ProductDetail = () => {
         }))
       }
 
-      // Fetch related products and plans
+      // Fetch related products, plans and reviews
       try {
-        const [relRes, plansRes] = await Promise.all([
+        const [relRes, plansRes, revsRes] = await Promise.all([
           api.get(`/api/products?category=${prod.category}`, { signal: controller.signal }),
-          api.get('/api/subscriptions/plans', { signal: controller.signal })
+          api.get('/api/subscriptions/plans', { signal: controller.signal }),
+          api.get(`/api/reviews/product/${prod._id}`, { signal: controller.signal })
         ])
-        setRelated((relRes.data || []).filter(p => p._id !== prod._id).slice(0, 4))
+        setRelated((relRes.data?.products || relRes.data || []).filter(p => p._id !== prod._id).slice(0, 4))
+        setReviews(revsRes.data?.reviews || [])
         
         // Filter plans for this product
         if (plansRes.data?.data) {
@@ -124,12 +128,13 @@ const ProductDetail = () => {
           // Fetch addresses and review eligibility in parallel
           const [meRes, eligRes] = await Promise.allSettled([
             api.get('/api/auth/me', { signal: controller.signal }),
-            api.get(`/api/products/${id}/review-eligibility`, { signal: controller.signal })
+            api.get(`/api/reviews/can-review/${id}`, { signal: controller.signal })
           ])
           if (meRes.status === 'fulfilled') setAddresses(meRes.value.data.addresses || [])
           if (eligRes.status === 'fulfilled') {
-            const { alreadyReviewed } = eligRes.value.data
+            const { alreadyReviewed, orderId } = eligRes.value.data
             if (alreadyReviewed) setHasReviewed(true)
+            if (orderId) setEligibleOrderId(orderId)
           }
         } catch {}
       }
@@ -211,13 +216,20 @@ const ProductDetail = () => {
   }
 
   const handleSubmitReview = async (e) => {
-    e.preventDefault()
+    e.preventDefault()  
     if (!user) { navigate('/login', { state: { from: location.pathname } }); return }
     if (reviewRating === 0) { toast.error('Please select a rating'); return }
     if (!reviewComment.trim()) { toast.error('Please write a review'); return }
+    if (!eligibleOrderId) { toast.error('You can only review products from delivered orders'); return }
     setSubmittingReview(true)
     try {
-      await api.post(`/api/products/${id}/reviews`, { rating: reviewRating, comment: reviewComment })
+      await api.post(`/api/reviews`, {
+        productId: id,
+        orderId: eligibleOrderId,
+        rating: reviewRating,
+        title: product.name,
+        body: reviewComment
+      })
       toast.success('Thank you for your review!')
       setReviewComment('')
       setReviewRating(0)
@@ -266,8 +278,7 @@ const ProductDetail = () => {
   )
 
   const defaultAddr = addresses.find(a => a.isDefault) || addresses[0]
-  const isCustomer  = !user || (user.role !== 'admin' && user.role !== 'superadmin')
-  const reviews     = product.reviews || []
+  const isCustomer = !user || (user.role !== 'admin' && user.role !== 'superadmin')
   const avgRating   = product.rating || 0
   const numReviews  = product.numReviews || 0
 
@@ -379,7 +390,7 @@ const ProductDetail = () => {
 
             {/* Name and Wishlist */}
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-3xl font-extrabold text-gray-900 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
                 {product.name}
               </h1>
               {isCustomer && (
@@ -418,7 +429,7 @@ const ProductDetail = () => {
             <div className="flex items-baseline gap-2">
               {product.mrp && product.mrp > product.price ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-4xl font-extrabold text-gray-900" style={{ fontFamily: 'var(--font-display)' }}>
+                  <span className="text-3xl sm:text-4xl font-extrabold text-gray-900" style={{ fontFamily: 'var(--font-display)' }}>
                     ₹{product.price.toLocaleString('en-IN')}
                   </span>
                   <span className="text-sm line-through text-gray-400" style={{ fontFamily: 'var(--font-body)' }}>
@@ -429,7 +440,7 @@ const ProductDetail = () => {
                   </span>
                 </div>
               ) : (
-                <span className="text-4xl font-extrabold text-gray-900" style={{ fontFamily: 'var(--font-display)' }}>
+                <span className="text-3xl sm:text-4xl font-extrabold text-gray-900" style={{ fontFamily: 'var(--font-display)' }}>
                   ₹{product.price.toLocaleString('en-IN')}
                 </span>
               )}
@@ -790,11 +801,11 @@ const ProductDetail = () => {
                         <div className="flex items-start justify-between gap-4 mb-2">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600">
-                              {r.name?.[0]?.toUpperCase()}
+                              {r.user?.name?.[0]?.toUpperCase()}
                             </div>
                             <div>
                               <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-semibold text-gray-900">{r.name}</p>
+                                <p className="text-sm font-semibold text-gray-900">{r.user?.name}</p>
                                 {r.verified && (
                                   <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-600">
                                     <BadgeCheck size={12} /> Verified
@@ -808,7 +819,7 @@ const ProductDetail = () => {
                           </div>
                           <Stars rating={r.rating} size={13} />
                         </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">{r.comment}</p>
+                        <p className="text-sm text-gray-600 leading-relaxed">{r.body || r.comment}</p>
                       </div>
                     ))}
                   </div>

@@ -21,5 +21,9 @@ router.post('/create-admin', auth, auth.superadmin, adminController.createAdmin)
 router.patch('/update-access/:id', auth, auth.superadmin, adminController.updateAdminPermissions);
 router.delete('/:id', auth, auth.superadmin, adminController.deleteAdmin);
 
+// Return Requests (Admin+orders)
+router.get('/return-requests', auth, auth.admin, auth.hasPermission('orders'), adminController.getReturnRequests);
+router.put('/return-requests/:id', auth, auth.admin, auth.hasPermission('orders'), adminController.approveReturnRequest);
+
 module.exports = router;
 

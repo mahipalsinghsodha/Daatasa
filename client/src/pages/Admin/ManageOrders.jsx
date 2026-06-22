@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiPackage, FiCheckCircle, FiTruck, FiRefreshCw,
   FiPrinter, FiX, FiSearch, FiChevronDown, FiTag,
-  FiUser, FiMapPin, FiCalendar, FiAlertCircle, FiShield
+  FiUser, FiMapPin, FiCalendar, FiAlertCircle, FiShield,
+  FiBox, FiCheckSquare, FiSquare, FiDownload
 } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
+import { useSocket } from '../../hooks/useSocket'
 
 const fmtINR = (val) => `₹${Number(val || 0).toLocaleString('en-IN')}`
 const qrUrl = (data, size = 120) => `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&margin=6`
@@ -17,6 +19,7 @@ const getStatus = (o) => {
   if (o.isDelivered) return { label: 'Delivered', color: 'var(--success)', bg: 'rgba(56,161,105,0.08)', border: 'rgba(56,161,105,0.25)' }
   if (o.paymentStatus === 'CANCELLED') return { label: 'Cancelled', color: 'var(--text-muted)', bg: 'var(--bg-alt)', border: 'var(--border-color)' }
   if (o.paymentStatus === 'FAILED') return { label: 'Failed', color: 'var(--danger)', bg: 'rgba(229,62,62,0.08)', border: 'rgba(229,62,62,0.25)' }
+  if (o.paymentStatus === 'RETURN_APPROVED') return { label: 'Returned', color: 'var(--warning)', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' }
   if (o.isPaid) return { label: 'Paid', color: 'var(--info)', bg: 'rgba(49,130,206,0.08)', border: 'rgba(49,130,206,0.25)' }
   if (o.paymentStatus === 'COD_CONFIRMED') return { label: 'Confirmed', color: 'var(--info)', bg: 'rgba(49,130,206,0.08)', border: 'rgba(49,130,206,0.25)' }
   return { label: 'Pending', color: 'var(--warning)', bg: 'rgba(245,166,35,0.12)', border: 'rgba(245,166,35,0.25)' }
@@ -45,55 +48,155 @@ const invoiceHTML = (o) => `<div class="inv"><div class="head"><div><div class="
 
 const ManageOrders = () => {
   const { hasPermission } = useAuth()
+  const socket = useSocket()
+  
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState(null)
+  
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalOrders, setTotalOrders] = useState(0)
+
+  const [selectedOrders, setSelectedOrders] = useState(new Set())
+
   const [cancelModal, setCancelModal] = useState(null)
+  const [trackingModal, setTrackingModal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [syncing, setSyncing] = useState(false)
 
-  useEffect(() => { if (hasPermission('orders')) fetchOrders(true) }, [hasPermission])
+  const [trackingNum, setTrackingNum] = useState('')
+  const [shippingProv, setShippingProv] = useState('')
 
-  const fetchOrders = async (showLoad = false) => {
+  useEffect(() => { 
+    if (hasPermission('orders')) fetchOrders(true, 1) 
+  }, [hasPermission])
+
+  useEffect(() => {
+    if (hasPermission('orders') && !loading) {
+      fetchOrders(false, page)
+    }
+  }, [page])
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('newOrder', (newOrder) => {
+        setOrders(prev => [newOrder, ...prev])
+        setTotalOrders(prev => prev + 1)
+        toast.info(`New order received: #${newOrder._id.slice(-8).toUpperCase()}`)
+      })
+      
+      socket.on('orderStatusUpdated', (updatedOrder) => {
+        setOrders(prev => prev.map(o => o._id === updatedOrder._id ? updatedOrder : o))
+      })
+
+      return () => {
+        socket.off('newOrder')
+        socket.off('orderStatusUpdated')
+      }
+    }
+  }, [socket])
+
+  const fetchOrders = async (showLoad = false, pg = 1) => {
     if (showLoad) setLoading(true); else setSyncing(true)
     try {
-      const res = await api.get('/api/orders')
+      const res = await api.get(`/api/orders?page=${pg}&limit=20`)
       setOrders(res.data.orders || res.data || [])
+      if (res.data.pages) setTotalPages(res.data.pages)
+      if (res.data.total) setTotalOrders(res.data.total)
     } catch { toast.error('Failed to load orders') }
     finally { setLoading(false); setSyncing(false) }
   }
 
+  const handleExportCSV = async () => {
+    try {
+      const res = await api.get('/api/orders/export/csv', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'orders_export.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+    } catch {
+      toast.error('Failed to export orders')
+    }
+  }
+
   const markPaid = async (id) => {
     if (!window.confirm('Mark this order as PAID?')) return
-    try { await api.put(`/api/orders/${id}/pay`); fetchOrders(); toast.success('Order marked as paid') }
+    try { await api.put(`/api/orders/${id}/pay`); fetchOrders(false, page); toast.success('Order marked as paid') }
     catch { toast.error('Failed to update') }
   }
 
   const markDelivered = async (id) => {
     if (!window.confirm('Mark this order as DELIVERED? This cannot be undone.')) return
-    try { await api.put(`/api/orders/${id}/deliver`); fetchOrders(); toast.success('Order marked as delivered') }
+    try { await api.put(`/api/orders/${id}/deliver`); fetchOrders(false, page); toast.success('Order marked as delivered') }
     catch { toast.error('Failed to update') }
   }
 
   const handleCancel = async (reason) => {
     setSubmitting(true)
-    try { await api.post(`/api/orders/${cancelModal._id}/cancel`, { reason }); toast.success('Order cancelled'); setCancelModal(null); fetchOrders() }
+    try { await api.post(`/api/orders/${cancelModal._id}/cancel`, { reason }); toast.success('Order cancelled'); setCancelModal(null); fetchOrders(false, page) }
     catch { toast.error('Cancellation failed') }
     finally { setSubmitting(false) }
   }
 
-  const isVoid = (o) => ['CANCELLED', 'FAILED'].includes(o.paymentStatus)
-
-  const counts = {
-    all: orders.length,
-    pending: orders.filter(o => !o.isPaid && !o.isDelivered && !isVoid(o) && o.paymentStatus !== 'COD_CONFIRMED').length,
-    cod: orders.filter(o => o.paymentStatus === 'COD_CONFIRMED' && !o.isDelivered).length,
-    paid: orders.filter(o => o.isPaid && !o.isDelivered).length,
-    delivered: orders.filter(o => o.isDelivered).length,
-    cancelled: orders.filter(isVoid).length,
+  const handleAddTracking = async (e) => {
+    e.preventDefault()
+    setSubmitting(true)
+    try {
+      await api.put(`/api/orders/${trackingModal._id}/ship`, { trackingNumber: trackingNum, shippingProvider: shippingProv })
+      toast.success('Tracking info added and order shipped!')
+      setTrackingModal(null)
+      setTrackingNum('')
+      setShippingProv('')
+      fetchOrders(false, page)
+    } catch { toast.error('Failed to add tracking') }
+    finally { setSubmitting(false) }
   }
+
+  const handleApproveReturn = async (id) => {
+    if (!window.confirm('Approve this return? A refund will be initiated if paid online.')) return
+    setSyncing(true)
+    try {
+      await api.put(`/api/admin/return-requests/${id}`, { status: 'APPROVED' })
+      toast.success('Return approved & refund initiated')
+      fetchOrders(false, page)
+    } catch (err) { toast.error(err.response?.data?.message || 'Failed to approve return') }
+    finally { setSyncing(false) }
+  }
+
+  const handleBulkAction = async (action) => {
+    if (selectedOrders.size === 0) return
+    const actionText = action === 'pay' ? 'PAID' : 'DELIVERED'
+    if (!window.confirm(`Mark ${selectedOrders.size} orders as ${actionText}?`)) return
+    
+    setSyncing(true)
+    try {
+      await api.put('/api/orders/bulk/update', { orderIds: Array.from(selectedOrders), action })
+      toast.success(`Orders marked as ${actionText.toLowerCase()}`)
+      setSelectedOrders(new Set())
+      fetchOrders(false, page)
+    } catch { toast.error('Bulk update failed') }
+    finally { setSyncing(false) }
+  }
+
+  const toggleSelection = (id) => {
+    const newSet = new Set(selectedOrders)
+    if (newSet.has(id)) newSet.delete(id)
+    else newSet.add(id)
+    setSelectedOrders(newSet)
+  }
+
+  const toggleAll = () => {
+    if (selectedOrders.size === filteredOrders.length) setSelectedOrders(new Set())
+    else setSelectedOrders(new Set(filteredOrders.map(o => o._id)))
+  }
+
+  const isVoid = (o) => ['CANCELLED', 'FAILED'].includes(o.paymentStatus)
 
   const filteredOrders = orders.filter(o => {
     const matchFilter =
@@ -159,7 +262,11 @@ const ManageOrders = () => {
                 <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search orders…"
                   className="bg-transparent outline-none text-sm w-48" style={{ color: '#FFF', caretColor: 'var(--gold)', fontFamily: 'var(--font)' }} />
               </div>
-              <button onClick={() => fetchOrders()} disabled={syncing}
+              <button onClick={handleExportCSV} className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.15)', color: '#FFF' }}>
+                <FiDownload size={14} /> <span className="hidden sm:inline">Export</span>
+              </button>
+              <button onClick={() => fetchOrders(true, page)} disabled={syncing}
                 className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold rounded-xl transition-all"
                 style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.80)' }}>
                 <FiRefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> Refresh
@@ -170,13 +277,13 @@ const ManageOrders = () => {
           {/* Filter Pills */}
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {[
-              { v: 'all',       l: 'All',       c: counts.all },
-              { v: 'pending',   l: 'Pending',   c: counts.pending },
-              { v: 'cod',       l: 'COD',       c: counts.cod },
-              { v: 'paid',      l: 'Paid',      c: counts.paid },
-              { v: 'delivered', l: 'Delivered', c: counts.delivered },
-              { v: 'cancelled', l: 'Cancelled', c: counts.cancelled },
-            ].map(({ v, l, c }) => (
+              { v: 'all',       l: 'All' },
+              { v: 'pending',   l: 'Pending' },
+              { v: 'cod',       l: 'COD' },
+              { v: 'paid',      l: 'Paid' },
+              { v: 'delivered', l: 'Delivered' },
+              { v: 'cancelled', l: 'Cancelled' },
+            ].map(({ v, l }) => (
               <button key={v} onClick={() => setFilter(v)}
                 className="whitespace-nowrap px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2"
                 style={filter === v
@@ -184,19 +291,39 @@ const ManageOrders = () => {
                   : { background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.75)' }
                 }>
                 {l}
-                <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
-                  style={filter === v
-                    ? { background: 'rgba(27,47,110,0.25)', color: 'var(--navy)' }
-                    : { background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.75)' }
-                  }>{c}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedOrders.size > 0 && (
+        <div className="sticky top-[72px] z-30 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-3 mb-2 bg-white dark:bg-gray-800 shadow-sm border-b rounded-b-2xl flex items-center justify-between">
+          <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+            {selectedOrders.size} order(s) selected
+          </span>
+          <div className="flex gap-2">
+            <button onClick={() => handleBulkAction('pay')} className="btn btn-primary text-xs px-3 py-1.5 h-auto">Mark Paid</button>
+            <button onClick={() => handleBulkAction('deliver')} className="btn btn-secondary text-xs px-3 py-1.5 h-auto">Mark Delivered</button>
+            <button onClick={() => setSelectedOrders(new Set())} className="btn text-xs px-3 py-1.5 h-auto ml-2"><FiX /></button>
+          </div>
+        </div>
+      )}
+
       {/* Order List */}
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        
+        {/* Select All Checkbox */}
+        {filteredOrders.length > 0 && (
+          <div className="flex items-center gap-3 mb-4 px-2">
+            <button onClick={toggleAll} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+              {selectedOrders.size === filteredOrders.length ? <FiCheckSquare size={18} /> : <FiSquare size={18} />}
+            </button>
+            <span className="text-sm font-bold text-[var(--text-muted)]">Select All</span>
+          </div>
+        )}
+
         {filteredOrders.length === 0 ? (
           <div style={{ padding: '80px 20px', background: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
             <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ background: 'var(--bg-alt)', color: 'var(--text-muted)' }}>
@@ -211,10 +338,16 @@ const ManageOrders = () => {
           <div className="space-y-3">
             {filteredOrders.map(o => {
               const isExp = expandedId === o._id
+              const isSelected = selectedOrders.has(o._id)
               return (
-                <div key={o._id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: `1.5px solid ${isExp ? 'var(--brand-secondary)' : 'var(--border-color)'}`, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', transition: 'all 0.2s' }}>
+                <div key={o._id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: `1.5px solid ${isExp || isSelected ? 'var(--brand-secondary)' : 'var(--border-color)'}`, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', transition: 'all 0.2s' }}>
                   {/* Row */}
                   <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                    
+                    <button onClick={() => toggleSelection(o._id)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                      {isSelected ? <FiCheckSquare size={18} color="var(--brand-secondary)" /> : <FiSquare size={18} />}
+                    </button>
+
                     <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setExpandedId(isExp ? null : o._id)}>
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                         <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'monospace' }}>#{o._id.slice(-8).toUpperCase()}</span>
@@ -259,6 +392,23 @@ const ManageOrders = () => {
                                   </div>
                                 ))}
                               </div>
+
+                              {o.trackingNumber && (
+                                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-xl">
+                                  <p className="text-xs font-bold uppercase tracking-wider text-blue-500 mb-1">Tracking Info</p>
+                                  <p className="text-sm font-medium">{o.shippingProvider} - <span className="font-mono">{o.trackingNumber}</span></p>
+                                </div>
+                              )}
+                              
+                              {o.returnRequest && o.returnRequest.status === 'PENDING' && (
+                                <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                                  <p className="text-sm font-bold text-orange-800">Return Requested</p>
+                                  <p className="text-xs text-orange-600 mt-1">Reason: {o.returnRequest.reason}</p>
+                                  <button onClick={() => handleApproveReturn(o._id)} className="mt-3 px-4 py-2 bg-orange-500 text-white rounded-lg text-xs font-bold hover:bg-orange-600">
+                                    Approve Return
+                                  </button>
+                                </div>
+                              )}
                             </div>
 
                             {/* Right: Details */}
@@ -291,7 +441,7 @@ const ManageOrders = () => {
 
                               {/* Actions */}
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 4 }}>
-                                <button onClick={() => openPrint(invoiceHTML(o), `Invoice #${o._id.slice(-8).toUpperCase()}`)} className="btn btn-secondary">
+                                <button onClick={() => openPrint(invoiceHTML(o), `Invoice #${o._id.slice(-8).toUpperCase()}`)} className="btn btn-secondary text-xs h-auto py-2">
                                   <FiPrinter size={13} /> Invoice
                                 </button>
                                 {!o.isPaid && !isVoid(o) && (
@@ -300,9 +450,16 @@ const ManageOrders = () => {
                                   </button>
                                 )}
                                 {o.isPaid && !o.isDelivered && !isVoid(o) && (
-                                  <button onClick={() => markDelivered(o._id)} style={{ padding: '8px 14px', background: 'var(--info)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                                    <FiTruck size={13} /> Mark Delivered
-                                  </button>
+                                  <>
+                                    {!o.trackingNumber && (
+                                      <button onClick={() => setTrackingModal(o)} style={{ padding: '8px 14px', background: 'var(--brand-primary)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                                        <FiBox size={13} /> Add Tracking
+                                      </button>
+                                    )}
+                                    <button onClick={() => markDelivered(o._id)} style={{ padding: '8px 14px', background: 'var(--info)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                                      <FiTruck size={13} /> Mark Delivered
+                                    </button>
+                                  </>
                                 )}
                                 {!o.isDelivered && !isVoid(o) && (
                                   <button onClick={() => setCancelModal(o)} style={{ padding: '8px 14px', background: 'rgba(229,62,62,0.1)', color: 'var(--danger)', border: '1.5px solid rgba(229,62,62,0.25)', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
@@ -321,6 +478,18 @@ const ManageOrders = () => {
             })}
           </div>
         )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8 gap-2">
+            {Array.from({ length: totalPages }).map((_, idx) => (
+              <button key={idx} onClick={() => setPage(idx + 1)} className={`w-8 h-8 rounded-lg text-sm font-bold ${page === idx + 1 ? 'bg-[var(--brand-secondary)] text-white' : 'bg-white text-gray-500 border hover:bg-gray-50'}`}>
+                {idx + 1}
+              </button>
+            ))}
+          </div>
+        )}
+
       </div>
 
       {/* Cancel Modal */}
@@ -360,6 +529,39 @@ const ManageOrders = () => {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Tracking Modal */}
+      <AnimatePresence>
+        {trackingModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(27,47,110,0.45)', backdropFilter: 'blur(12px)' }}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              style={{ background: 'var(--bg-surface)', borderRadius: 'var(--radius-lg)', width: '100%', maxWidth: 440, padding: 24, boxShadow: 'var(--shadow-lg)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', margin: 0 }}>Add Tracking Info</h3>
+                <button onClick={() => setTrackingModal(null)} style={{ padding: 8, background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', borderRadius: 8 }}><FiX size={16} /></button>
+              </div>
+              <form onSubmit={handleAddTracking} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Shipping Provider</label>
+                  <input required value={shippingProv} onChange={e=>setShippingProv(e.target.value)} type="text" placeholder="e.g. BlueDart, Delhivery" className="w-full p-3 border rounded-xl" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Tracking Number</label>
+                  <input required value={trackingNum} onChange={e=>setTrackingNum(e.target.value)} type="text" placeholder="Tracking Number" className="w-full p-3 border rounded-xl" />
+                </div>
+                <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                  <button type="button" onClick={() => setTrackingModal(null)} className="btn btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>Cancel</button>
+                  <button type="submit" disabled={submitting}
+                    style={{ flex: 1.5, padding: '12px', background: 'var(--brand-primary)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}>
+                    {submitting ? 'Saving…' : 'Save & Ship'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   )
 }

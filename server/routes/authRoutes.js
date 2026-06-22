@@ -488,7 +488,7 @@ router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, 
 
     const totalCount = await User.countDocuments();
     const users = await User.find()
-      .select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint -refreshTokens')
+      .select('-password -resetPasswordToken -resetPasswordExpire -resetPasswordFingerprint')
       .skip(skip).limit(limit).lean();
 
     const orders = await Order.aggregate([

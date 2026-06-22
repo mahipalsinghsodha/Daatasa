@@ -37,7 +37,7 @@ const FAQS = [
   { q: 'How long does standard delivery take?', a: 'Standard delivery takes 3–5 business days across most cities in India. Metro cities typically receive orders within 2–3 business days.' },
   { q: 'What is your return and refund policy?', a: 'We accept returns within 7 days of delivery for any quality-related issue. Refunds are processed within 5–7 business days to your original payment method.' },
   { q: 'How do I track my order?', a: 'Once your order is shipped, you\'ll receive an SMS and email with a tracking link. You can also check your order status in the "My Orders" section of your account.' },
-  { q: 'Is your ghee 100% pure and natural?', a: 'Yes! All our ghee products are made from A2 milk using the traditional bilona (hand-churned) method. No artificial additives, preservatives, or fillers.' },
+  { q: 'Is your ghee 100% pure and natural?', a: 'Yes! All our ghee products are made from Tharparkar cow milk in our Rajasthan village using the traditional bilona (hand-churned) method. No artificial additives, preservatives, or fillers.' },
   { q: 'Do you offer bulk or wholesale pricing?', a: 'Yes, we offer special pricing for bulk orders above 10 kg. Please contact us at wholesale@dhanifresh.com or chat with us for a custom quote.' },
   { q: 'What payment methods do you accept?', a: 'We accept UPI, credit/debit cards, net banking, and Cash on Delivery (COD) for eligible pin codes. All payments are secured by Razorpay.' },
 ]
@@ -150,15 +150,17 @@ export default function Support() {
   }, [])
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesAreaRef.current) {
+      messagesAreaRef.current.scrollTop = messagesAreaRef.current.scrollHeight;
+    }
     setShowScrollBtn(false)
     setIsAtBottom(true)
   }
 
   // ── Auto-scroll only when at bottom ───────────────────────────────────────
   useEffect(() => {
-    if (isAtBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (isAtBottom && messagesAreaRef.current) {
+      messagesAreaRef.current.scrollTop = messagesAreaRef.current.scrollHeight;
     }
   }, [messages])
 
@@ -398,38 +400,26 @@ export default function Support() {
       </Helmet>
 
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
-        <div className="absolute top-10 left-20 w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.30) 0%, transparent 70%)', filter: 'blur(60px)', opacity: 0.5 }} />
-        <div className="absolute inset-0 opacity-[0.04]"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-14 pb-20 text-center">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5"
-              style={{ background: 'rgba(245,166,35,0.18)', border: '1px solid rgba(245,166,35,0.30)' }}>
-              <Headphones size={24} style={{ color: 'var(--gold)' }} />
+      <div className="relative overflow-hidden" style={{ background: 'var(--navy)' }}>
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between">
+          <div>
+            <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+              className="text-3xl sm:text-4xl font-extrabold mb-2 text-white"
+              style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+              DhaniFresh Help Center | 24x7 Support
+            </motion.h1>
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+              className="text-sm sm:text-base" style={{ color: 'rgba(255,255,255,0.7)' }}>
+              We are here to help you with your orders, refunds, and queries.
+            </motion.p>
+          </div>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="hidden sm:flex items-center gap-3 bg-white/10 px-5 py-3 rounded-xl border border-white/20 mt-4 sm:mt-0">
+            <Headphones size={28} style={{ color: 'var(--gold)' }} />
+            <div className="text-left">
+              <div className="text-white font-bold text-sm">Always Online</div>
+              <div className="text-white/60 text-xs">Fastest resolution</div>
             </div>
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border"
-              style={{ background: 'rgba(245,166,35,0.18)', borderColor: 'rgba(245,166,35,0.30)', color: 'var(--gold)' }}>
-              Support Center
-            </span>
           </motion.div>
-          <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
-            className="text-4xl sm:text-5xl font-extrabold mb-3 text-white"
-            style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
-            How can we <span className="shimmer-text">help?</span>
-          </motion.h1>
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
-            className="text-sm sm:text-base max-w-sm mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
-            Get help with your orders, returns, and account.
-          </motion.p>
-        </div>
-
-        <div className="absolute bottom-0 left-0 right-0" style={{ lineHeight: 0 }}>
-          <svg viewBox="0 0 1440 60" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 60 }}>
-            <path d="M0,60 C360,0 1080,0 1440,60 L1440,60 L0,60 Z" fill="var(--bg-base)" />
-          </svg>
         </div>
       </div>
 
@@ -618,22 +608,25 @@ export default function Support() {
                     {/* ─ Step 1: Topic ─ */}
                     {chatStep === 1 && (
                       <>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                           {TOPICS.map(t => (
                             <button
                               key={t.id}
                               onClick={() => handleTopicSelect(t.id)}
                               className="transition-all"
                               style={{
-                                padding: '14px 12px', borderRadius: '14px', cursor: 'pointer',
-                                border: `2px solid ${topic === t.id ? 'var(--gold)' : 'var(--border-color)'}`,
-                                background: topic === t.id ? 'rgba(245,166,35,0.08)' : 'var(--bg-alt)',
-                                textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '2px',
+                                padding: '16px 20px', borderRadius: '8px', cursor: 'pointer',
+                                border: `1px solid ${topic === t.id ? 'var(--navy)' : 'var(--border-color)'}`,
+                                background: topic === t.id ? 'rgba(27,47,110,0.04)' : 'var(--bg-card)',
+                                textAlign: 'left', display: 'flex', alignItems: 'center', gap: '16px',
+                                boxShadow: topic === t.id ? '0 0 0 1px var(--navy)' : 'none',
                               }}
                             >
-                              <span style={{ fontSize: '20px' }}>{t.icon}</span>
-                              <span style={{ fontSize: '13px', fontWeight: 700, color: topic === t.id ? 'var(--gold)' : 'var(--text-primary)' }}>{t.label}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{t.desc}</span>
+                              <span style={{ fontSize: '24px' }}>{t.icon}</span>
+                              <div>
+                                <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>{t.label}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t.desc}</div>
+                              </div>
                             </button>
                           ))}
                         </div>

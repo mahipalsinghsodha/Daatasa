@@ -123,7 +123,7 @@ const ForgotPassword = () => {
     <div className="min-h-screen flex" style={{ background: '#EAF5FB' }}>
       <Helmet>
         <title>Forgot Password — DhaniFresh</title>
-        <meta name="description" content="Reset your DhaniFresh account password to continue shopping premium A2 bilona ghee." />
+        <meta name="description" content="Reset your DhaniFresh account password to continue shopping premium Tharparkar bilona ghee." />
       </Helmet>
 
       {/* Left Column: Visual Brand Identity (Mooly Navy Style) */}

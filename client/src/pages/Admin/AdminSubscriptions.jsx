@@ -105,7 +105,7 @@ const AdminSubscriptions = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 mb-1">Plan Name (e.g. Monthly A2 Milk)</label>
+                    <label className="block text-xs font-bold text-gray-500 mb-1">Plan Name (e.g. Monthly Tharparkar Ghee)</label>
                     <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full p-3 border border-gray-200 rounded-xl outline-none" />
                   </div>
                   <div>

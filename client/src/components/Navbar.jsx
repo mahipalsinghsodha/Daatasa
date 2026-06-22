@@ -110,7 +110,17 @@ const Navbar = () => {
                 boxShadow: '0 4px 14px rgba(245,166,35,0.45)',
               }}
             >
-              <span className="text-lg">🫙</span>
+              {/* Professional SVG Vector Logo */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8 2 5 5 5 9C5 13 12 22 12 22C12 22 19 13 19 9C19 5 16 2 12 2Z" fill="url(#ghee-grad)" />
+                <circle cx="12" cy="9" r="3" fill="#1B2F6E" />
+                <defs>
+                  <linearGradient id="ghee-grad" x1="5" y1="2" x2="19" y2="22" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#FFF4D2" />
+                    <stop offset="1" stopColor="#F5A623" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
             <span className="font-extrabold text-[18px] tracking-tight text-white" style={{ fontFamily: 'var(--font-display)' }}>
               Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
@@ -152,6 +162,7 @@ const Navbar = () => {
                 {[
                   { to: '/admin', label: 'Dashboard' },
                   ...(hasPermission('products') ? [{ to: '/admin/products', label: 'Products' }] : []),
+                  ...(hasPermission('products') ? [{ to: '/admin/reviews', label: 'Reviews' }] : []),
                   ...(hasPermission('products') ? [{ to: '/admin/subscriptions', label: 'Subscriptions' }] : []),
                   ...(hasPermission('orders') ? [{ to: '/admin/orders', label: 'Orders' }] : []),
                   ...(hasPermission('users') ? [{ to: '/admin/users', label: 'Users' }] : []),
@@ -487,7 +498,7 @@ const Navbar = () => {
                     </div>
                     <div>
                       <p className="text-[13px] font-bold text-white">{user.name}</p>
-                      <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.50)' }}>{user.email}</p>
+                      <p className="text-[11px] truncate max-w-[200px]" style={{ color: 'rgba(255,255,255,0.50)' }}>{user.email}</p>
                     </div>
                   </div>
                 )}
@@ -521,6 +532,7 @@ const Navbar = () => {
                   <>
                     <Link to="/admin" className={mobileLinkCls('/admin')}>Dashboard</Link>
                     <Link to="/admin/products" className={mobileLinkCls('/admin/products')}>Products</Link>
+                    <Link to="/admin/reviews" className={mobileLinkCls('/admin/reviews')}>Reviews</Link>
                     <Link to="/admin/orders" className={mobileLinkCls('/admin/orders')}>Orders</Link>
                     <Link to="/admin/users" className={mobileLinkCls('/admin/users')}>Users</Link>
                     <Link to="/admin/analytics" className={mobileLinkCls('/admin/analytics')}>Analytics</Link>

@@ -181,6 +181,14 @@ router.post('/', auth, async (req, res) => {
       });
     }
 
+    if (settings.serviceablePincodes && settings.serviceablePincodes.length > 0) {
+      if (!settings.serviceablePincodes.includes(addr.zipCode.trim())) {
+        return res.status(400).json({
+          message: `Delivery is currently not available for pincode ${addr.zipCode}.`
+        });
+      }
+    }
+
     // 5️⃣ CREATE ORDER DATA
     const orderData = {
       user: req.user._id,
@@ -529,6 +537,75 @@ router.get('/:id', auth, async (req, res) => {
     res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+// ========================================================================
+// ADMIN: EXPORT ORDERS CSV
+// ========================================================================
+router.get('/export/csv', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
+  try {
+    const orders = await Order.find()
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (!orders.length) {
+      return res.status(404).json({ message: 'No orders found to export' });
+    }
+
+    // Prepare CSV header
+    const headers = [
+      'Order ID', 'Date', 'Customer Name', 'Customer Email', 'Customer Phone',
+      'Address', 'City', 'State', 'Zip Code',
+      'Items Count', 'Items Price', 'Tax Price', 'Shipping Price', 'Discount', 'Total Price',
+      'Payment Method', 'Payment Status', 'Delivery Status', 'Tracking Number'
+    ];
+
+    // Escape CSV fields helper
+    const escapeCsv = (str) => {
+      if (str == null) return '';
+      const stringified = String(str);
+      if (stringified.includes(',') || stringified.includes('"') || stringified.includes('\n')) {
+        return `"${stringified.replace(/"/g, '""')}"`;
+      }
+      return stringified;
+    };
+
+    // Prepare CSV rows
+    const rows = orders.map(order => {
+      return [
+        order.invoiceNumber || order._id.toString(),
+        new Date(order.createdAt).toISOString(),
+        order.shippingAddress?.name || order.user?.name || '',
+        order.user?.email || '',
+        order.shippingAddress?.phone || '',
+        order.shippingAddress?.street || '',
+        order.shippingAddress?.city || '',
+        order.shippingAddress?.state || '',
+        order.shippingAddress?.zipCode || '',
+        order.orderItems?.length || 0,
+        order.itemsPrice || 0,
+        order.taxPrice || 0,
+        order.shippingPrice || 0,
+        order.discount || 0,
+        order.totalPrice || 0,
+        order.paymentMethod,
+        order.paymentStatus,
+        order.isDelivered ? 'Delivered' : 'Pending',
+        order.trackingNumber || ''
+      ].map(escapeCsv).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename=orders_export.csv');
+    res.status(200).send(csvContent);
+
+  } catch (error) {
+    console.error('CSV Export Error:', error);
+    res.status(500).json({ message: 'Failed to export orders' });
   }
 });
 

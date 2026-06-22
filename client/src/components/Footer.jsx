@@ -33,9 +33,9 @@ const SOCIALS = [
 ]
 
 const CONTACT_ITEMS = [
-  { Icon: FiMapPin, text: '99 Brooklyn New Street, Mumbai, India' },
+  { Icon: FiMapPin, text: 'Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan' },
   { Icon: FiMail,   text: 'support@dhanifresh.com',  href: 'mailto:support@dhanifresh.com' },
-  { Icon: FiPhone,  text: '+91 (100) 234-5678',      href: 'tel:+911002345678' },
+  { Icon: FiPhone,  text: '+91 7665306403',      href: 'tel:+917665306403' },
 ]
 
 export default function Footer() {
@@ -142,7 +142,7 @@ export default function Footer() {
           </div>
 
           {/* Nav columns */}
-          <div className="lg:col-span-6 grid grid-cols-2 gap-8">
+          <div className="lg:col-span-6 grid grid-cols-2 gap-4 sm:gap-8">
             {NAV_COLS.map(col => (
               <div key={col.title}>
                 <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>

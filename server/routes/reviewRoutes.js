@@ -9,6 +9,32 @@ const Order   = require('../models/Order');
 const auth    = require('../middleware/auth');
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+/*  ADMIN: GET all reviews (paginated)                                         */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.get('/admin', auth, auth.admin, async (req, res) => {
+  try {
+    const page  = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, parseInt(req.query.limit) || 20);
+    const skip  = (page - 1) * limit;
+
+    const [reviews, total] = await Promise.all([
+      Review.find({})
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('user', 'name email avatar')
+        .populate('product', 'name image price')
+        .lean(),
+      Review.countDocuments({}),
+    ]);
+
+    res.json({ reviews, total, page, pages: Math.ceil(total / limit) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 /*  GET reviews for a product                                                  */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.get('/product/:productId', async (req, res) => {
@@ -112,17 +138,30 @@ router.post('/:id/helpful', auth, async (req, res) => {
 });
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+/*  ADMIN: Toggle review visibility                                            */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.put('/admin/:id/toggle', auth, auth.admin, async (req, res) => {
+  try {
+    const review = await Review.findById(req.params.id);
+    if (!review) return res.status(404).json({ message: 'Review not found' });
+    
+    review.isActive = !review.isActive;
+    await review.save(); // triggers recalcProductRating
+    
+    res.json({ message: `Review ${review.isActive ? 'unhidden' : 'hidden'}`, review });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 /*  DELETE review (admin only)                                                 */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.delete('/:id', auth, auth.admin, async (req, res) => {
   try {
-    const review = await Review.findByIdAndUpdate(
-      req.params.id,
-      { isActive: false },
-      { new: true }
-    );
+    const review = await Review.findByIdAndDelete(req.params.id);
     if (!review) return res.status(404).json({ message: 'Review not found' });
-    res.json({ message: 'Review removed' });
+    res.json({ message: 'Review completely deleted' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

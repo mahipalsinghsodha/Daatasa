@@ -1,4 +1,5 @@
 const transporter = require('../config/nodemailer');
+const { generateInvoiceBuffer } = require('../utils/invoiceGenerator');
 
 // ── Premium Email Template System ─────────────────────────────────────────────
 const brandPrimary = '#1B2F6E';
@@ -107,17 +108,14 @@ const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items,
   // Hero image: Beautiful Indian spices/food aesthetic
   const heroImg = 'https://images.unsplash.com/photo-1596797882870-8c33deeac224?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 
-  const invoiceHtmlContent = `
-    <!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;padding:20px;">
-      <h2>Invoice: ${invoiceNumber || sid}</h2>
-      <p>Customer: ${userName}</p>
-      <p>Payment Method: ${paymentMethod}</p>
-      <hr/>
-      ${itemsHtml}
-      <hr/>
-      <h3>Total: ₹${Number(totalPrice).toFixed(2)}</h3>
-    </body></html>
-  `;
+  // Generate PDF Invoice
+  const pdfBuffer = await generateInvoiceBuffer({
+    userName,
+    invoiceNumber: invoiceNumber || sid,
+    paymentMethod,
+    items,
+    totalPrice
+  });
 
   await sendWithRetry({ 
     from: FROM(), 
@@ -126,9 +124,9 @@ const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items,
     html: wrap(body, heroImg),
     attachments: [
       {
-        filename: `invoice_${invoiceNumber || sid}.html`,
-        content: invoiceHtmlContent,
-        contentType: 'text/html'
+        filename: `Invoice_${invoiceNumber || sid}.pdf`,
+        content: pdfBuffer,
+        contentType: 'application/pdf'
       }
     ]
   });
@@ -380,6 +378,99 @@ const sendNewsletterEmail = async ({ to, subject, message }) => {
   });
 };
 
+// ── 11. LOW STOCK ADMIN ALERT ──────────────────────────────────────────────────
+const sendLowStockAlertEmail = async ({ to, products }) => {
+  const itemsHtml = products.map(p => `
+    <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E2E8F0;font-size:14px;">
+      <div style="color:#334155;"><strong>${p.name}</strong></div>
+      <div style="font-weight:700;color:#EF4444;">${p.stock} remaining</div>
+    </div>`).join('');
+
+  const body = `
+    <h2 style="${h2Style}">⚠️ Action Required: Low Stock Alert</h2>
+    <p style="${pStyle}">Hi Admin,</p>
+    <p style="${pStyle}">The following products have dropped to 10 or fewer items in stock. Please restock them to avoid losing potential sales.</p>
+    
+    ${box(`
+      <h3 style="margin:0 0 16px;font-size:13px;font-weight:800;color:#EF4444;text-transform:uppercase;letter-spacing:1px;">Low Stock Products</h3>
+      ${itemsHtml}
+    `)}
+    
+    ${btn('Go to Admin Dashboard', `${CLIENT_URL()}/admin/products`)}
+  `;
+
+  const heroImg = 'https://images.unsplash.com/photo-1580674285054-bed31e145f59?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: `Low Stock Alert: ${products.length} products need restocking`,
+    html: wrap(body, heroImg),
+  });
+};
+
+// ── 12. ABANDONED CART RECOVERY ──────────────────────────────────────────────
+const sendAbandonedCartEmail = async ({ to, userName, cartItems }) => {
+  const itemsHtml = cartItems.map(p => `
+    <div style="display:flex;align-items:center;padding:12px 0;border-bottom:1px solid #E2E8F0;">
+      <div style="flex:1;">
+        <div style="font-size:14px;color:#334155;font-weight:600;">${p.name}</div>
+        <div style="font-size:13px;color:#64748B;">Qty: ${p.quantity}</div>
+      </div>
+    </div>`).join('');
+
+  const body = `
+    <h2 style="${h2Style}">Did you forget something?</h2>
+    <p style="${pStyle}">Hi ${userName},</p>
+    <p style="${pStyle}">We noticed you left some amazing items in your cart. They are still waiting for you! Complete your purchase now before they run out of stock.</p>
+    
+    ${box(`
+      <h3 style="margin:0 0 16px;font-size:13px;font-weight:800;color:#F5A623;text-transform:uppercase;letter-spacing:1px;">Your Cart</h3>
+      ${itemsHtml}
+    `)}
+    
+    <p style="${pStyle}">Use code <strong>COMEBACK10</strong> for 10% off your order.</p>
+    
+    ${btn('Complete Your Purchase', `${CLIENT_URL()}/cart`)}
+  `;
+
+  const heroImg = 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: `We saved your cart, ${userName}! 🛒`,
+    html: wrap(body, heroImg),
+  });
+};
+
+// ── 13. SUPPORT CHAT REPLY ──────────────────────────────────────────────────────
+const sendSupportReplyEmail = async ({ to, userName, agentName, messageContent, sessionId }) => {
+  const body = `
+    <h2 style="${h2Style}">New message from Support</h2>
+    <p style="${pStyle}">Hi ${userName},</p>
+    <p style="${pStyle}"><strong>${agentName}</strong> has replied to your chat session regarding your recent inquiry.</p>
+    
+    ${box(`
+      <p style="margin:0;font-size:15px;color:#1B2F6E;font-style:italic;">"${messageContent}"</p>
+    `)}
+    
+    <p style="${pStyle}">You can reply directly by clicking the button below.</p>
+    
+    ${btn('Reply to Chat', `${CLIENT_URL()}/support?session=${sessionId}`)}
+  `;
+
+  // Hero image: Customer support / friendly aesthetic
+  const heroImg = 'https://images.unsplash.com/photo-1553877522-43269d4ea984?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: `New message from DhaniFresh Support`,
+    html: wrap(body, heroImg),
+  });
+};
+
 module.exports = {
   sendCancelEmail,
   sendBlockEmail,
@@ -391,4 +482,7 @@ module.exports = {
   sendWelcomeEmail,
   sendShippingUpdateEmail,
   sendNewsletterEmail,
+  sendLowStockAlertEmail,
+  sendAbandonedCartEmail,
+  sendSupportReplyEmail,
 };

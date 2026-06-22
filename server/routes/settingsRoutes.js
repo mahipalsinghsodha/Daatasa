@@ -13,6 +13,7 @@ router.get('/', async (req, res) => {
       gstEnabled: settings.gstEnabled,
       freeShippingThreshold: settings.freeShippingThreshold,
       shippingCharge: settings.shippingCharge,
+      serviceablePincodes: settings.serviceablePincodes || [],
     });
   } catch (error) {
     console.error('Settings GET error:', error);
@@ -20,10 +21,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ── PATCH /api/settings  (ADMIN ONLY — update GST/shipping config)
+// ── PATCH /api/settings  (ADMIN ONLY — update GST/shipping/pincode config)
 router.patch('/', auth, auth.admin, async (req, res) => {
   try {
-    const { gstRate, gstEnabled, freeShippingThreshold, shippingCharge } = req.body;
+    const { gstRate, gstEnabled, freeShippingThreshold, shippingCharge, serviceablePincodes } = req.body;
 
     // Validate
     if (gstRate !== undefined) {
@@ -44,6 +45,10 @@ router.patch('/', auth, auth.admin, async (req, res) => {
     if (gstEnabled !== undefined)          update.gstEnabled = Boolean(gstEnabled);
     if (freeShippingThreshold !== undefined) update.freeShippingThreshold = Number(freeShippingThreshold);
     if (shippingCharge !== undefined)      update.shippingCharge = Number(shippingCharge);
+    if (serviceablePincodes !== undefined) {
+      if (!Array.isArray(serviceablePincodes)) return res.status(400).json({ message: 'serviceablePincodes must be an array' });
+      update.serviceablePincodes = serviceablePincodes;
+    }
 
     const settings = await Settings.findByIdAndUpdate(
       'global',
@@ -58,11 +63,30 @@ router.patch('/', auth, auth.admin, async (req, res) => {
         gstEnabled: settings.gstEnabled,
         freeShippingThreshold: settings.freeShippingThreshold,
         shippingCharge: settings.shippingCharge,
+        serviceablePincodes: settings.serviceablePincodes,
       },
     });
   } catch (error) {
     console.error('Settings PATCH error:', error);
     res.status(500).json({ message: 'Failed to update settings' });
+  }
+});
+
+// ── GET /api/settings/pincode/:zip  (PUBLIC — check if a pincode is serviceable)
+router.get('/pincode/:zip', async (req, res) => {
+  try {
+    const settings = await Settings.getGlobal();
+    const zip = req.params.zip?.trim();
+    
+    if (!settings.serviceablePincodes || settings.serviceablePincodes.length === 0) {
+      // Empty array means ALL pincodes are serviceable
+      return res.json({ serviceable: true });
+    }
+    
+    const isServiceable = settings.serviceablePincodes.includes(zip);
+    res.json({ serviceable: isServiceable });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to check pincode' });
   }
 });
 

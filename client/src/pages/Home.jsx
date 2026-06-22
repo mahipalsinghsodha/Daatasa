@@ -64,9 +64,9 @@ const WHY_US = [
 ]
 
 const TESTIMONIALS = [
-  { name: 'Anjali Sharma',    role: 'Home Maker & Mother',          rating: 5, initials: 'AS', color: '#1B2F6E', comment: 'This Bilona Cow Ghee smells exactly like the hand-churned ghee my grandmother used to make. The graininess and the rich aroma are absolutely perfect!' },
-  { name: 'Dr. Ramesh Patel', role: 'Nutritionist & Wellness Coach', rating: 5, initials: 'RP', color: '#38A169', comment: 'Finding genuine, chemical-free A2 Bilona ghee is hard. I tested DhaniFresh myself and the purity is exceptional. Highly recommend to my clients.' },
-  { name: 'Vikram Malhotra',  role: 'Fitness Enthusiast',           rating: 5, initials: 'VM', color: '#E09010', comment: 'I add DhaniFresh ghee to my bullet coffee every morning. It gives sustained energy and the taste is incredible. Quality unmatched!' },
+  { name: 'Anjali Sharma',    role: 'Home Maker & Mother',          rating: 5, initials: 'AS', color: '#1B2F6E', comment: 'This Tharparkar Bilona Ghee smells exactly like the hand-churned ghee my grandmother used to make in Rajasthan. The graininess and the rich aroma are absolutely perfect!' },
+  { name: 'Dr. Ramesh Patel', role: 'Nutritionist & Wellness Coach', rating: 5, initials: 'RP', color: '#38A169', comment: 'Finding genuine, chemical-free ghee from Tharparkar cows is hard. I tested DhaniFresh myself and the purity from their village process is exceptional.' },
+  { name: 'Vikram Malhotra',  role: 'Fitness Enthusiast',           rating: 5, initials: 'VM', color: '#E09010', comment: 'I add DhaniFresh ghee to my bullet coffee every morning. The traditional village preparation gives sustained energy and the taste is incredible.' },
 ]
 
 /* ── Wave SVG dividers ──────────────────────────────────────── */
@@ -94,7 +94,7 @@ const GHEE_STEPS = [
     startTime: 0,
     endTime: 10,
     desc: 'Boiling & Cooling Process',
-    longDesc: 'Farm-fresh A2 milk is boiled in large traditional earthen/metal pots over hot firewood, then slow-cooled to build the culturing foundation.',
+    longDesc: 'Fresh milk from our Tharparkar cows is boiled in mitti ki handi (traditional earthen pots) over slow-burning kanda (cow dung cakes) and babool firewood, capturing the true rustic aroma of Rajasthan.',
     image: '/ghee-step-1.png',
   },
   {
@@ -103,7 +103,7 @@ const GHEE_STEPS = [
     startTime: 10,
     endTime: 20,
     desc: 'Traditional Bilona Churning',
-    longDesc: 'The milk is cultured into curd overnight. We then use a wooden Bilona to churn the curd bidirectionally, separating butter (Makhan) from buttermilk (Chhash).',
+    longDesc: 'The curd is hand-churned before dawn using a wooden Bilona, rotated clockwise and anti-clockwise to separate the nutrient-rich makkhan (butter) from the buttermilk.',
     image: '/ghee-step-2.png',
   },
   {
@@ -129,9 +129,9 @@ const GHEE_STEPS = [
 const GALLERY_ITEMS = [
   {
     id: 1,
-    title: 'Happy Gir Cows',
+    title: 'Happy Tharparkar Cows',
     category: 'Farm',
-    desc: 'Free-range cows grazing in green pastures.',
+    desc: 'Our pure Tharparkar cows lovingly feeding their calves.',
     image: '/gallery-cows.png'
   },
   {
@@ -139,7 +139,7 @@ const GALLERY_ITEMS = [
     title: 'Traditional Wooden Bilona',
     category: 'Process',
     desc: 'Wood churner used to extract fresh butter.',
-    image: '/ghee-step-2.png'
+    image: '/gallery-churn.png'
   },
   {
     id: 3,
@@ -167,7 +167,7 @@ const GALLERY_ITEMS = [
     title: 'DhaniFresh Ghee Jars',
     category: 'Products',
     desc: 'Finished premium granular ghee ready for kitchens.',
-    image: '/ghee-step-4.png'
+    image: '/gallery-jar.png'
   }
 ]
 
@@ -277,7 +277,7 @@ const Home = () => {
     <div className="min-h-screen">
       <Helmet>
         <title>DhaniFresh — Pure Desi Bilona Ghee Online</title>
-        <meta name="description" content="Shop 100% pure, natural Bilona Desi Ghee online at DhaniFresh. Traditional slow-churned A2 cow ghee, buffalo ghee and more. FSSAI certified." />
+        <meta name="description" content="Shop 100% pure, natural Bilona Desi Ghee online at DhaniFresh. Traditional slow-churned Tharparkar cow ghee straight from our Rajasthan village. FSSAI certified." />
         <link rel="canonical" href="https://dhanifresh.in/" />
       </Helmet>
 
@@ -318,7 +318,7 @@ const Home = () => {
 
               <motion.p {...fadeUp(0.16)} className="text-base leading-relaxed mb-8 max-w-lg"
                 style={{ color: 'rgba(255,255,255,0.68)' }}>
-                Crafted from pure farm-fresh milk using the ancient Bilona method. No additives, no shortcuts — just pure, rich, golden ghee delivered to your door across India.
+                Crafted in Khuri, Jaisalmer from pure Tharparkar cow milk using the ancient Vedic Bilona method. Sun-baked earthen pots, wooden churners, and firewood slow-cooking give our ghee its signature golden granularity and unmatched aroma.
               </motion.p>
 
               <motion.div {...fadeUp(0.24)} className="flex flex-wrap gap-3 mb-12">
@@ -448,6 +448,38 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ══════════ FULL-WIDTH COW VIDEO ══════════ */}
+      <section className="relative w-full overflow-hidden bg-[#1B2F6E] mt-16 sm:mt-24" style={{ height: '60vh' }}>
+        {/* Background YouTube Video - desktop only for performance */}
+        <div className="absolute inset-0 overflow-hidden hidden sm:block">
+          <iframe
+            style={{ position: 'absolute', top: '50%', left: '50%', width: '120%', height: '120%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', border: 'none' }}
+            src="https://www.youtube.com/embed/nRbkTi7ge_Q?autoplay=1&mute=1&controls=0&loop=1&playlist=nRbkTi7ge_Q&modestbranding=1&rel=0&playsinline=1"
+            title="Pure Tharparkar Cows"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+        {/* Mobile fallback image */}
+        <div className="absolute inset-0 sm:hidden">
+          <img src="/gallery-cows.png" alt="Tharparkar Cows" className="w-full h-full object-cover opacity-60" />
+        </div>
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1B2F6E]/90 via-[#1B2F6E]/30 to-black/20" />
+        {/* Content */}
+        <div className="absolute inset-0 flex items-end justify-center pb-12 sm:pb-20">
+          <div className="text-center px-4 max-w-4xl">
+            <h2 className="text-3xl sm:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl" style={{ fontFamily: 'var(--font-display)' }}>
+              100% Pure Tharparkar Cows
+            </h2>
+            <p className="text-base sm:text-xl text-white/90 drop-shadow-xl mx-auto max-w-2xl font-medium leading-relaxed">
+              Experience the beautiful, organic lifestyle of our cows. They roam freely in the pure arid environment of Khuri, Jaisalmer, drinking pristine water and grazing naturally.
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* ══════════ CATEGORIES ══════════ */}
       <WaveDown from="#fff" to="#EAF5FB" />
       <section style={{ background: '#EAF5FB', paddingBottom: '80px' }}>
@@ -528,74 +560,9 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ══════════ WHY US ══════════ */}
-      <WaveDown from="#fff" to="#EAF5FB" />
-      <section style={{ background: '#EAF5FB', padding: '60px 0 80px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left: illustration */}
-            <motion.div {...fadeUp(0)} className="relative">
-              <div className="rounded-3xl overflow-hidden aspect-[4/3] flex items-center justify-center relative"
-                style={{ background: 'linear-gradient(135deg, var(--navy) 0%, #2D4499 100%)' }}>
-                {/* Inner decoration */}
-                <div className="absolute top-0 right-0 w-40 h-40 rounded-full opacity-10"
-                  style={{ background: 'white', filter: 'blur(40px)' }} />
-                <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-20"
-                  style={{ background: 'rgba(245,166,35,0.5)', filter: 'blur(30px)' }} />
-
-                <div className="text-center text-white p-8 relative z-10">
-                  <div className="text-5xl sm:text-7xl mb-4 animate-float-slow inline-block">🐄</div>
-                  <div className="text-2xl font-extrabold mb-2" style={{ fontFamily: 'var(--font-display)' }}>Farm Services</div>
-                  <p className="text-sm opacity-70 mb-6">Eco-Friendly Practices on Our Ghee Farm</p>
-                  <div className="grid grid-cols-2 gap-4">
-                    {[{ v: '65+', l: 'Years Experience' }, { v: '99%', l: 'Purity Guaranteed' }].map((s, i) => (
-                      <div key={i} className="text-center p-3 rounded-2xl" style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                        <div className="text-2xl font-extrabold" style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>{s.v}</div>
-                        <div className="text-xs opacity-70 mt-1">{s.l}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Right: content */}
-            <div>
-              <motion.p {...fadeUp(0)} className="section-tag">Farm Services</motion.p>
-              <motion.h2 {...fadeUp(0.08)} className="section-title mb-4">
-                Eco-Friendly Practices on Our Ghee Farm
-              </motion.h2>
-              <motion.p {...fadeUp(0.14)} className="section-sub mb-8">
-                We follow traditional and sustainable methods to ensure our ghee is pure, natural, and ethically produced at every step.
-              </motion.p>
-
-              {WHY_US.map((item, idx) => (
-                <motion.div key={idx} {...fadeUp(0.12 + idx * 0.08)} className="flex items-start gap-4 mb-6">
-                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform hover:scale-110"
-                    style={{ background: item.color, color: item.iconColor, flexShrink: 0 }}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-[15px] font-bold mb-1.5" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>{item.title}</h3>
-                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{item.text}</p>
-                  </div>
-                </motion.div>
-              ))}
-
-              <motion.div {...fadeUp(0.38)}>
-                <Link to="/about"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm mt-2 transition-all hover:scale-105"
-                  style={{ background: 'var(--brand-gradient)', color: 'white', boxShadow: 'var(--shadow-brand)' }}>
-                  <FiArrowRight size={14} /> Read More
-                </Link>
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ══════════ GHEE MAKING PROCESS (BILONA PROCESS & VIDEO SYNC) ══════════ */}
-      <section style={{ background: '#EAF5FB', padding: '0 0 80px' }}>
+      <section style={{ background: '#EAF5FB', padding: '0 0 80px', overflowX: 'hidden' }}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <motion.p {...fadeUp(0)} className="section-tag flex items-center gap-1.5 justify-center">
@@ -609,7 +576,7 @@ const Home = () => {
             </motion.p>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-8 items-stretch">
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
             {/* Left: Video Player Pane (7 cols) */}
             <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl p-4 sm:p-6"
                  style={{ 
@@ -727,7 +694,7 @@ const Home = () => {
             </div>
 
             {/* Right: Stepper Steps list (5 cols) */}
-            <div className="lg:col-span-5 flex flex-col gap-4">
+            <div className="lg:col-span-5 flex flex-col gap-3 w-full min-w-0">
               {GHEE_STEPS.map((step, idx) => {
                 const isActive = activeStep === idx;
                 return (
@@ -757,14 +724,14 @@ const Home = () => {
                           {idx + 1}
                         </div>
                         {idx < GHEE_STEPS.length - 1 && (
-                          <div className="w-0.5 flex-1 my-2 transition-colors duration-300"
+                          <div className="w-0.5 h-4 my-1 transition-colors duration-300"
                                style={{ background: isActive ? 'var(--gold)' : 'rgba(27, 47, 110, 0.12)' }} />
                         )}
                       </div>
 
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <h3 className="text-sm font-bold transition-colors duration-300"
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
+                          <h3 className="text-sm font-bold transition-colors duration-300 min-w-0 flex-1"
                               style={{ color: isActive ? 'var(--navy)' : 'rgba(27,47,110,0.8)' }}>
                             {step.title}
                           </h3>
@@ -790,7 +757,7 @@ const Home = () => {
                             {step.longDesc}
                           </motion.p>
                         ) : (
-                          <p className="text-xs truncate max-w-xs" style={{ color: 'var(--text-muted)' }}>
+                          <p className="text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>
                             {step.longDesc}
                           </p>
                         )}
@@ -1089,11 +1056,11 @@ const Home = () => {
               {/* Title & Description */}
               <div className="text-center mt-6 max-w-xl">
                 <h3 className="text-lg font-bold text-white mb-2">
-                  {videoModalSource === 'local' ? 'Traditional Farm-to-Table Process' : 'Gir Cow A2 Bilona Ghee Making Tour'}
+                  {videoModalSource === 'local' ? 'Traditional Khuri Village Process' : 'Tharparkar Cow Bilona Ghee Making Tour'}
                 </h3>
                 <p className="text-xs text-white/60 leading-relaxed">
                   {videoModalSource === 'local' 
-                    ? 'Watch our farm team process whole A2 milk, cool it naturally, hand-churn it into fresh butter, and gently heat it over firewood.' 
+                    ? 'Watch the artisans of Khuri village process whole Tharparkar milk, set the curd overnight in mitti ki handi, hand-churn it with a wooden bilona in the early morning, and gently heat the makkhan over a chulha.' 
                     : 'Experience a detailed tour of an authentic organic Vedic cow farm, highlighting milk culturing, wooden Bilona hand churning, and traditional clarifying.'}
                 </p>
               </div>

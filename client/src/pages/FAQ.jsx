@@ -9,7 +9,7 @@ const SECTIONS = [
     label: 'Product & Quality',
     emoji: '🔬',
     faqs: [
-      { q: 'What is Bilona Ghee?', a: 'Bilona Ghee is prepared using the traditional Vedic method. Fresh A2 cow milk is boiled, cultured into curd, then hand-churned in wooden vats to extract makkhan (butter). This butter is slow-heated to produce pure, aromatic ghee, retaining maximum nutrients.' },
+      { q: 'What is Bilona Ghee?', a: 'Bilona Ghee is prepared using the traditional Vedic method. Fresh Tharparkar cow milk from our Rajasthan village is boiled, cultured into curd, then hand-churned in wooden vats to extract makkhan (butter). This butter is slow-heated over firewood to produce pure, aromatic ghee, retaining maximum nutrients.' },
       { q: 'Is your ghee lab tested?', a: 'Absolutely. Every batch undergoes rigorous testing in FSSAI-certified laboratories to ensure purity, quality, and compliance with food safety standards. Test reports are available on request.' },
       { q: 'How should I store the ghee?', a: 'Store in a cool, dry place away from direct sunlight. No refrigeration needed. Always use a clean, dry spoon to prevent moisture from entering the jar.' },
     ]

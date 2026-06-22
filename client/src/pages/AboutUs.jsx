@@ -5,22 +5,22 @@ import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 
 const STEPS = [
-  { emoji: '🥛', title: 'Fresh A2 Milk',  desc: 'Sourced from free-grazing desi cows on our partner farms every morning.' },
-  { emoji: '🫙', title: 'Curd & Churn',   desc: 'Milk is cultured into curd, then hand-churned in wooden bilona vats.' },
-  { emoji: '🔥', title: 'Slow-Cooked',    desc: 'Extracted butter is slow-heated over a low flame until golden ghee forms.' },
+  { emoji: '🥛', title: 'Tharparkar Cow Milk',  desc: 'Sourced every morning from our own free-grazing Tharparkar cows foraging in the open desert pastures of Jaisalmer.' },
+  { emoji: '🫙', title: 'Curd & Bilona Churn',   desc: 'Cultured overnight in mitti ki handi, then hand-churned clockwise and anti-clockwise using a traditional wooden bilona.' },
+  { emoji: '🔥', title: 'Chulha Slow-Cooked',    desc: 'The makkhan is slow-cooked over a traditional mud chulha using cow dung cakes and babool wood to lock in the rustic aroma.' },
   { emoji: '✅', title: 'Lab Tested',      desc: 'Every batch passes FSSAI-certified lab tests before dispatch.' },
 ]
 
 const PROMISES = [
   'No preservatives, no artificial colours, no hidden chemicals.',
-  'Our cows graze freely and are never injected with hormones.',
+  'Our Tharparkar cows graze freely on native desert herbs in Jaisalmer and are never injected with hormones.',
   'Every batch is rigorously lab-tested for purity and safety.',
   'Delivered fresh in food-safe, tamper-evident packaging.',
   'Carbon-neutral packaging initiative since 2024.',
 ]
 
 const TIMELINE = [
-  { year: '2019', title: 'The Idea',        desc: 'A family tired of adulterated supermarket ghee decides to go back to roots.' },
+  { year: '2019', title: 'The Idea',        desc: 'Our family in Khuri, Jaisalmer, tired of adulterated supermarket ghee, decides to share our authentic desert village ghee.' },
   { year: '2020', title: 'First Batch',     desc: 'Our first Bilona ghee is made on the farm — sold out in 3 days.' },
   { year: '2021', title: 'Online Launch',   desc: 'DhaniFresh.com goes live. 500 families order in the first month.' },
   { year: '2022', title: 'FSSAI Certified', desc: 'After rigorous lab testing, we earn full FSSAI certification.' },
@@ -78,7 +78,7 @@ export default function AboutUs() {
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
             className="text-sm sm:text-base max-w-md mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
-            Bringing pure traditional Bilona ghee from our farms to your family's table.
+            Bringing the golden essence of the Thar desert — authentic Bilona ghee straight from Khuri, Jaisalmer.
           </motion.p>
         </div>
 
@@ -151,7 +151,7 @@ export default function AboutUs() {
                 <section id="section-1" className="scroll-mt-28">
                   <SectionHeader title="Our Story" />
                   <p className="text-[15px] leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    DhaniFresh was born from a simple frustration — the market was flooded with processed ghee alternatives lacking the rich aroma, texture, and health benefits of traditionally churned ghee. What started as a kitchen experiment became a family mission.
+                    DhaniFresh was born in Khuri, Jaisalmer — a desert village where time-honored traditions are a way of life. We realized the market was flooded with processed ghee lacking the rich aroma and granularity of true Rajasthani bilona ghee. Our family decided to share our authentic, chulha-cooked Tharparkar cow ghee with the world.
                   </p>
                   <p className="text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     We set out to bridge the gap between ancient Vedic wisdom and modern convenience — delivering FSSAI-certified, lab-tested, pure Bilona ghee right to your doorstep. No shortcuts. No additives. Just tradition in every jar.
@@ -242,14 +242,14 @@ export default function AboutUs() {
                     {[...Array(5)].map((_, i) => <FiStar key={i} size={14} style={{ color: 'var(--gold)' }} />)}
                   </div>
                   <p className="text-[15px] leading-relaxed mb-4 italic" style={{ color: 'var(--text-secondary)' }}>
-                    "The aroma when I open the jar is absolutely divine. You can taste the difference — this is how ghee is supposed to be made."
+                    "The aroma when I open the jar reminds me of my grandmother's village in Rajasthan. You can taste the authenticity of Tharparkar cow milk in every spoonful."
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
                       style={{ background: 'var(--gold)', color: 'var(--navy)' }}>P</div>
                     <div>
                       <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Priya Sharma</p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Mumbai · Verified Customer</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Jaipur · Verified Customer</p>
                     </div>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ const ChatMessage = require('../models/ChatMessage');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const { handleBotMessage } = require('./aiBot');
+const { sendSupportReplyEmail } = require('../services/emailService');
 
 // Helper: generate short unique session ID
 const generateSessionId = () => require('crypto').randomBytes(12).toString('hex');
@@ -311,6 +312,59 @@ function registerChatHandlers(io, socket) {
 
       await ChatSession.findOneAndUpdate({ sessionId }, { lastMessageAt: new Date() });
       io.to(`session:${sessionId}`).emit('chat:message', msg);
+
+      // Check if user is offline
+      const sessionData = await ChatSession.findOne({ sessionId });
+      if (sessionData) {
+        let isUserOnline = false;
+        try {
+          if (sessionData.userId) {
+            const userSockets = await io.in(`user:${sessionData.userId}`).fetchSockets();
+            if (userSockets.length > 0) isUserOnline = true;
+          } else {
+            // For guests, check if there are sockets in the session room that belong to guests
+            const sessionSockets = await io.in(`session:${sessionId}`).fetchSockets();
+            isUserOnline = sessionSockets.some(s => !s.user || !['admin', 'superadmin'].includes(s.user.role));
+          }
+        } catch (e) {
+          console.error('[Chat] Error checking socket presence:', e);
+        }
+
+        if (!isUserOnline) {
+          // Send offline email if email exists
+          const email = sessionData.guestEmail || (sessionData.userId && (await User.findById(sessionData.userId)).email);
+          const name = sessionData.guestName || (sessionData.userId && (await User.findById(sessionData.userId)).name) || 'Guest';
+
+          if (email) {
+            sendSupportReplyEmail({
+              to: email,
+              userName: name,
+              agentName: socket.user.name,
+              messageContent: messageType === 'TEXT' ? content.trim() : 'Sent an attachment.',
+              sessionId,
+            }).catch(err => console.error('[Chat] Failed to send offline email:', err));
+          }
+
+          // Create persistent notification for registered users
+          if (sessionData.userId) {
+            try {
+              const notification = await Notification.create({
+                user: sessionData.userId,
+                type: 'CHAT_REPLY',
+                title: 'New message from Support',
+                message: `${socket.user.name}: ${messageType === 'TEXT' ? content.trim() : 'Sent an attachment.'}`,
+                link: `/support?session=${sessionId}`,
+                metadata: { sessionId },
+              });
+              // Emitting just in case they have another tab open in some edge case
+              io.to(`user:${sessionData.userId}`).emit('notification', notification);
+            } catch (err) {
+              console.error('[Chat] Failed to create chat reply notification:', err);
+            }
+          }
+        }
+      }
+
     } catch (error) {
       console.error('[Chat] agent:message error:', error);
     }

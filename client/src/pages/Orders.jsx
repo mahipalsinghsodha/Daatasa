@@ -623,10 +623,10 @@ const Orders = () => {
                   initial={{ y: 16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: i * 0.04 }}
-                  className="rounded-2xl transition-all duration-300 overflow-hidden bg-white hover:shadow-[0_8px_30px_rgba(27,47,110,0.06)] hover:border-slate-300 border border-slate-100 shadow-sm"
+                  className={`rounded-2xl transition-all duration-300 overflow-hidden bg-white hover:shadow-[0_8px_30px_rgba(27,47,110,0.06)] hover:border-slate-300 border shadow-sm ${highlightId === o._id ? 'animate-[pulse_2s_ease-in-out_3]' : ''}`}
                   style={{
-                    border: `1px solid ${isExp ? 'var(--gold)' : '#F1F5F9'}`,
-                    boxShadow: isExp ? 'var(--glow-gold-sm)' : 'var(--shadow-card)'
+                    borderColor: isExp ? 'var(--gold)' : (highlightId === o._id ? 'var(--gold)' : '#F1F5F9'),
+                    boxShadow: isExp ? 'var(--glow-gold-sm)' : (highlightId === o._id ? 'var(--glow-gold-sm)' : 'var(--shadow-card)')
                   }}
                 >
                   {/* Order Row */}

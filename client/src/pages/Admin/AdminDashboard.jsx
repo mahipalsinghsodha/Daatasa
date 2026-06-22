@@ -296,6 +296,7 @@ const AdminDashboard = () => {
         <div className="grid md:grid-cols-2 gap-6">
           <SectionCard title="Management" icon={FiSettings} delay={0.15}>
             {hasPermission('products')   && <QuickCard title="Manage Products"   desc="Add, edit, or remove products"         icon={FiPackage}    to="/admin/products"      delay={0.20} />}
+            {hasPermission('products')   && <QuickCard title="Product Reviews"   desc="Hide or delete customer reviews"       icon={FiStar}       to="/admin/reviews"       delay={0.22} />}
             {hasPermission('orders')     && <QuickCard title="Manage Orders"     desc="View and update order status"          icon={FiShoppingBag}to="/admin/orders"        delay={0.25} />}
             {hasPermission('products')   && <QuickCard title="Subscriptions"     desc="Manage auto-renewing orders"           icon={FiRefreshCw}  to="/admin/subscriptions" delay={0.28} />}
             {hasPermission('users')      && <QuickCard title="Manage Users"      desc="View users, block/unblock accounts"    icon={FiUsers}      to="/admin/users"         delay={0.30} />}

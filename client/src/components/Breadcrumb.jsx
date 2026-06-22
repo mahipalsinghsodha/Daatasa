@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ChevronRight, ArrowLeft, Home } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import { Helmet } from 'react-helmet-async'
 
 // Route map: path → breadcrumb label
 const ROUTE_MAP = {
@@ -89,9 +90,26 @@ export default function Breadcrumb() {
 
   const isAdmin = pathname.startsWith('/admin')
 
+  const schemaMarkup = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": crumbs.map((crumb, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": crumb.label,
+      "item": `${window.location.origin}${crumb.path}`
+    }))
+  }
+
   return (
-    <div
-      className="sticky top-[60px] z-40"
+    <>
+      <Helmet>
+        <script type="application/ld+json">
+          {JSON.stringify(schemaMarkup)}
+        </script>
+      </Helmet>
+      <div
+        className="sticky top-[60px] z-40"
       style={{
         background: 'var(--bg-surface)',
         backdropFilter: 'blur(12px)',
@@ -150,5 +168,6 @@ export default function Breadcrumb() {
         </div>
       </div>
     </div>
+    </>
   )
 }

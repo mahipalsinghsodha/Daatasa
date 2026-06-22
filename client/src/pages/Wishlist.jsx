@@ -279,7 +279,7 @@ const Wishlist = () => {
 
             {/* Category suggestion chips */}
             <div className="flex flex-wrap gap-2.5 justify-center mb-8">
-              {['A2 Bilona Ghee', 'Cow Ghee', 'Buffalo Ghee', 'Best Sellers'].map(cat => (
+              {['Tharparkar Bilona Ghee', 'Cow Ghee', 'Buffalo Ghee', 'Best Sellers'].map(cat => (
                 <Link
                   key={cat}
                   to={`/products?category=${cat.toLowerCase().replace(/ /g, '-')}`}

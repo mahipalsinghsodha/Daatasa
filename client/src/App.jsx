@@ -14,7 +14,6 @@ import 'react-toastify/dist/ReactToastify.css'
 import WhatsAppButton from './components/WhatsAppButton'
 import { useThemeStore } from './store/theme'
 import NotificationDrawer from './components/NotificationDrawer'
-import ChatWidget from './components/chat/ChatWidget'
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
@@ -32,6 +31,7 @@ const Profile         = lazy(() => import('./pages/Profile'))
 const Orders          = lazy(() => import('./pages/Orders'))
 const Checkout        = lazy(() => import('./pages/Checkout'))
 const Support         = lazy(() => import('./pages/Support'))
+const OrderDetail     = lazy(() => import('./pages/OrderDetail'))
 const Wishlist        = lazy(() => import('./pages/Wishlist'))  // ✅ P1: Wishlist page
 const NotFound        = lazy(() => import('./pages/NotFound'))
 
@@ -46,20 +46,21 @@ const FAQ             = lazy(() => import('./pages/FAQ'))
 const CheckoutSubscription = lazy(() => import('./pages/CheckoutSubscription'))
 
 // Admin pages
-const AdminDashboard  = lazy(() => import('./pages/admin/AdminDashboard'))
-const AddProduct      = lazy(() => import('./pages/admin/AddProduct'))
-const ManageOrders    = lazy(() => import('./pages/admin/ManageOrders'))
-const AdminSupport    = lazy(() => import('./pages/admin/AdminSupport'))
-const AdminCoupons    = lazy(() => import('./pages/admin/AdminCoupons'))
-const AdminUsers      = lazy(() => import('./pages/admin/AdminUsers'))
-const AdminCategories = lazy(() => import('./pages/admin/AdminCategories'))
-const AdminProducts   = lazy(() => import('./pages/admin/AdminProducts'))
-const AdminManagement = lazy(() => import('./pages/admin/AdminManagement'))
-const AuditLogs       = lazy(() => import('./pages/admin/AuditLogs'))
-const AdminAnalytics  = lazy(() => import('./pages/admin/AdminAnalytics'))
-const AdminSettings   = lazy(() => import('./pages/admin/AdminSettings'))
-const AdminNewsletters= lazy(() => import('./pages/admin/AdminNewsletters'))
-const AdminSubscriptions = lazy(() => import('./pages/admin/AdminSubscriptions'))
+const AdminDashboard  = lazy(() => import('./pages/Admin/AdminDashboard'))
+const AddProduct      = lazy(() => import('./pages/Admin/AddProduct'))
+const ManageOrders    = lazy(() => import('./pages/Admin/ManageOrders'))
+const AdminReviews    = lazy(() => import('./pages/Admin/AdminReviews'))
+const AdminSupport    = lazy(() => import('./pages/Admin/AdminSupport'))
+const AdminCoupons    = lazy(() => import('./pages/Admin/AdminCoupons'))
+const AdminUsers      = lazy(() => import('./pages/Admin/AdminUsers'))
+const AdminCategories = lazy(() => import('./pages/Admin/AdminCategories'))
+const AdminProducts   = lazy(() => import('./pages/Admin/AdminProducts'))
+const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement'))
+const AuditLogs       = lazy(() => import('./pages/Admin/AuditLogs'))
+const AdminAnalytics  = lazy(() => import('./pages/Admin/AdminAnalytics'))
+const AdminSettings   = lazy(() => import('./pages/Admin/AdminSettings'))
+const AdminNewsletters= lazy(() => import('./pages/Admin/AdminNewsletters'))
+const AdminSubscriptions = lazy(() => import('./pages/Admin/AdminSubscriptions'))
 
 // ─── Guest-Only Route ─────────────────────────────────────────────────────────
 function GuestRoute({ children }) {
@@ -143,6 +144,7 @@ function AnimatedRoutes() {
             {/* ── Protected User ── */}
             <Route path="/profile"  element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/orders"   element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
             <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/support"  element={<ProtectedRoute><Support /></ProtectedRoute>} />
@@ -161,6 +163,7 @@ function AnimatedRoutes() {
             <Route path="/admin/users"            element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/analytics"        element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/settings"          element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin/reviews"          element={<ProtectedRoute adminOnly><AdminReviews /></ProtectedRoute>} />
 
             {/* ── Superadmin ── */}
             <Route path="/admin/manage-admins"    element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminManagement /></ProtectedRoute>} />
@@ -176,21 +179,6 @@ function AnimatedRoutes() {
   )
 }
 
-// ─── Chat Widget (logged-in normal users only) ────────────────────────────────
-function ChatWidgetWrapper() {
-  const { user, loading } = useAuth()
-  const location = useLocation()
-  // Don't show while loading auth
-  if (loading) return null
-  // Don't show for guests (not logged in) — they can use /support page
-  if (!user) return null
-  // Don't show on admin pages
-  if (location.pathname.startsWith('/admin')) return null
-  // Don't show for admin/superadmin users
-  if (user.role === 'admin' || user.role === 'superadmin') return null
-  // Only show for normal logged-in customers
-  return <ChatWidget />
-}
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
@@ -231,7 +219,6 @@ function App() {
                 <Footer />
                 <WhatsAppButton />
                 <NotificationDrawer />
-                <ChatWidgetWrapper />
               </div>
             </Router>
           </CartProvider>
