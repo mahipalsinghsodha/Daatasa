@@ -66,7 +66,7 @@ const ProductCard = ({ product, categories = [] }) => {
       <div className="relative aspect-square overflow-hidden" style={{ background: 'var(--bg-base)' }}>
         <img
           src={clImg(product.image)}
-          alt={`${product.name} — DhaniFresh`}
+          alt={`${product.name} — Daatasa`}
           loading="lazy"
           decoding="async"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"

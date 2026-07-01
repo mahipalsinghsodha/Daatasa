@@ -6,7 +6,7 @@ const TOC = ['Agreement to Terms','Products & Pricing','Your Account','Intellect
 const Terms = () => (
   <PolicyPage icon="📋" accentClass="from-orange-400 to-amber-400" tag="Legal"
     title="Terms & Conditions"
-    subtitle="Please read these terms carefully before using DhaniFresh."
+    subtitle="Please read these terms carefully before using Daatasa."
     lastUpdated={date} toc={TOC}>
 
     <PolicySection id="section-1" title="Agreement to Terms">
@@ -31,11 +31,11 @@ const Terms = () => (
         <PolicyBullet>All activities that occur under your account</PolicyBullet>
         <PolicyBullet>Notifying us immediately of any unauthorized use</PolicyBullet>
       </ul>
-      <PolicyCallout type="warning">Never share your login credentials. DhaniFresh will never ask for your password via email or phone.</PolicyCallout>
+      <PolicyCallout type="warning">Never share your login credentials. Daatasa will never ask for your password via email or phone.</PolicyCallout>
     </PolicySection>
 
     <PolicySection id="section-4" title="Intellectual Property">
-      <p>All content on this website — including text, graphics, logos, images, and software — is the property of DhaniFresh and protected by applicable Indian intellectual property laws. Unauthorized use is prohibited.</p>
+      <p>All content on this website — including text, graphics, logos, images, and software — is the property of Daatasa and protected by applicable Indian intellectual property laws. Unauthorized use is prohibited.</p>
     </PolicySection>
 
     <PolicySection id="section-5" title="Governing Law">
@@ -45,7 +45,7 @@ const Terms = () => (
     <PolicySection id="section-6" title="Contact Us">
       <p>Questions about these Terms?</p>
       <div className="mt-3 inline-block p-4 rounded-2xl" style={{ background: 'var(--bg-alt)', border: '1px solid var(--border-color)' }}>
-        <a href="mailto:support@dhanifresh.com" className="text-sm font-bold hover:underline" style={{ color: 'var(--brand-secondary)' }}>📧 support@dhanifresh.com</a>
+        <a href="mailto:support@daatasa.com" className="text-sm font-bold hover:underline" style={{ color: 'var(--brand-secondary)' }}>📧 support@daatasa.com</a>
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>We respond within 48 hours</p>
       </div>
     </PolicySection>

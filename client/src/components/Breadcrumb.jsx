@@ -44,7 +44,7 @@ function buildCrumbs(pathname) {
 
   if (isProductDetail) {
     const pageTitle   = document.title?.split(' – ')?.[0] || document.title?.split(' | ')?.[0] || 'Product Details'
-    const productName = pageTitle !== 'DhaniFresh' ? pageTitle : 'Product Details'
+    const productName = pageTitle !== 'Daatasa' ? pageTitle : 'Product Details'
     crumbs.unshift({ path: current, label: productName })
     crumbs.unshift({ path: '/products', label: 'Products' })
     crumbs.unshift({ path: '/', label: 'Home' })

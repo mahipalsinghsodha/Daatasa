@@ -5,11 +5,11 @@ const Product = require('../models/Product');
 /**
  * GET /sitemap.xml
  * Dynamically generates a sitemap for public pages + all active products.
- * Should be served at the root level: https://dhanifresh.in/sitemap.xml
+ * Should be served at the root level: https://daatasa.in/sitemap.xml
  */
 router.get('/', async (req, res) => {
   try {
-    const BASE_URL = process.env.CLIENT_URL || 'https://dhanifresh.in';
+    const BASE_URL = process.env.CLIENT_URL || 'https://daatasa.in';
     const now = new Date().toISOString().split('T')[0];
 
     // Fetch all active products

@@ -65,8 +65,8 @@ const WHY_US = [
 
 const TESTIMONIALS = [
   { name: 'Anjali Sharma',    role: 'Home Maker & Mother',          rating: 5, initials: 'AS', color: '#1B2F6E', comment: 'This Tharparkar Bilona Ghee smells exactly like the hand-churned ghee my grandmother used to make in Rajasthan. The graininess and the rich aroma are absolutely perfect!' },
-  { name: 'Dr. Ramesh Patel', role: 'Nutritionist & Wellness Coach', rating: 5, initials: 'RP', color: '#38A169', comment: 'Finding genuine, chemical-free ghee from Tharparkar cows is hard. I tested DhaniFresh myself and the purity from their village process is exceptional.' },
-  { name: 'Vikram Malhotra',  role: 'Fitness Enthusiast',           rating: 5, initials: 'VM', color: '#E09010', comment: 'I add DhaniFresh ghee to my bullet coffee every morning. The traditional village preparation gives sustained energy and the taste is incredible.' },
+  { name: 'Dr. Ramesh Patel', role: 'Nutritionist & Wellness Coach', rating: 5, initials: 'RP', color: '#38A169', comment: 'Finding genuine, chemical-free ghee from Tharparkar cows is hard. I tested Daatasa myself and the purity from their village process is exceptional.' },
+  { name: 'Vikram Malhotra',  role: 'Fitness Enthusiast',           rating: 5, initials: 'VM', color: '#E09010', comment: 'I add Daatasa ghee to my bullet coffee every morning. The traditional village preparation gives sustained energy and the taste is incredible.' },
 ]
 
 /* ── Wave SVG dividers ──────────────────────────────────────── */
@@ -164,7 +164,7 @@ const GALLERY_ITEMS = [
   },
   {
     id: 6,
-    title: 'DhaniFresh Ghee Jars',
+    title: 'Daatasa Ghee Jars',
     category: 'Products',
     desc: 'Finished premium granular ghee ready for kitchens.',
     image: '/gallery-jar.png'
@@ -276,9 +276,9 @@ const Home = () => {
   return (
     <div className="min-h-screen">
       <Helmet>
-        <title>DhaniFresh — Pure Desi Bilona Ghee Online</title>
-        <meta name="description" content="Shop 100% pure, natural Bilona Desi Ghee online at DhaniFresh. Traditional slow-churned Tharparkar cow ghee straight from our Rajasthan village. FSSAI certified." />
-        <link rel="canonical" href="https://dhanifresh.in/" />
+        <title>Daatasa — Pure Desi Bilona Ghee Online</title>
+        <meta name="description" content="Shop 100% pure, natural Bilona Desi Ghee online at Daatasa. Traditional slow-churned Tharparkar cow ghee straight from our Rajasthan village. FSSAI certified." />
+        <link rel="canonical" href="https://daatasa.in/" />
       </Helmet>
 
       {/* ══════════ HERO ══════════ */}
@@ -780,7 +780,7 @@ const Home = () => {
             <motion.p {...fadeUp(0)} className="section-tag">Testimonials</motion.p>
             <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">Trusted by 5,000+ Families</motion.h2>
             <motion.p {...fadeUp(0.16)} className="section-sub max-w-md mx-auto">
-              Here's what our happy families say about the pure aroma and quality of DhaniFresh ghee.
+              Here's what our happy families say about the pure aroma and quality of Daatasa ghee.
             </motion.p>
           </div>
 
@@ -1084,7 +1084,7 @@ const Home = () => {
               <FiZap size={28} />
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold mb-3" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
-              Join the DhaniFresh Family
+              Join the Daatasa Family
             </h2>
             <p className="text-sm sm:text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>
               Subscribe to our newsletter to receive exclusive offers, health tips, and early access to our premium organic products.

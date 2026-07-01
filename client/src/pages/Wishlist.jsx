@@ -197,8 +197,8 @@ const Wishlist = () => {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>My Wishlist — DhaniFresh</title>
-        <meta name="description" content="Your saved DhaniFresh products. Add to cart and enjoy premium Bilona Desi Ghee delivered to your door." />
+        <title>My Wishlist — Daatasa</title>
+        <meta name="description" content="Your saved Daatasa products. Add to cart and enjoy premium Bilona Desi Ghee delivered to your door." />
         <meta name="robots" content="noindex" />
       </Helmet>
 

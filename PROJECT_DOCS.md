@@ -1,6 +1,6 @@
-# DhaniFresh E-Commerce — Complete Project Documentation
+# Daatasa E-Commerce — Complete Project Documentation
 
-Welcome to the **DhaniFresh E-Commerce** project documentation. DhaniFresh is a premium, full-stack web application tailored for selling high-quality A1 and A2 Bilona Ghee. This document covers the architecture, features, setup instructions, and testing guidelines for the entire platform.
+Welcome to the **Daatasa E-Commerce** project documentation. Daatasa is a premium, full-stack web application tailored for selling high-quality A1 and A2 Bilona Ghee. This document covers the architecture, features, setup instructions, and testing guidelines for the entire platform.
 
 ---
 

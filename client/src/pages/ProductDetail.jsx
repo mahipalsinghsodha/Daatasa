@@ -292,27 +292,27 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       {product && (
         <Helmet>
-          <title>{product.name} – DhaniFresh | Premium Bilona Ghee</title>
-          <meta name="description" content={`${product.description?.slice(0, 155)}... Buy ${product.name} online from DhaniFresh. FSSAI certified, lab tested, pan India delivery.`} />
-          <meta property="og:title" content={`${product.name} – DhaniFresh`} />
+          <title>{product.name} – Daatasa | Premium Bilona Ghee</title>
+          <meta name="description" content={`${product.description?.slice(0, 155)}... Buy ${product.name} online from Daatasa. FSSAI certified, lab tested, pan India delivery.`} />
+          <meta property="og:title" content={`${product.name} – Daatasa`} />
           <meta property="og:description" content={product.description?.slice(0, 200)} />
           <meta property="og:image" content={product.image} />
           <meta property="og:type" content="product" />
-          <meta property="og:url" content={`https://dhanifresh.in/products/${product._id}`} />
-          <link rel="canonical" href={`https://dhanifresh.in/products/${product._id}`} />
+          <meta property="og:url" content={`https://daatasa.in/products/${product._id}`} />
+          <link rel="canonical" href={`https://daatasa.in/products/${product._id}`} />
           <script type="application/ld+json">{JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Product',
             name: product.name,
             image: product.image,
             description: product.description,
-            brand: { '@type': 'Brand', name: 'DhaniFresh' },
+            brand: { '@type': 'Brand', name: 'Daatasa' },
             offers: {
               '@type': 'Offer',
               priceCurrency: 'INR',
               price: product.price,
               availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-              url: `https://dhanifresh.in/products/${product._id}`,
+              url: `https://daatasa.in/products/${product._id}`,
             },
             ...(product.rating && {
               aggregateRating: {

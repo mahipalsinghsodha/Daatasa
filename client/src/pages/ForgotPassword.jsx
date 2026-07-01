@@ -122,8 +122,8 @@ const ForgotPassword = () => {
   return (
     <div className="min-h-screen flex" style={{ background: '#EAF5FB' }}>
       <Helmet>
-        <title>Forgot Password — DhaniFresh</title>
-        <meta name="description" content="Reset your DhaniFresh account password to continue shopping premium Tharparkar bilona ghee." />
+        <title>Forgot Password — Daatasa</title>
+        <meta name="description" content="Reset your Daatasa account password to continue shopping premium Tharparkar bilona ghee." />
       </Helmet>
 
       {/* Left Column: Visual Brand Identity (Mooly Navy Style) */}
@@ -137,15 +137,9 @@ const ForgotPassword = () => {
           style={{ background: 'radial-gradient(circle, var(--gold-light) 0%, transparent 70%)' }} />
 
         {/* Top Header */}
-        <Link to="/" className="relative z-10 flex items-center gap-2.5 self-start group">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_4px_12px_rgba(245,166,35,0.35)] group-hover:scale-105 transition-transform"
-            style={{ background: 'var(--gold)' }}>
-            <span className="text-lg">🫙</span>
-          </div>
-          <span className="font-extrabold text-[20px] text-white tracking-tight">
-            Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-          </span>
-        </Link>
+        <Link to="/" className="inline-flex items-center gap-3 mb-14">
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-16 w-auto" />
+          </Link>
 
         {/* Narrative / Focus section */}
         <div className="relative z-10 my-auto max-w-[420px] space-y-6">
@@ -179,7 +173,7 @@ const ForgotPassword = () => {
 
         {/* Footer info */}
         <div className="relative z-10 text-[12px] font-medium text-white/55">
-          © {new Date().getFullYear()} DhaniFresh. Prepared traditionally, delivered modernly.
+          © {new Date().getFullYear()} Daatasa. Prepared traditionally, delivered modernly.
         </div>
       </div>
 
@@ -193,12 +187,9 @@ const ForgotPassword = () => {
         >
           {/* Mobile logo header */}
           <div className="flex flex-col items-center mb-8 lg:hidden">
-            <Link to="/" className="flex items-center gap-2 group mb-2">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gold)' }}>
-                <span className="text-base">🫙</span>
-              </div>
-              <span className="font-extrabold text-[18px] text-[var(--navy)]">Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span></span>
-            </Link>
+            <Link to="/" className="inline-flex items-center gap-3 mb-14">
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-16 w-auto" />
+          </Link>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Password Recovery</p>
           </div>
 

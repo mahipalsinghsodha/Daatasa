@@ -95,7 +95,7 @@ const Register = () => {
     setLoading(true)
     try {
       await register(name.trim(), email.trim(), password)
-      toast.success('Account created! Welcome to DhaniFresh 🎉')
+      toast.success('Account created! Welcome to Daatasa 🎉')
       navigate('/', { replace: true })
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Registration failed. Please try again.')
@@ -134,8 +134,8 @@ const Register = () => {
   return (
     <div className="min-h-screen flex" style={{ background: '#EAF5FB' }}>
       <Helmet>
-        <title>Create Account — DhaniFresh</title>
-        <meta name="description" content="Create a DhaniFresh account to shop pure Bilona ghee online." />
+        <title>Create Account — Daatasa</title>
+        <meta name="description" content="Create a Daatasa account to shop pure Bilona ghee online." />
       </Helmet>
 
       {/* ── Left Panel (Navy Immersive) ── */}
@@ -154,14 +154,8 @@ const Register = () => {
           transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 text-center max-w-md w-full"
         >
-          <Link to="/" className="inline-flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: 'var(--gold)', boxShadow: '0 8px 24px rgba(245,166,35,0.55)' }}>
-              <span className="text-2xl">🫙</span>
-            </div>
-            <span className="text-2xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-            </span>
+          <Link to="/" className="inline-flex items-center gap-3 mb-14">
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-16 w-auto" />
           </Link>
 
           <div className="relative mb-10 inline-block">
@@ -213,13 +207,8 @@ const Register = () => {
           className="w-full max-w-[440px] py-4"
         >
           {/* Mobile logo */}
-          <Link to="/" className="flex lg:hidden items-center gap-2.5 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--navy)' }}>
-              <span className="text-xl">🫙</span>
-            </div>
-            <span className="text-xl font-extrabold" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
-              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-            </span>
+          <Link to="/" className="flex lg:hidden items-center justify-center mb-8">
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-14 w-auto" />
           </Link>
 
           <div className="rounded-3xl p-8 sm:p-10"

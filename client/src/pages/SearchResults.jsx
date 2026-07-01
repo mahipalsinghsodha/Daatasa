@@ -73,7 +73,7 @@ const SearchResults = () => {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>Search results for "{query}" — DhaniFresh</title>
+        <title>Search results for "{query}" — Daatasa</title>
         <meta name="robots" content="noindex, follow" />
       </Helmet>
 

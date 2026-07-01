@@ -12,7 +12,7 @@ export default function RefundPolicy() {
 
       <PolicySection id="section-1" title="Cancellation Policy">
         <p>Orders can be cancelled before they are dispatched. Once an order is shipped, it cannot be cancelled.</p>
-        <PolicyCallout type="info">To request cancellation, email <strong>support@dhanifresh.com</strong> with your Order ID as soon as possible.</PolicyCallout>
+        <PolicyCallout type="info">To request cancellation, email <strong>support@daatasa.com</strong> with your Order ID as soon as possible.</PolicyCallout>
       </PolicySection>
 
       <PolicySection id="section-2" title="Returns & Refunds">
@@ -43,7 +43,7 @@ export default function RefundPolicy() {
           <PolicyBullet>A brief description of the issue</PolicyBullet>
         </ul>
         <div className="mt-4 inline-block p-4 rounded-2xl" style={{ background: 'var(--bg-alt)', border: '1px solid var(--border-color)' }}>
-          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>📧 support@dhanifresh.com</p>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>📧 support@daatasa.com</p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>We respond within 24 hours, Mon–Sat</p>
         </div>
       </PolicySection>

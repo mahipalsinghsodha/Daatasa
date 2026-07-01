@@ -174,7 +174,7 @@ const Checkout = () => {
     const { data: rzrOrder } = await api.post('/api/payment/create-order', { orderId: order._id })
     const rzp = new window.Razorpay({
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      order_id: rzrOrder.id, name: 'Dhani Fresh',
+      order_id: rzrOrder.id, name: 'Daatasa',
       description: 'Premium Ghee Purchase', amount: rzrOrder.amount,
       theme: { color: '#F5A623' }, prefill: { name: user.name, email: user.email },
       handler: async (res) => {

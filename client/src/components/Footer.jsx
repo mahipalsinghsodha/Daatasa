@@ -34,7 +34,7 @@ const SOCIALS = [
 
 const CONTACT_ITEMS = [
   { Icon: FiMapPin, text: 'Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan' },
-  { Icon: FiMail,   text: 'support@dhanifresh.com',  href: 'mailto:support@dhanifresh.com' },
+  { Icon: FiMail,   text: 'support@daatasa.com',  href: 'mailto:support@daatasa.com' },
   { Icon: FiPhone,  text: '+91 7665306403',      href: 'tel:+917665306403' },
 ]
 
@@ -83,13 +83,11 @@ export default function Footer() {
           <div className="lg:col-span-3">
             {/* Logo */}
             <Link to="/" className="inline-flex items-center gap-2.5 mb-7 group">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 group-hover:scale-110"
-                style={{ background: 'var(--gold)', boxShadow: '0 4px 16px rgba(245,166,35,0.45)' }}>
-                <span className="text-xl">🫙</span>
-              </div>
-              <span className="font-extrabold text-xl text-white leading-none" style={{ fontFamily: 'var(--font-display)' }}>
-                Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-              </span>
+              <img 
+                src="/logo_rectangle.png" 
+                alt="Daatasa Logo" 
+                className="h-20 sm:h-24 w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
+              />
             </Link>
 
             <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
@@ -226,8 +224,8 @@ export default function Footer() {
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-2"
           style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
           <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            DhaniFresh Ghee — © Copyright {year} by{' '}
-            <span style={{ color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>DhaniFresh Pvt. Ltd.</span>
+            Daatasa Ghee — © Copyright {year} by{' '}
+            <span style={{ color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>Daatasa Pvt. Ltd.</span>
             {' '}All rights reserved.
           </p>
         </div>

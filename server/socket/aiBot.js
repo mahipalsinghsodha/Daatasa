@@ -17,7 +17,7 @@ const BOT_NAME   = 'Ghee Assistant';
 const BOT_SENDER = 'BOT';
 
 // ─── System Prompt ───────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `You are "Ghee Assistant", a friendly and helpful customer support agent for DhaniFresh, 
+const SYSTEM_PROMPT = `You are "Ghee Assistant", a friendly and helpful customer support agent for Daatasa, 
 an online store selling premium ghee and organic products.
 
 Your capabilities:

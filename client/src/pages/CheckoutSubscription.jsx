@@ -88,9 +88,9 @@ const CheckoutSubscription = () => {
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         subscription_id: subscriptionId,
-        name: 'DhaniFresh',
+        name: 'Daatasa',
         description: plan.name,
-        image: 'https://dhanifresh.in/logo.png', // Optional
+        image: 'https://daatasa.in/logo.png', // Optional
         handler: function (response) {
           // Razorpay returns razorpay_payment_id, razorpay_subscription_id, razorpay_signature
           toast.success('Subscription activated successfully!');

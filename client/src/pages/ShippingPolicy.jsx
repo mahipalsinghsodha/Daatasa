@@ -48,14 +48,14 @@ export default function ShippingPolicy() {
 
       <PolicySection id="section-4" title="Order Tracking">
         <p>You will receive a Shipment Confirmation email with a tracking number once your order ships. The tracking link becomes active within 24 hours of dispatch.</p>
-        <PolicyCallout type="info">Track your order anytime at <strong>My Orders</strong> in your DhaniFresh account.</PolicyCallout>
+        <PolicyCallout type="info">Track your order anytime at <strong>My Orders</strong> in your Daatasa account.</PolicyCallout>
       </PolicySection>
 
       <PolicySection id="section-5" title="Damaged Shipments">
         <p>If your order arrives damaged, please:</p>
         <ul className="mt-3 space-y-2 list-none">
           <PolicyBullet>Take clear photographs of the damaged packaging and product</PolicyBullet>
-          <PolicyBullet>Email us within 48 hours of delivery at support@dhanifresh.com</PolicyBullet>
+          <PolicyBullet>Email us within 48 hours of delivery at support@daatasa.com</PolicyBullet>
           <PolicyBullet>We will arrange a replacement or full refund within 5 business days</PolicyBullet>
         </ul>
       </PolicySection>

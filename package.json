@@ -43,14 +43,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mahipalsinghsodha/DhaniFresh.git"
+    "url": "git+https://github.com/mahipalsinghsodha/Daatasa.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/mahipalsinghsodha/DhaniFresh/issues"
+    "url": "https://github.com/mahipalsinghsodha/Daatasa/issues"
   },
-  "homepage": "https://github.com/mahipalsinghsodha/DhaniFresh#readme"
+  "homepage": "https://github.com/mahipalsinghsodha/Daatasa#readme"
 }

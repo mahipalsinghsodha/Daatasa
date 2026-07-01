@@ -94,8 +94,8 @@ export default function Contact() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>Contact Us — DhaniFresh</title>
-        <meta name="description" content="Get in touch with DhaniFresh. We typically respond within 24 hours on business days." />
+        <title>Contact Us — Daatasa</title>
+        <meta name="description" content="Get in touch with Daatasa. We typically respond within 24 hours on business days." />
       </Helmet>
 
       {/* ── Premium Hero ── */}
@@ -183,7 +183,7 @@ export default function Contact() {
 
           {/* Contact Info */}
           <div className="md:col-span-2 space-y-3">
-            <ContactRow icon={Mail}   label="Email"   value="support@dhanifresh.com" href="mailto:support@dhanifresh.com" />
+            <ContactRow icon={Mail}   label="Email"   value="support@daatasa.com" href="mailto:support@daatasa.com" />
             <ContactRow icon={Phone}  label="Phone"   value="+91 7665306403"          href="tel:+917665306403" />
             <ContactRow icon={MapPin} label="Address" value="Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan" />
 

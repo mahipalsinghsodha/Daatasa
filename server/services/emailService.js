@@ -5,7 +5,7 @@ const { generateInvoiceBuffer } = require('../utils/invoiceGenerator');
 const brandPrimary = '#1B2F6E';
 const brandGold = '#F5A623';
 const CLIENT_URL = () => process.env.CLIENT_URL || 'http://localhost:3000';
-const FROM = () => `"DhaniFresh" <${process.env.SMTP_USER}>`;
+const FROM = () => `"Daatasa" <${process.env.SMTP_USER}>`;
 
 const sendWithRetry = async (mailOptions, retries = 3) => {
   for (let i = 0; i < retries; i++) {
@@ -35,7 +35,7 @@ const wrap = (body, heroImage) => `<!DOCTYPE html>
     <!-- Logo -->
     <div style="text-align:center;margin-top:-32px;">
       <div style="display:inline-block;background:#ffffff;padding:12px 28px;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,0.08);border:1px solid #F1F5F9;">
-         <span style="font-size:24px;font-weight:800;color:${brandPrimary};letter-spacing:-0.5px;">Dhani<span style="color:${brandGold};">Fresh</span></span>
+         <img src="${CLIENT_URL()}/logo_rectangle.png" alt="Daatasa" style="height:48px;width:auto;vertical-align:middle;" />
       </div>
     </div>
     
@@ -48,7 +48,7 @@ const wrap = (body, heroImage) => `<!DOCTYPE html>
     <div style="background:#F8FAFC;padding:32px 40px;text-align:center;border-top:1px solid #E2E8F0;">
        <div style="color:#64748B;font-size:13px;line-height:1.6;">
          Have questions? Reply to this email or contact our support team.<br/>
-         © ${new Date().getFullYear()} DhaniFresh. Crafted with pure love in India.
+         © ${new Date().getFullYear()} Daatasa. Crafted with pure love in India.
        </div>
     </div>
   </div>
@@ -86,7 +86,7 @@ const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items,
   const body = `
     <h2 style="${h2Style}">Your order is confirmed!</h2>
     <p style="${pStyle}">Hi <strong>${userName}</strong>,</p>
-    <p style="${pStyle}">Thank you so much for choosing DhaniFresh! We're thrilled to let you know that we've received your order and our team is already carefully preparing it for you.</p>
+    <p style="${pStyle}">Thank you so much for choosing Daatasa! We're thrilled to let you know that we've received your order and our team is already carefully preparing it for you.</p>
     <p style="${pStyle}">You'll receive another email as soon as your premium Bilona Ghee ships. Until then, here is a summary of what you ordered:</p>
     
     ${box(`
@@ -120,7 +120,7 @@ const sendOrderSuccessEmail = async ({ to, userName, orderId, totalPrice, items,
   await sendWithRetry({ 
     from: FROM(), 
     to, 
-    subject: `Order Confirmed: #${sid} | DhaniFresh`, 
+    subject: `Order Confirmed: #${sid} | Daatasa`, 
     html: wrap(body, heroImg),
     attachments: [
       {
@@ -195,10 +195,10 @@ const sendBlockEmail = async ({ to, userName, isBlocked, reason }) => {
     <p style="${pStyle}">Hi <strong>${userName}</strong>,</p>
     
     ${isBlocked 
-      ? `<p style="${pStyle}">We are writing to inform you that your DhaniFresh account has been temporarily suspended to protect the security of our platform.</p>
+      ? `<p style="${pStyle}">We are writing to inform you that your Daatasa account has been temporarily suspended to protect the security of our platform.</p>
          ${box(`<div style="font-size:14px;color:#EF4444;font-weight:700;">Reason: ${reason || 'Violation of terms or suspicious activity.'}</div>`)}
          <p style="${pStyle}">If you believe this was done in error, please reply to this email and our support team will help resolve the issue immediately.</p>`
-      : `<p style="${pStyle}">Great news! After review, your DhaniFresh account has been fully reinstated.</p>
+      : `<p style="${pStyle}">Great news! After review, your Daatasa account has been fully reinstated.</p>
          <p style="${pStyle}">We apologize for any inconvenience this may have caused. You can now log back in and continue enjoying our premium products.</p>
          ${btn('Log In Now', `${CLIENT_URL()}/login`)}`
     }
@@ -208,7 +208,7 @@ const sendBlockEmail = async ({ to, userName, isBlocked, reason }) => {
     ? 'https://images.unsplash.com/photo-1614064641913-6b71a2eaae37?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80'
     : 'https://images.unsplash.com/photo-1528698827591-e19ccd7bc23d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 
-  await sendWithRetry({ from: FROM(), to, subject: isBlocked ? 'Notice regarding your DhaniFresh account' : 'Your DhaniFresh account is reinstated', html: wrap(body, heroImg) });
+  await sendWithRetry({ from: FROM(), to, subject: isBlocked ? 'Notice regarding your Daatasa account' : 'Your Daatasa account is reinstated', html: wrap(body, heroImg) });
 };
 
 // ── 5. PASSWORD RESET ─────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ const sendPasswordResetEmail = async ({ to, userName, resetUrl }) => {
   const body = `
     <h2 style="${h2Style}">Reset your password</h2>
     <p style="${pStyle}">Hi <strong>${userName}</strong>,</p>
-    <p style="${pStyle}">We received a request to reset the password for your DhaniFresh account. Don't worry, we've got you covered.</p>
+    <p style="${pStyle}">We received a request to reset the password for your Daatasa account. Don't worry, we've got you covered.</p>
     <p style="${pStyle}">Click the button below to securely set a new password. For your security, this link is only valid for <strong>2 minutes</strong>.</p>
     
     ${btn('Securely Reset Password', resetUrl)}
@@ -229,7 +229,7 @@ const sendPasswordResetEmail = async ({ to, userName, resetUrl }) => {
 
   const heroImg = 'https://images.unsplash.com/photo-1510511459019-5efa325f6e80?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 
-  await sendWithRetry({ from: FROM(), to: `${userName} <${to}>`, subject: 'Reset your DhaniFresh password', replyTo: process.env.SMTP_USER, html: wrap(body, heroImg) });
+  await sendWithRetry({ from: FROM(), to: `${userName} <${to}>`, subject: 'Reset your Daatasa password', replyTo: process.env.SMTP_USER, html: wrap(body, heroImg) });
 };
 
 // ── 6. CONTACT FORM — Admin notification ──────────────────────────────────────
@@ -275,7 +275,7 @@ const sendContactAutoReply = async ({ name, email, phone, subject, message }) =>
 
   const heroImg = 'https://images.unsplash.com/photo-1596524430615-b46475ddff6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
 
-  await sendWithRetry({ from: FROM(), to: `${name} <${email}>`, subject: `We've received your message — DhaniFresh`, html: wrap(body, heroImg) });
+  await sendWithRetry({ from: FROM(), to: `${name} <${email}>`, subject: `We've received your message — Daatasa`, html: wrap(body, heroImg) });
 };
 
 // ── 8. WELCOME EMAIL ──────────────────────────────────────────────────────────
@@ -283,7 +283,7 @@ const sendWelcomeEmail = async ({ to, userName }) => {
   const body = `
     <h2 style="${h2Style}">Welcome to the family!</h2>
     <p style="${pStyle}">Hi <strong>${userName}</strong>,</p>
-    <p style="${pStyle}">I'm absolutely thrilled to welcome you to DhaniFresh. When we started this journey, our mission was simple: to bring the purest, most authentic, and deeply nourishing Bilona Ghee back to our kitchen tables.</p>
+    <p style="${pStyle}">I'm absolutely thrilled to welcome you to Daatasa. When we started this journey, our mission was simple: to bring the purest, most authentic, and deeply nourishing Bilona Ghee back to our kitchen tables.</p>
     <p style="${pStyle}">You're not just a customer to us — you're joining a community that values health, tradition, and uncompromising quality.</p>
     
     ${box(`
@@ -301,7 +301,7 @@ const sendWelcomeEmail = async ({ to, userName }) => {
       <span style="display:inline-block;padding:12px 24px;background:#FEF3C7;color:#D97706;font-size:20px;font-weight:900;letter-spacing:2px;border:2px dashed #F5A623;border-radius:12px;">FIRST10</span>
     </div>
     
-    <p style="${pStyle}">Thank you again for trusting us. I can't wait for you to experience the DhaniFresh difference.</p>
+    <p style="${pStyle}">Thank you again for trusting us. I can't wait for you to experience the Daatasa difference.</p>
     
     ${btn('Shop Our Collection', `${CLIENT_URL()}/products`)}
   `;
@@ -312,7 +312,7 @@ const sendWelcomeEmail = async ({ to, userName }) => {
   await sendWithRetry({
     from: FROM(),
     to,
-    subject: `Welcome to DhaniFresh, ${userName}!`,
+    subject: `Welcome to Daatasa, ${userName}!`,
     html: wrap(body, heroImg),
   });
 };
@@ -347,7 +347,7 @@ const sendShippingUpdateEmail = async ({ to, userName, orderId, trackingNumber, 
   await sendWithRetry({
     from: FROM(),
     to,
-    subject: `Your DhaniFresh order #${sid} has been shipped!`,
+    subject: `Your Daatasa order #${sid} has been shipped!`,
     html: wrap(body, heroImg),
   });
 };
@@ -363,7 +363,7 @@ const sendNewsletterEmail = async ({ to, subject, message }) => {
     ${btn('Shop Special Offers', `${CLIENT_URL()}/products`)}
     
     <div style="margin-top: 32px; font-size: 11px; color: #94A3B8; text-align: center;">
-      You are receiving this email because you subscribed to DhaniFresh newsletters.
+      You are receiving this email because you subscribed to Daatasa newsletters.
     </div>
   `;
 
@@ -466,7 +466,7 @@ const sendSupportReplyEmail = async ({ to, userName, agentName, messageContent, 
   await sendWithRetry({
     from: FROM(),
     to,
-    subject: `New message from DhaniFresh Support`,
+    subject: `New message from Daatasa Support`,
     html: wrap(body, heroImg),
   });
 };

@@ -38,7 +38,7 @@ const FAQS = [
   { q: 'What is your return and refund policy?', a: 'We accept returns within 7 days of delivery for any quality-related issue. Refunds are processed within 5–7 business days to your original payment method.' },
   { q: 'How do I track my order?', a: 'Once your order is shipped, you\'ll receive an SMS and email with a tracking link. You can also check your order status in the "My Orders" section of your account.' },
   { q: 'Is your ghee 100% pure and natural?', a: 'Yes! All our ghee products are made from Tharparkar cow milk in our Rajasthan village using the traditional bilona (hand-churned) method. No artificial additives, preservatives, or fillers.' },
-  { q: 'Do you offer bulk or wholesale pricing?', a: 'Yes, we offer special pricing for bulk orders above 10 kg. Please contact us at wholesale@dhanifresh.com or chat with us for a custom quote.' },
+  { q: 'Do you offer bulk or wholesale pricing?', a: 'Yes, we offer special pricing for bulk orders above 10 kg. Please contact us at wholesale@daatasa.com or chat with us for a custom quote.' },
   { q: 'What payment methods do you accept?', a: 'We accept UPI, credit/debit cards, net banking, and Cash on Delivery (COD) for eligible pin codes. All payments are secured by Razorpay.' },
 ]
 
@@ -395,8 +395,8 @@ export default function Support() {
   return (
     <div className="min-h-screen pb-24" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>Support Center — DhaniFresh</title>
-        <meta name="description" content="Get help with your DhaniFresh orders, returns, and account. Browse FAQs or chat with our AI assistant." />
+        <title>Support Center — Daatasa</title>
+        <meta name="description" content="Get help with your Daatasa orders, returns, and account. Browse FAQs or chat with our AI assistant." />
       </Helmet>
 
       {/* ── Hero ── */}
@@ -406,7 +406,7 @@ export default function Support() {
             <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
               className="text-3xl sm:text-4xl font-extrabold mb-2 text-white"
               style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-              DhaniFresh Help Center | 24x7 Support
+              Daatasa Help Center | 24x7 Support
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
               className="text-sm sm:text-base" style={{ color: 'rgba(255,255,255,0.7)' }}>
@@ -561,7 +561,7 @@ export default function Support() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px',
                   }}>🫙</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '15px' }}>DhaniFresh Support</div>
+                    <div style={{ fontWeight: 700, fontSize: '15px' }}>Daatasa Support</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', opacity: 0.9 }}>
                       <span style={{
                         width: '7px', height: '7px', borderRadius: '50%',

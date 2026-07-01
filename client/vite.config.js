@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'DhaniFresh E-commerce',
-        short_name: 'DhaniFresh',
+        name: 'Daatasa E-commerce',
+        short_name: 'Daatasa',
         description: 'Premium Ghee and Fresh Products',
         theme_color: '#ffffff',
         icons: [

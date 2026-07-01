@@ -89,7 +89,7 @@ const NotFound = () => (
             </svg>
           </div>
           <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
-            Dhani<span style={{ color: 'var(--brand-secondary)' }}>Fresh</span>
+            Daatasa
           </span>
         </div>
       </motion.div>

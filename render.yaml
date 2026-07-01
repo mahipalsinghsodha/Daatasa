@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: dhanifresh-api
+    name: daatasa-api
     runtime: node
     rootDir: server
     buildCommand: npm install

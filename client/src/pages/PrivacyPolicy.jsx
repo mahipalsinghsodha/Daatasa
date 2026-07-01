@@ -11,7 +11,7 @@ export default function PrivacyPolicy() {
       lastUpdated={date} toc={TOC}>
 
       <PolicySection id="section-1" title="Information We Collect">
-        <p>At DhaniFresh, we collect information you provide when creating an account, placing an order, or contacting support:</p>
+        <p>At Daatasa, we collect information you provide when creating an account, placing an order, or contacting support:</p>
         <ul className="mt-3 space-y-2 list-none">
           <PolicyBullet>Name, email address, and phone number</PolicyBullet>
           <PolicyBullet>Shipping and billing addresses</PolicyBullet>
@@ -46,13 +46,13 @@ export default function PrivacyPolicy() {
 
       <PolicySection id="section-5" title="Your Rights">
         <p>You have the right to access, correct, or delete your personal data at any time. You may also opt out of marketing communications by clicking "Unsubscribe" in any email we send.</p>
-        <PolicyCallout type="info">To request account deletion or data export, email us at privacy@dhanifresh.com.</PolicyCallout>
+        <PolicyCallout type="info">To request account deletion or data export, email us at privacy@daatasa.com.</PolicyCallout>
       </PolicySection>
 
       <PolicySection id="section-6" title="Contacting Us">
         <p>Questions about this Privacy Policy? Contact us:</p>
         <div className="mt-3 inline-block p-4 rounded-2xl" style={{ background: 'var(--bg-alt)', border: '1px solid var(--border-color)' }}>
-          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>📧 privacy@dhanifresh.com</p>
+          <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>📧 privacy@daatasa.com</p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Response within 48 hours</p>
         </div>
       </PolicySection>

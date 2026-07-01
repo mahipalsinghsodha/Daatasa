@@ -84,10 +84,10 @@ const Products = () => {
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
         <title>{selectedCategory && selectedCategory !== 'all'
-          ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Ghee — DhaniFresh`
-          : 'Buy Pure Desi Ghee Online — DhaniFresh'}</title>
+          ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Ghee — Daatasa`
+          : 'Buy Pure Desi Ghee Online — Daatasa'}</title>
         <meta name="description" content="Shop premium Bilona Desi Ghee online. Traditional Tharparkar cow ghee crafted in our Rajasthan village. FSSAI certified. Free shipping above ₹500. Pan India delivery." />
-        <link rel="canonical" href="https://dhanifresh.in/products" />
+        <link rel="canonical" href="https://daatasa.in/products" />
       </Helmet>
 
       {/* ── Premium Hero Header ── */}

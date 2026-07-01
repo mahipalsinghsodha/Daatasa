@@ -22,7 +22,7 @@ const PROMISES = [
 const TIMELINE = [
   { year: '2019', title: 'The Idea',        desc: 'Our family in Khuri, Jaisalmer, tired of adulterated supermarket ghee, decides to share our authentic desert village ghee.' },
   { year: '2020', title: 'First Batch',     desc: 'Our first Bilona ghee is made on the farm — sold out in 3 days.' },
-  { year: '2021', title: 'Online Launch',   desc: 'DhaniFresh.com goes live. 500 families order in the first month.' },
+  { year: '2021', title: 'Online Launch',   desc: 'Daatasa.com goes live. 500 families order in the first month.' },
   { year: '2022', title: 'FSSAI Certified', desc: 'After rigorous lab testing, we earn full FSSAI certification.' },
   { year: '2023', title: 'Pan India',       desc: 'Now serving 5,000+ families across all major Indian cities.' },
   { year: '2024', title: 'Eco Packaging',   desc: 'Launched biodegradable, carbon-neutral packaging across all products.' },
@@ -49,8 +49,8 @@ export default function AboutUs() {
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>About Us — DhaniFresh Pure Bilona Ghee</title>
-        <meta name="description" content="Learn about DhaniFresh — our story, the traditional Bilona process, and our promise of 100% pure, natural desi ghee." />
+        <title>About Us — Daatasa Pure Bilona Ghee</title>
+        <meta name="description" content="Learn about Daatasa — our story, the traditional Bilona process, and our promise of 100% pure, natural desi ghee." />
       </Helmet>
 
       {/* ── Premium Hero ── */}
@@ -74,7 +74,7 @@ export default function AboutUs() {
           <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
             className="text-4xl sm:text-5xl font-extrabold mb-4 leading-[1.1] text-white"
             style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
-            About <span className="shimmer-text">DhaniFresh</span>
+            About <span className="shimmer-text">Daatasa</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
             className="text-sm sm:text-base max-w-md mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
@@ -151,7 +151,7 @@ export default function AboutUs() {
                 <section id="section-1" className="scroll-mt-28">
                   <SectionHeader title="Our Story" />
                   <p className="text-[15px] leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    DhaniFresh was born in Khuri, Jaisalmer — a desert village where time-honored traditions are a way of life. We realized the market was flooded with processed ghee lacking the rich aroma and granularity of true Rajasthani bilona ghee. Our family decided to share our authentic, chulha-cooked Tharparkar cow ghee with the world.
+                    Daatasa was born in Khuri, Jaisalmer — a desert village where time-honored traditions are a way of life. We realized the market was flooded with processed ghee lacking the rich aroma and granularity of true Rajasthani bilona ghee. Our family decided to share our authentic, chulha-cooked Tharparkar cow ghee with the world.
                   </p>
                   <p className="text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                     We set out to bridge the gap between ancient Vedic wisdom and modern convenience — delivering FSSAI-certified, lab-tested, pure Bilona ghee right to your doorstep. No shortcuts. No additives. Just tradition in every jar.
@@ -221,7 +221,7 @@ export default function AboutUs() {
                 <section id="section-4" className="scroll-mt-28">
                   <SectionHeader title="Our Promise" />
                   <p className="text-[15px] leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
-                    Every jar of DhaniFresh ghee is a commitment — to you, to the cows, and to the planet:
+                    Every jar of Daatasa ghee is a commitment — to you, to the cows, and to the planet:
                   </p>
                   <ul className="space-y-3">
                     {PROMISES.map((p, i) => (

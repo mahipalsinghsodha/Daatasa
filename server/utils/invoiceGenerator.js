@@ -22,14 +22,23 @@ function generateInvoiceBuffer(invoice) {
 }
 
 function generateHeader(doc) {
+  const path = require('path');
+  const logoPath = path.join(__dirname, '../../client/public/logo_rectangle.png');
+  
+  try {
+    doc.image(logoPath, 50, 45, { width: 140 });
+  } catch (err) {
+    doc
+      .fillColor('#1B2F6E')
+      .fontSize(26)
+      .text('Daatasa', 50, 50);
+  }
+
   doc
-    .fillColor('#1B2F6E')
-    .fontSize(26)
-    .text('DhaniFresh', 50, 50)
     .fontSize(10)
     .fillColor('#64748B')
-    .text('Pure Bilona A1 & A2 Ghee', 50, 80)
-    .text('India', 50, 95)
+    .text('Pure Bilona A1 & A2 Ghee', 50, 105)
+    .text('India', 50, 120)
     .moveDown();
 }
 

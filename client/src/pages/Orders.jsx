@@ -353,7 +353,7 @@ const buildInvoiceHTML = (inv, order) => {
   const discountRow = discount > 0 ? `<tr><td colspan="3" style="color:#10b981">Discount</td><td style="color:#10b981">-₹${discount.toFixed(2)}</td></tr>` : ''
   return `<div style="max-width:760px;margin:0 auto;padding:40px;font-family:sans-serif;color:#111827">
     <div style="display:flex;justify-content:space-between;margin-bottom:32px;border-bottom:2px solid #E6A800;padding-bottom:16px">
-      <div><h1 style="color:#E6A800;margin:0">DhaniFresh</h1><p style="color:#6b7280;margin:4px 0">Pure & Natural Ghee</p></div>
+      <div><h1 style="color:#E6A800;margin:0">Daatasa</h1><p style="color:#6b7280;margin:4px 0">Pure & Natural Ghee</p></div>
       <div style="text-align:right"><h2 style="margin:0">INVOICE</h2><p style="color:#E6A800;font-weight:bold;margin:4px 0">#${(inv.invoiceNumber || order._id.slice(-10)).toUpperCase()}</p></div>
     </div>
     <div style="display:flex;justify-content:space-between;margin-bottom:32px">
@@ -537,8 +537,8 @@ const Orders = () => {
   return (
     <div className="min-h-screen pb-20 bg-slate-50">
       <Helmet>
-        <title>My Orders — DhaniFresh</title>
-        <meta name="description" content="Track and manage your DhaniFresh orders. View order history, cancel, return, or reorder with one click." />
+        <title>My Orders — Daatasa</title>
+        <meta name="description" content="Track and manage your Daatasa orders. View order history, cancel, return, or reorder with one click." />
         <meta name="robots" content="noindex" />
       </Helmet>
 

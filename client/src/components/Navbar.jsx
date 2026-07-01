@@ -103,34 +103,17 @@ const Navbar = () => {
 
           {/* ── Logo ── */}
           <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-2.5 shrink-0 group">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110"
-              style={{
-                background: 'var(--gold)',
-                boxShadow: '0 4px 14px rgba(245,166,35,0.45)',
-              }}
-            >
-              {/* Professional SVG Vector Logo */}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8 2 5 5 5 9C5 13 12 22 12 22C12 22 19 13 19 9C19 5 16 2 12 2Z" fill="url(#ghee-grad)" />
-                <circle cx="12" cy="9" r="3" fill="#1B2F6E" />
-                <defs>
-                  <linearGradient id="ghee-grad" x1="5" y1="2" x2="19" y2="22" gradientUnits="userSpaceOnUse">
-                    <stop stopColor="#FFF4D2" />
-                    <stop offset="1" stopColor="#F5A623" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-            <span className="font-extrabold text-[18px] tracking-tight text-white" style={{ fontFamily: 'var(--font-display)' }}>
-              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-              {isAdmin && (
-                <span className="ml-2 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full"
-                  style={{ background: 'var(--gold)', color: 'var(--navy)' }}>
-                  {user.role === 'superadmin' ? 'Super' : 'Admin'}
-                </span>
-              )}
-            </span>
+            <img 
+              src="/logo_rectangle.png" 
+              alt="Daatasa Logo" 
+              className="h-[52px] sm:h-[60px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
+            />
+            {isAdmin && (
+              <span className="hidden sm:inline-block ml-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full"
+                style={{ background: 'var(--gold)', color: 'var(--navy)' }}>
+                {user.role === 'superadmin' ? 'Super' : 'Admin'}
+              </span>
+            )}
           </Link>
 
           {/* ── Desktop Nav ── */}

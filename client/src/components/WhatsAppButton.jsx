@@ -3,7 +3,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 
 // You can configure this to your actual support number
 const WHATSAPP_NUMBER = '7665306403' // Replace with actual number
-const MESSAGE = encodeURIComponent('Hi DhaniFresh, I need some help!')
+const MESSAGE = encodeURIComponent('Hi Daatasa, I need some help!')
 
 const WhatsAppButton = () => {
   return (

@@ -21,7 +21,7 @@ const SECTIONS = [
     faqs: [
       { q: 'Do you deliver across India?', a: 'Yes, we offer Pan India delivery via trusted courier partners. Orders above ₹500 qualify for free shipping. Below ₹500, a nominal ₹50 fee is applied.' },
       { q: 'How long does delivery take?', a: 'Standard delivery takes 4–7 business days depending on your location. Metro cities usually receive orders in 2–4 business days.' },
-      { q: 'Can I track my order?', a: 'Yes! A tracking link is emailed to you once your order is dispatched. You can also track it in "My Orders" on your DhaniFresh account.' },
+      { q: 'Can I track my order?', a: 'Yes! A tracking link is emailed to you once your order is dispatched. You can also track it in "My Orders" on your Daatasa account.' },
     ]
   },
   {
@@ -39,7 +39,7 @@ const SECTIONS = [
     emoji: '📦',
     faqs: [
       { q: 'Can I place a bulk or wholesale order?', a: 'Yes! Select "Bulk Order" in the contact form and we will share a custom quote within 24 hours.' },
-      { q: 'Can I cancel my order?', a: 'Orders can be cancelled before dispatch. Once shipped, cancellation is not possible. Email support@dhanifresh.com with your Order ID immediately.' },
+      { q: 'Can I cancel my order?', a: 'Orders can be cancelled before dispatch. Once shipped, cancellation is not possible. Email support@daatasa.com with your Order ID immediately.' },
     ]
   },
 ]
@@ -170,7 +170,7 @@ export default function FAQ() {
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
                 ← Back to Home
               </Link>
-              <a href="mailto:support@dhanifresh.com" className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
+              <a href="mailto:support@daatasa.com" className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>

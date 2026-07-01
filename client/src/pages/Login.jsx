@@ -117,8 +117,8 @@ const Login = () => {
   return (
     <div className="min-h-screen flex" style={{ background: '#EAF5FB' }}>
       <Helmet>
-        <title>Login — DhaniFresh</title>
-        <meta name="description" content="Log in to your DhaniFresh account to shop pure Bilona ghee." />
+        <title>Login — Daatasa</title>
+        <meta name="description" content="Log in to your Daatasa account to shop pure Bilona ghee." />
       </Helmet>
 
       {/* ── Left Panel (Navy Immersive) ── */}
@@ -142,13 +142,7 @@ const Login = () => {
         >
           {/* Logo */}
           <Link to="/" className="inline-flex items-center gap-3 mb-14">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center"
-              style={{ background: 'var(--gold)', boxShadow: '0 8px 24px rgba(245,166,35,0.55)' }}>
-              <span className="text-2xl">🫙</span>
-            </div>
-            <span className="text-2xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)' }}>
-              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-            </span>
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-16 w-auto" />
           </Link>
 
           {/* Floating hero visual */}
@@ -196,14 +190,8 @@ const Login = () => {
           className="w-full max-w-[420px]"
         >
           {/* Mobile logo */}
-          <Link to="/" className="flex lg:hidden items-center gap-2.5 mb-8 justify-center">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'var(--navy)', boxShadow: 'var(--shadow-brand)' }}>
-              <span className="text-xl">🫙</span>
-            </div>
-            <span className="text-xl font-extrabold" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
-              Dhani<span style={{ color: 'var(--gold)' }}>Fresh</span>
-            </span>
+          <Link to="/" className="flex lg:hidden items-center justify-center mb-8">
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-14 w-auto" />
           </Link>
 
           {/* Card */}
