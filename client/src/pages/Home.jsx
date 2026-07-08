@@ -282,141 +282,137 @@ const Home = () => {
       </Helmet>
 
       {/* ══════════ HERO ══════════ */}
-      <section className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', minHeight: '94vh', display: 'flex', alignItems: 'center' }}>
+      <section className="relative overflow-hidden">
 
-        {/* Animated blob decorations */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-          <div className="absolute top-20 left-[10%] w-80 h-80 rounded-full animate-blob opacity-20"
-            style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.5) 0%, transparent 70%)', filter: 'blur(60px)' }} />
-          <div className="absolute bottom-20 right-[10%] w-96 h-96 rounded-full animate-blob-delay opacity-15"
-            style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)', filter: 'blur(70px)' }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full animate-blob-delay2 opacity-10"
-            style={{ background: 'radial-gradient(circle, rgba(45,68,153,0.8) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+        {/* Full-bleed background image */}
+        <div className="absolute inset-0">
+          <img
+            src="/herosection.png"
+            alt="Traditional Bilona ghee churning in Khuri, Jaisalmer"
+            className="w-full h-full object-cover"
+          />
+          {/* Mobile/tablet: top-to-bottom dark scrim (text sits over full image width) */}
+          <div className="absolute inset-0 lg:hidden"
+            style={{ background: 'linear-gradient(180deg, rgba(20,30,80,0.94) 0%, rgba(20,30,80,0.90) 45%, rgba(20,30,80,0.85) 100%)' }} />
+          {/* Desktop: left-to-right gradient so the photo shows through on the right */}
+          <div className="absolute inset-0 hidden lg:block"
+            style={{ background: 'linear-gradient(90deg, rgba(20,30,80,0.97) 0%, rgba(20,30,80,0.90) 32%, rgba(20,30,80,0.55) 55%, rgba(20,30,80,0.15) 75%, rgba(20,30,80,0.05) 100%)' }} />
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(180deg, transparent 55%, rgba(20,30,80,0.5) 100%)' }} />
         </div>
 
-        {/* Dot grid overlay */}
-        <div className="absolute inset-0 opacity-[0.04]"
+        {/* Faint mandala/dot decoration, left edge — desktop only */}
+        <div className="absolute -left-24 top-1/2 -translate-y-1/2 w-96 h-96 opacity-[0.06] pointer-events-none hidden lg:block"
+          style={{
+            backgroundImage: 'repeating-radial-gradient(circle, rgba(255,255,255,0.9) 0px, transparent 1px, transparent 14px, rgba(255,255,255,0.9) 15px)',
+            borderRadius: '50%',
+          }} />
+        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
           style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32 relative z-10 w-full">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left text */}
-            <div>
-              <motion.div {...fadeUp(0)}>
-                <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-6"
-                  style={{ background: 'rgba(245,166,35,0.18)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.30)' }}>
-                  <FiZap size={11} /> Premium Dairy Products
-                </span>
-              </motion.div>
+        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 pt-14 pb-16 sm:py-20 lg:py-24 relative z-10 w-full">
+          <div className="max-w-xl">
 
-              <motion.h1 {...fadeUp(0.08)}
-                className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.08] mb-6 text-white"
-                style={{ letterSpacing: '-0.025em', fontFamily: 'var(--font-display)' }}>
-                Pure & Natural<br />
-                <span className="shimmer-text">Desi Bilona</span> Ghee
-              </motion.h1>
+            <motion.div {...fadeUp(0)}>
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-5"
+                style={{ background: 'rgba(245,166,35,0.18)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.30)' }}>
+                <FiAward size={12} /> Authentic Bilona Process
+              </span>
+            </motion.div>
 
-              <motion.p {...fadeUp(0.16)} className="text-base leading-relaxed mb-8 max-w-lg"
-                style={{ color: 'rgba(255,255,255,0.68)' }}>
-                Crafted in Khuri, Jaisalmer from pure Tharparkar cow milk using the ancient Vedic Bilona method. Sun-baked earthen pots, wooden churners, and firewood slow-cooking give our ghee its signature golden granularity and unmatched aroma.
-              </motion.p>
+            {/* Wordmark heading */}
+            <motion.h1 {...fadeUp(0.06)}
+              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-2 text-white"
+              style={{ letterSpacing: '-0.02em', fontFamily: 'var(--font-display)' }}>
+              Daatasa
+            </motion.h1>
 
-              <motion.div {...fadeUp(0.24)} className="flex flex-wrap gap-3 mb-12">
-                <Link to="/products"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-[15px] transition-all hover:scale-105"
-                  style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 6px 24px rgba(245,166,35,0.50)' }}>
-                  Shop Now <FiArrowRight size={16} />
-                </Link>
-                <Link to="/about"
-                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl font-bold text-[15px] transition-all hover:bg-white/12"
-                  style={{ border: '1.5px solid rgba(255,255,255,0.25)', color: 'white' }}>
-                  Our Story
-                </Link>
-              </motion.div>
+            {/* Subheading */}
+            <motion.h2 {...fadeUp(0.12)}
+              className="text-base sm:text-xl lg:text-2xl font-extrabold uppercase leading-snug mb-4 sm:mb-5 text-white"
+              style={{ letterSpacing: '-0.005em' }}>
+              Reclaiming the Vedic Craft of{' '}
+              <span style={{ color: 'var(--gold)' }}>Desi Bilona Ghee</span>, Direct From Khuri
+            </motion.h2>
 
-              {/* Stats row */}
-              <motion.div {...fadeUp(0.32)} className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-                {STATS.map((s, i) => (
-                  <div key={i} className="text-center rounded-2xl p-4"
-                    style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    <div className="text-2xl mb-1">{s.icon}</div>
-                    <div className="text-xl font-extrabold mb-0.5" style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)' }}>{s.value}</div>
-                    <div className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.50)' }}>{s.label}</div>
+            <motion.p {...fadeUp(0.18)} className="text-sm leading-relaxed mb-7 sm:mb-8 max-w-md"
+              style={{ color: 'rgba(255,255,255,0.75)' }}>
+              Experience the rich legacy of Jaisalmer's craft. Our ghee is handcrafted from the A2 milk of free-grazing Tharparkar cows, slow-churned in traditional earthen handis over a controlled wood fire. Taste the pure, granular texture and unmatched aroma of ancient tradition.
+            </motion.p>
+
+            <motion.div {...fadeUp(0.24)} className="flex flex-wrap gap-3 mb-12 sm:mb-14">
+              <Link to="/products"
+                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105"
+                style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 6px 24px rgba(245,166,35,0.50)' }}>
+                Shop Collection
+              </Link>
+              <Link to="/about"
+                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-xl font-bold text-sm transition-all hover:bg-white/12"
+                style={{ border: '1.5px solid rgba(255,255,255,0.30)', color: 'white' }}>
+                Our Heritage Story
+              </Link>
+            </motion.div>
+
+            {/* KEY BENEFITS row */}
+            <motion.div {...fadeUp(0.3)}>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] mb-4"
+                style={{ color: 'rgba(255,255,255,0.6)' }}>
+                Key Benefits
+              </p>
+              <div className="grid grid-cols-2 gap-3 sm:gap-3.5 max-w-2xl">
+                {[
+                  { icon: <FiAward size={17} />, title: 'Free-Grazing', sub: 'Tharparkar Herds' },
+                  { icon: <FiDroplet size={17} />, title: 'Vedic Bilona', sub: 'Craft, Slow-Churned' },
+                  { icon: <FiShield size={17} />, title: 'Unmatched Purity', sub: '& Granular Texture' },
+                  { icon: <FiTruck size={17} />, title: '48hr Express', sub: 'Delivery (Select Zones)' },
+                ].map((b, i) => (
+                  <div key={i} className="rounded-xl p-3.5 flex flex-col gap-2.5 min-w-0"
+                    style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.16)' }}>
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ background: 'rgba(245,166,35,0.20)', color: 'var(--gold)' }}>
+                      {b.icon}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-[11px] font-bold uppercase tracking-wide text-white leading-tight">{b.title}</div>
+                      <div className="text-[10px] uppercase tracking-wide leading-snug mt-0.5 break-words" style={{ color: 'rgba(255,255,255,0.62)' }}>{b.sub}</div>
+                    </div>
                   </div>
                 ))}
-              </motion.div>
-            </div>
-
-            {/* Right — visual card */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.90, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: 0.15 }}
-              className="hidden lg:block"
-            >
-              <div className="relative">
-                {/* Main card */}
-                <div className="rounded-3xl p-10 text-center relative overflow-hidden"
-                  style={{
-                    background: 'rgba(255,255,255,0.08)',
-                    border: '1px solid rgba(255,255,255,0.16)',
-                    backdropFilter: 'blur(16px)',
-                    boxShadow: '0 32px 80px rgba(0,0,0,0.30)',
-                  }}>
-                  <div className="animate-float-slow inline-block">
-                    <div className="text-7xl sm:text-9xl mb-4 drop-shadow-2xl">🫙</div>
-                  </div>
-                  <div className="text-4xl sm:text-5xl font-extrabold text-white mb-1" style={{ letterSpacing: '-0.04em', fontFamily: 'var(--font-display)' }}>100%</div>
-                  <div className="text-lg font-bold uppercase tracking-[0.15em]" style={{ color: 'var(--gold)' }}>Pure Desi Ghee</div>
-                  <div className="mt-5 flex items-center justify-center gap-2">
-                    <span className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: 'rgba(245,166,35,0.20)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.35)' }}>FSSAI Certified</span>
-                    <span className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{ background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.20)' }}>Lab Tested</span>
-                  </div>
-                  <div className="mt-4 flex justify-center gap-1">
-                    {[1,2,3,4,5].map(i => <span key={i} className="text-xl" style={{ color: 'var(--gold)' }}>★</span>)}
-                  </div>
-                  {/* Inner glow */}
-                  <div className="absolute inset-0 rounded-3xl pointer-events-none"
-                    style={{ background: 'radial-gradient(circle at 50% 0%, rgba(245,166,35,0.12) 0%, transparent 60%)' }} />
-                </div>
-
-                {/* Floating card 1 */}
-                <div className="absolute -left-12 top-1/3 rounded-2xl p-4 w-44 animate-float"
-                  style={{ background: 'rgba(255,255,255,0.96)', boxShadow: '0 12px 40px rgba(27,47,110,0.25)', border: '1px solid rgba(255,255,255,0.80)' }}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--success)' }}>
-                      <FiCheck size={11} color="white" />
-                    </div>
-                    <span className="text-xs font-bold" style={{ color: 'var(--navy)' }}>Lab Tested</span>
-                  </div>
-                  <p className="text-[10px] leading-relaxed" style={{ color: 'var(--text-muted)' }}>FSSAI certified, tested for purity at every batch.</p>
-                  <div className="mt-2 flex gap-0.5">
-                    {[1,2,3,4,5].map(i => <span key={i} className="text-amber-400 text-xs">★</span>)}
-                  </div>
-                </div>
-
-                {/* Floating card 2 */}
-                <div className="absolute -right-10 bottom-1/4 rounded-2xl p-4"
-                  style={{ background: 'rgba(255,255,255,0.96)', boxShadow: '0 12px 40px rgba(27,47,110,0.25)', border: '1px solid rgba(255,255,255,0.80)' }}>
-                  <div className="text-2xl font-extrabold mb-0.5" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>5,000+</div>
-                  <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: 'var(--gold)' }}>Happy Families</div>
-                  <div className="mt-2.5 flex -space-x-2">
-                    {['#1B2F6E','#F5A623','#38A169','#3182CE'].map((c, i) => (
-                      <div key={i} className="w-6 h-6 rounded-full border-2 border-white" style={{ background: c }} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Gold glow ring */}
-                <div className="absolute -inset-4 rounded-[36px] pointer-events-none opacity-20"
-                  style={{ background: 'radial-gradient(circle at 50% 50%, rgba(245,166,35,0.6) 0%, transparent 70%)', filter: 'blur(20px)' }} />
               </div>
             </motion.div>
           </div>
         </div>
 
+        {/* Certification badge — desktop only, stacked bottom-right over the image */}
+        <div className="hidden lg:flex flex-col items-center gap-1.5 absolute bottom-8 right-8 z-10 rounded-2xl px-4 py-3"
+          style={{ background: 'rgba(20,30,80,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.18)' }}>
+          <span className="text-[10px] font-bold uppercase tracking-wide text-white/80">Certification</span>
+          <div className="flex gap-2">
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold"
+              style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
+              <FiShield size={11} style={{ color: 'var(--success)' }} /> FSSAI
+            </span>
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold"
+              style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
+              <FiCheck size={11} style={{ color: 'var(--success)' }} /> Lab Tested
+            </span>
+          </div>
+        </div>
+
+        {/* Mobile-only Certification badges — inline, below key benefits, centered */}
+        <div className="flex lg:hidden justify-center gap-2 flex-wrap relative z-10 px-5 pb-20 sm:pb-24">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap"
+            style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
+            <FiShield size={12} style={{ color: 'var(--success)' }} /> FSSAI Certified
+          </span>
+          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap"
+            style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
+            <FiCheck size={12} style={{ color: 'var(--success)' }} /> Lab Tested
+          </span>
+        </div>
+
         {/* Wave bottom */}
-        <div className="absolute bottom-0 left-0 right-0" style={{ lineHeight: 0 }}>
+        <div className="absolute bottom-0 left-0 right-0 z-10" style={{ lineHeight: 0 }}>
           <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 72 }}>
             <path d="M0,80 C360,0 1080,0 1440,80 L1440,80 L0,80 Z" fill="white" />
           </svg>
