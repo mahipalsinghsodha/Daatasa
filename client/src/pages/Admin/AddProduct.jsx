@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/axios'
-import { FiPackage, FiAlertCircle, FiLock, FiStar } from 'react-icons/fi'
+import { FiPackage, FiAlertCircle, FiLock, FiStar, FiUpload } from 'react-icons/fi'
 import CustomDropdown from '../../components/CustomDropdown'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
@@ -47,8 +47,67 @@ const inputStyle = {
   fontWeight: 500,
 }
 
+/* ── Custom Image Upload Input ── */
+const ImageUploadInput = ({ name, value, onChange, placeholder, style, onFocus, onBlur }) => {
+  const [uploading, setUploading] = useState(false)
+
+  const handleUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    const form = new FormData()
+    form.append('image', file)
+    try {
+      const res = await api.post('/api/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      // Trigger onChange manually to update parent state
+      onChange({ target: { name, value: res.data.url, type: 'text' } })
+    } catch (err) {
+      alert('Upload failed: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setUploading(false)
+      e.target.value = '' // Reset input so same file can be selected again
+    }
+  }
+
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <input
+        type="url"
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        style={{ ...style, paddingRight: 40 }}
+        onFocus={onFocus}
+        onBlur={onBlur}
+      />
+      <label style={{
+        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+        cursor: uploading ? 'not-allowed' : 'pointer', color: 'var(--brand-secondary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
+        borderRadius: 8, background: 'rgba(245,166,35,0.1)'
+      }}>
+        {uploading ? (
+          <div className="w-3 h-3 border-2 border-t-transparent border-[var(--brand-secondary)] rounded-full animate-spin" />
+        ) : (
+          <FiUpload size={14} />
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleUpload}
+          disabled={uploading}
+          style={{ display: 'none' }}
+        />
+      </label>
+    </div>
+  )
+}
+
 const AddProduct = () => {
-  const { user, hasPermission }   = useAuth()
+  const { user, hasPermission, loading: authLoading } = useAuth()
   const navigate   = useNavigate()
   const { id }     = useParams()
   const isEdit     = Boolean(id)
@@ -59,12 +118,15 @@ const AddProduct = () => {
   const [categories, setCategories] = useState([])
   const [formData, setFormData] = useState({
     name: '', description: '', category: '',
-    price: '', stock: '', weight: '500g', image: '', featured: false,
+    price: '', stock: '', weight: '500g', image: '', imageLeft: '', imageRight: '', imageTop: '', imagePackage: '', featured: false,
   })
 
   const WEIGHT_OPTIONS = ['250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg']
 
   useEffect(() => {
+    if (authLoading) {
+      return // Wait until auth is settled before fetching data
+    }
     const init = async () => {
       try {
         const catRes = await api.get('/api/categories')
@@ -82,7 +144,7 @@ const AddProduct = () => {
       }
     }
     init()
-  }, [id, isEdit])
+  }, [id, isEdit, authLoading])
 
   const handleChange = e => {
     const { name, value, type, checked } = e.target
@@ -95,11 +157,11 @@ const AddProduct = () => {
     setError('')
     try {
       const payload = { ...formData, price: Number(formData.price), stock: Number(formData.stock) }
-      const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      // Let the Axios interceptor attach the auth token automatically (no manual headers needed)
       if (isEdit) {
-        await api.put(`/api/products/${id}`, payload, { headers })
+        await api.put(`/api/products/${id}`, payload)
       } else {
-        await api.post('/api/products', payload, { headers })
+        await api.post('/api/products', payload)
       }
       navigate('/admin/products')
     } catch (err) {
@@ -110,6 +172,12 @@ const AddProduct = () => {
   }
 
   /* ── Guard states ── */
+  if (authLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-base)' }}>
+      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border-color)', borderTopColor: 'var(--brand-secondary)' }} />
+    </div>
+  )
+
   if (!user) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{
@@ -290,10 +358,38 @@ const AddProduct = () => {
                   style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
               </Field>
 
-              {/* Image URL */}
-              <Field label="Image URL" hint="Paste a Cloudinary or any public image link. Leave blank to use a default placeholder.">
-                <input type="url" name="image" value={formData.image} onChange={handleChange}
-                  placeholder="https://res.cloudinary.com/..."
+              {/* Main Image URL */}
+              <Field label="Main Image URL" hint="Primary product image. Provide URL or upload file.">
+                <ImageUploadInput name="image" value={formData.image || ''} onChange={handleChange}
+                  placeholder="https://..."
+                  style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
+              </Field>
+
+              {/* Left Side Image URL */}
+              <Field label="Left Side Image URL" half>
+                <ImageUploadInput name="imageLeft" value={formData.imageLeft || ''} onChange={handleChange}
+                  placeholder="https://..."
+                  style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
+              </Field>
+
+              {/* Right Side Image URL */}
+              <Field label="Right Side Image URL" half>
+                <ImageUploadInput name="imageRight" value={formData.imageRight || ''} onChange={handleChange}
+                  placeholder="https://..."
+                  style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
+              </Field>
+
+              {/* Top Image URL */}
+              <Field label="Top Image URL" half>
+                <ImageUploadInput name="imageTop" value={formData.imageTop || ''} onChange={handleChange}
+                  placeholder="https://..."
+                  style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
+              </Field>
+
+              {/* Package Image URL */}
+              <Field label="Package Image URL" half>
+                <ImageUploadInput name="imagePackage" value={formData.imagePackage || ''} onChange={handleChange}
+                  placeholder="https://..."
                   style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
               </Field>
 

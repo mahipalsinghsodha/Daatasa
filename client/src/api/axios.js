@@ -15,11 +15,17 @@ const api = axios.create({
 // ─── In-memory token store ────────────────────────────────────────────────────
 // This module is a singleton, so the token persists across components
 // without being accessible from browser devtools/localStorage
-let _accessToken = localStorage.getItem('accessToken');
+const _readToken = (key) => {
+  const v = localStorage.getItem(key);
+  // Guard against the string "null" or "undefined" being stored
+  return (v && v !== 'null' && v !== 'undefined') ? v : null;
+};
+
+let _accessToken = _readToken('accessToken');
 
 export const setAccessToken = (token) => {
-  _accessToken = token;
-  if (token) {
+  _accessToken = token || null;
+  if (token && token !== 'null') {
     localStorage.setItem('accessToken', token);
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
   } else {
@@ -29,14 +35,14 @@ export const setAccessToken = (token) => {
 };
 
 export const setRefreshToken = (token) => {
-  if (token) {
+  if (token && token !== 'null') {
     localStorage.setItem('refreshToken', token);
   } else {
     localStorage.removeItem('refreshToken');
   }
 };
 
-export const getRefreshToken = () => localStorage.getItem('refreshToken');
+export const getRefreshToken = () => _readToken('refreshToken');
 
 export const getAccessToken = () => _accessToken;
 
@@ -78,6 +84,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    // Network error (server down, ECONNREFUSED, etc.) — do NOT attempt token refresh.
+    // Only refresh on actual 401 HTTP responses.
+    if (!error.response) {
+      return Promise.reject(error);
+    }
+
     // Only intercept 401 (Unauthorized) errors
     // Skip: already retried, refresh endpoint itself, login/register endpoints
     if (
@@ -112,10 +124,14 @@ api.interceptors.response.use(
         originalRequest.headers['Authorization'] = `Bearer ${token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed — force logout
+        // Refresh failed — force logout and clear ALL stored tokens
         processQueue(refreshError, null);
         setAccessToken(null);
         setRefreshToken(null);
+        // Also clear any leftover keys
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('token');
 
         // Dispatch global logout event (AuthContext listens to this)
         window.dispatchEvent(new CustomEvent('auth:forced_logout'));

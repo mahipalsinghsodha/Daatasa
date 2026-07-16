@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiPlus, FiSearch, FiBox, FiTrash2, FiSave,
-  FiToggleLeft, FiToggleRight, FiArrowLeft, FiTag, FiUpload
+  FiToggleLeft, FiToggleRight, FiArrowLeft, FiTag, FiUpload, FiImage
 } from 'react-icons/fi'
 import api from '../../api/axios'
 import { toast } from 'react-toastify'
@@ -11,11 +11,58 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
+/* ── Custom Image Upload Input ── */
+const ImageUploadInput = ({ name, value, onChange, placeholder, style, onFocus, onBlur }) => {
+  const [uploading, setUploading] = useState(false)
+
+  const handleUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    const form = new FormData()
+    form.append('image', file)
+    try {
+      const res = await api.post('/api/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      onChange({ target: { name, value: res.data.url, type: 'text' } })
+    } catch (err) {
+      toast.error('Upload failed: ' + (err.response?.data?.message || err.message))
+    } finally {
+      setUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  return (
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <input 
+        type="url" name={name} value={value} onChange={onChange}
+        placeholder={placeholder} style={{ ...style, paddingRight: 40 }} 
+        onFocus={onFocus} onBlur={onBlur} 
+      />
+      <label style={{ 
+        position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+        cursor: uploading ? 'not-allowed' : 'pointer', color: 'var(--brand-secondary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28,
+        borderRadius: 8, background: 'rgba(245,166,35,0.1)'
+      }}>
+        {uploading ? (
+          <div className="w-3 h-3 border-2 border-t-transparent border-[var(--brand-secondary)] rounded-full animate-spin" />
+        ) : (
+          <FiUpload size={14} />
+        )}
+        <input type="file" accept="image/*" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
+      </label>
+    </div>
+  )
+}
+
 const WEIGHT_OPTIONS = ['250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg']
 
 const AdminProducts = () => {
   const navigate = useNavigate()
-  const { hasPermission } = useAuth()
+  const { hasPermission, loading: authLoading } = useAuth()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,8 +73,8 @@ const AdminProducts = () => {
   const [importing, setImporting] = useState(false)
 
   useEffect(() => {
-    if (hasPermission('products')) fetchData()
-  }, [hasPermission])
+    if (!authLoading && hasPermission('products')) fetchData()
+  }, [hasPermission, authLoading])
 
   const fetchData = async () => {
     try {
@@ -52,6 +99,11 @@ const AdminProducts = () => {
       category: prod.category,
       weight: prod.weight || '',
       isActive: prod.isActive ?? true,
+      image: prod.image || '',
+      imageLeft: prod.imageLeft || '',
+      imageRight: prod.imageRight || '',
+      imageTop: prod.imageTop || '',
+      imagePackage: prod.imagePackage || '',
     })
   }
 
@@ -118,6 +170,12 @@ const AdminProducts = () => {
     icon: c.image ? <img src={c.image} alt={c.name} style={{ width: 16, height: 16, borderRadius: 4, objectFit: 'cover' }} /> : <span style={{ fontSize: 14 }}>{c.emoji || '🏷️'}</span>
   }))
 
+  if (authLoading) return (
+    <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-base)' }}>
+      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border-color)', borderTopColor: 'var(--brand-secondary)' }} />
+    </div>
+  )
+
   if (!hasPermission('products')) return (
     <RestrictedAccess title="Access Restricted" message="You don't have permission to manage products." />
   )
@@ -141,6 +199,23 @@ const AdminProducts = () => {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
+            <button onClick={() => {
+              const headers = ['name', 'description', 'price', 'mrp', 'category', 'stock', 'weight', 'isActive', 'featured', 'image', 'imageLeft', 'imageRight', 'imageTop', 'imagePackage'];
+              const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + ['Sample Ghee', 'Pure description', '500', '600', 'a2', '100', '500g', 'true', 'false', 'https://...', 'https://...', 'https://...', 'https://...', 'https://...'].join(",");
+              const encodedUri = encodeURI(csvContent);
+              const link = document.createElement("a");
+              link.setAttribute("href", encodedUri);
+              link.setAttribute("download", "product_import_template.csv");
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+            }}
+              className="btn btn-secondary"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, fontSize: 14, fontWeight: 700, transition: 'all 0.2s', cursor: 'pointer', background: 'rgba(255,255,255,0.1)', color: '#FFF', border: '1px solid rgba(255,255,255,0.2)' }}
+              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+              Template
+            </button>
             <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 12, fontSize: 14, fontWeight: 700, transition: 'all 0.2s', background: 'rgba(255,255,255,0.15)', color: '#FFF' }}
               onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
               onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
@@ -265,11 +340,22 @@ const AdminProducts = () => {
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(selectedProduct._id)} style={{ padding: 10, color: 'var(--text-muted)', background: 'transparent', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
-                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'rgba(229,62,62,0.1)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}>
-                    <FiTrash2 size={18} />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button
+                      onClick={() => navigate(`/admin/products/${selectedProduct._id}/images`)}
+                      title="Manage all product images"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', color: 'var(--brand-secondary)', background: 'rgba(245,166,35,0.1)', border: '1px solid rgba(245,166,35,0.25)', borderRadius: 10, cursor: 'pointer', transition: 'all 0.2s', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font)' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(245,166,35,0.2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(245,166,35,0.1)'}
+                    >
+                      <FiImage size={14} /> Images
+                    </button>
+                    <button onClick={() => handleDelete(selectedProduct._id)} style={{ padding: 10, color: 'var(--text-muted)', background: 'transparent', border: 'none', borderRadius: 8, cursor: 'pointer', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'rgba(229,62,62,0.1)' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'transparent' }}>
+                      <FiTrash2 size={18} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Edit Form */}
@@ -331,6 +417,29 @@ const AdminProducts = () => {
                       style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)', resize: 'none' }}
                       onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
                     />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Main Image URL</label>
+                      <ImageUploadInput name="image" value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }} onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Left Side Image</label>
+                      <ImageUploadInput name="imageLeft" value={form.imageLeft} onChange={e => setForm({ ...form, imageLeft: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }} onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Right Side Image</label>
+                      <ImageUploadInput name="imageRight" value={form.imageRight} onChange={e => setForm({ ...form, imageRight: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }} onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Top Image</label>
+                      <ImageUploadInput name="imageTop" value={form.imageTop} onChange={e => setForm({ ...form, imageTop: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }} onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Package Image</label>
+                      <ImageUploadInput name="imagePackage" value={form.imagePackage} onChange={e => setForm({ ...form, imagePackage: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }} onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
                   </div>
 
                   <label style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 16, background: 'var(--bg-alt)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', cursor: 'pointer', transition: 'background 0.2s' }}

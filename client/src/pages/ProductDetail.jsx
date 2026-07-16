@@ -59,6 +59,7 @@ const ProductDetail = () => {
   const { fetchCartCount } = useCart()
 
   const [product,    setProduct]    = useState(null)
+  const [selectedImage, setSelectedImage] = useState(null)
   const [plans,      setPlans]      = useState([])
   const [related,    setRelated]    = useState([])
   const [reviews, setReviews] = useState([])
@@ -94,6 +95,7 @@ const ProductDetail = () => {
       ])
       const prod = prodRes.data
       setProduct(prod)
+      setSelectedImage(prod.image)
 
       // Check if current user already reviewed
       if (user && prod.reviews?.length) {
@@ -337,7 +339,7 @@ const ProductDetail = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="relative bg-white rounded-2xl border border-gray-100 overflow-hidden aspect-square flex items-center justify-center p-10 group">
+            <div className="relative bg-white rounded-2xl border border-gray-100 overflow-hidden aspect-square flex items-center justify-center p-10 group mb-4">
               {product.featured && (
                 <span className="absolute top-4 left-4 px-3 py-1 text-white text-xs font-bold rounded-full"
                       style={{ background: 'var(--brand-gradient)' }}>
@@ -350,12 +352,47 @@ const ProductDetail = () => {
                 </span>
               )}
               <img
-                src={cloudinaryTransform(product.image, { width: 800, quality: 'auto', format: 'auto' })}
+                src={cloudinaryTransform(selectedImage || product.image, { width: 800, quality: 'auto', format: 'auto' })}
                 alt={product.name}
                 loading="eager"
                 className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
               />
             </div>
+
+            {/* Thumbnail Gallery */}
+            {(() => {
+              const gallery = [
+                { url: product.image, label: 'Main' },
+                { url: product.imageLeft, label: 'Left' },
+                { url: product.imageRight, label: 'Right' },
+                { url: product.imageTop, label: 'Top' },
+                { url: product.imagePackage, label: 'Package' }
+              ].filter(img => img.url);
+
+              if (gallery.length > 1) {
+                return (
+                  <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {gallery.map((img, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setSelectedImage(img.url)}
+                        className={`relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
+                          selectedImage === img.url ? 'border-amber-500 scale-105' : 'border-gray-200 hover:border-amber-300'
+                        }`}
+                        title={img.label}
+                      >
+                        <img
+                          src={cloudinaryTransform(img.url, { width: 150, quality: 'auto', format: 'auto' })}
+                          alt={`${product.name} - ${img.label}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                );
+              }
+              return null;
+            })()}
 
             {/* Trust badges */}
             <div className="grid grid-cols-3 gap-3 mt-4">

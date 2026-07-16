@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import {
   FiPlus, FiPackage, FiShoppingBag, FiAlertCircle, FiTag,
   FiUsers, FiShield, FiActivity, FiBarChart2, FiTrendingUp,
-  FiArrowRight, FiBox, FiSettings, FiZap, FiStar, FiLock, FiMail, FiRefreshCw
+  FiArrowRight, FiBox, FiSettings, FiZap, FiStar, FiLock, FiMail, FiRefreshCw, FiImage
 } from 'react-icons/fi'
 import api from '../../api/axios'
 import { motion } from 'framer-motion'
@@ -296,6 +296,7 @@ const AdminDashboard = () => {
         <div className="grid md:grid-cols-2 gap-6">
           <SectionCard title="Management" icon={FiSettings} delay={0.15}>
             {hasPermission('products')   && <QuickCard title="Manage Products"   desc="Add, edit, or remove products"         icon={FiPackage}    to="/admin/products"      delay={0.20} />}
+            {hasPermission('products')   && <QuickCard title="Media Library"     desc="View and bulk upload images"           icon={FiImage}      to="/admin/media"         delay={0.21} />}
             {hasPermission('products')   && <QuickCard title="Product Reviews"   desc="Hide or delete customer reviews"       icon={FiStar}       to="/admin/reviews"       delay={0.22} />}
             {hasPermission('orders')     && <QuickCard title="Manage Orders"     desc="View and update order status"          icon={FiShoppingBag}to="/admin/orders"        delay={0.25} />}
             {hasPermission('products')   && <QuickCard title="Subscriptions"     desc="Manage auto-renewing orders"           icon={FiRefreshCw}  to="/admin/subscriptions" delay={0.28} />}

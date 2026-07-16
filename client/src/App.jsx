@@ -58,6 +58,8 @@ const AdminProducts   = lazy(() => import('./pages/Admin/AdminProducts'))
 const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement'))
 const AuditLogs       = lazy(() => import('./pages/Admin/AuditLogs'))
 const AdminAnalytics  = lazy(() => import('./pages/Admin/AdminAnalytics'))
+const AdminProductImages = lazy(() => import('./pages/Admin/AdminProductImages'))
+const AdminMedia      = lazy(() => import('./pages/Admin/AdminMedia'))
 const AdminSettings   = lazy(() => import('./pages/Admin/AdminSettings'))
 const AdminNewsletters= lazy(() => import('./pages/Admin/AdminNewsletters'))
 const AdminSubscriptions = lazy(() => import('./pages/Admin/AdminSubscriptions'))
@@ -163,6 +165,8 @@ function AnimatedRoutes() {
             <Route path="/admin/users"            element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
             <Route path="/admin/analytics"        element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/settings"          element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin/media"             element={<ProtectedRoute adminOnly><AdminMedia /></ProtectedRoute>} />
+            <Route path="/admin/products/:id/images" element={<ProtectedRoute adminOnly><AdminProductImages /></ProtectedRoute>} />
             <Route path="/admin/reviews"          element={<ProtectedRoute adminOnly><AdminReviews /></ProtectedRoute>} />
 
             {/* ── Superadmin ── */}
