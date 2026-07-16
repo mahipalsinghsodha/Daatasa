@@ -2,70 +2,154 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinaryStorage = require('multer-storage-cloudinary');
+const streamifier = require('streamifier');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 
-// ── Configure Cloudinary (add these 3 vars to your .env) ──
+// ── Configure Cloudinary ──
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ── Tell multer to upload straight to Cloudinary (v2.2.1 syntax) ──
-const storage = cloudinaryStorage({
-    cloudinary: cloudinary,
-    folder: 'categories',
-    allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
-    transformation: [{ width: 800, crop: 'limit' }],
+// ── Use memory storage — we stream the buffer directly to Cloudinary ──
+const upload = multer({
+    storage: multer.memoryStorage(),
+    fileFilter: (req, file, cb) => {
+        if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    },
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
 
-const fileFilter = (req, file, cb) => {
-    if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image files are allowed'), false);
-    }
-};
+// Helper: stream buffer to Cloudinary and return the result
+const streamUpload = (buffer, options) =>
+    new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+        });
+        streamifier.createReadStream(buffer).pipe(stream);
+    });
 
-const upload = multer({ 
-    storage, 
-    fileFilter,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5 MB limit
-});
-
-// POST /api/upload
+// POST /api/upload (admin only)
 router.post('/', auth, auth.admin, upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        await logAction(req, 'UPLOAD_IMAGE', 'FILE', null, { 
-          filename: req.file.originalname, 
-          url: req.file.path.slice(-30) // Log partial URL for privacy/brevity
+        const result = await streamUpload(req.file.buffer, {
+            folder: 'products',
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            transformation: [{ width: 1200, crop: 'limit', quality: 'auto', fetch_format: 'auto' }],
         });
 
-        // Cloudinary gives us req.file.path which is the public HTTPS URL
-        res.json({ url: req.file.path });
+        await logAction(req, 'UPLOAD_IMAGE', 'FILE', null, {
+            filename: req.file.originalname,
+            url: result.secure_url.slice(-40),
+        });
+
+        res.json({ url: result.secure_url });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Upload error:', error);
+        res.status(500).json({ message: error.message || 'Image upload failed' });
     }
 });
 
-// POST /api/upload/chat
-// For chat image uploads (doesn't require admin, works for users, maybe even guests if no auth is passed, but we should probably just allow it loosely for chat support)
-// For guests, we can't use auth middleware. So we will make it open but rate-limited or at least without auth required, since they are asking for help.
+// POST /api/upload/chat (open — no auth required for guest chat support)
 router.post('/chat', upload.single('image'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No file uploaded' });
         }
-        res.json({ url: req.file.path });
+
+        const result = await streamUpload(req.file.buffer, {
+            folder: 'chat',
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+        });
+
+        res.json({ url: result.secure_url });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Chat upload error:', error);
+        res.status(500).json({ message: error.message || 'Image upload failed' });
+    }
+});
+
+// ── Media Library Routes ──
+
+// GET /api/upload/images (admin only) - Fetch all images from 'products' folder
+router.get('/images', auth, auth.admin, async (req, res) => {
+    try {
+        const { next_cursor } = req.query;
+        // Search for all resources in the 'products' folder
+        const result = await cloudinary.api.resources({
+            type: 'upload',
+            prefix: 'products/', // fetch images starting with this prefix
+            max_results: 50,
+            direction: 'desc',
+            next_cursor: next_cursor || null
+        });
+
+        res.json({
+            images: result.resources,
+            next_cursor: result.next_cursor
+        });
+    } catch (error) {
+        console.error('Fetch images error:', error);
+        res.status(500).json({ message: error.message || 'Failed to fetch images' });
+    }
+});
+
+// POST /api/upload/bulk (admin only) - Upload multiple images
+router.post('/bulk', auth, auth.admin, upload.array('images', 10), async (req, res) => {
+    try {
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No files uploaded' });
+        }
+
+        const uploadPromises = req.files.map(file => 
+            streamUpload(file.buffer, {
+                folder: 'products',
+                allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+                transformation: [{ width: 1200, crop: 'limit', quality: 'auto', fetch_format: 'auto' }],
+            })
+        );
+
+        const results = await Promise.all(uploadPromises);
+        
+        await logAction(req, 'UPLOAD_IMAGE_BULK', 'FILE', null, {
+            count: req.files.length
+        });
+
+        const urls = results.map(r => ({ url: r.secure_url, public_id: r.public_id }));
+        res.json({ urls });
+    } catch (error) {
+        console.error('Bulk upload error:', error);
+        res.status(500).json({ message: error.message || 'Bulk upload failed' });
+    }
+});
+
+// DELETE /api/upload/images (admin only) - Delete an image by public_id
+router.delete('/images', auth, auth.admin, async (req, res) => {
+    try {
+        const { public_id } = req.body;
+        if (!public_id) {
+            return res.status(400).json({ message: 'public_id is required' });
+        }
+        
+        const result = await cloudinary.uploader.destroy(public_id);
+        
+        await logAction(req, 'DELETE_IMAGE', 'FILE', null, { public_id });
+        
+        res.json({ result });
+    } catch (error) {
+        console.error('Delete image error:', error);
+        res.status(500).json({ message: error.message || 'Failed to delete image' });
     }
 });
 

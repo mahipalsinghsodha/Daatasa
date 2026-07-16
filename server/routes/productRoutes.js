@@ -21,12 +21,16 @@ const validateProduct = [
   body('category').notEmpty().withMessage('Category is required'),
   body('stock').optional({ nullable: true }).isInt({ min: 0 }).withMessage('Stock must be a non-negative integer'),
   body('image').optional({ nullable: true }).isString().trim(),
+  body('imageLeft').optional({ nullable: true }).isString().trim(),
+  body('imageRight').optional({ nullable: true }).isString().trim(),
+  body('imageTop').optional({ nullable: true }).isString().trim(),
+  body('imagePackage').optional({ nullable: true }).isString().trim(),
   body('isActive').optional().isBoolean()
 ];
 
 // Whitelist of fields that clients may set on a product
 const ALLOWED_PRODUCT_FIELDS = [
-  'name', 'description', 'price', 'mrp', 'image', 'images', 'category',
+  'name', 'description', 'price', 'mrp', 'image', 'imageLeft', 'imageRight', 'imageTop', 'imagePackage', 'images', 'category',
   'stock', 'weight', 'featured', 'isActive', 'tags'
 ];
 
@@ -157,6 +161,10 @@ router.post('/import/csv', auth, auth.admin, auth.hasPermission('products'), upl
               isActive: row.isActive ? row.isActive.toLowerCase() === 'true' : true,
               featured: row.featured ? row.featured.toLowerCase() === 'true' : false,
               image: row.image?.trim() || '',
+              imageLeft: row.imageLeft?.trim() || '',
+              imageRight: row.imageRight?.trim() || '',
+              imageTop: row.imageTop?.trim() || '',
+              imagePackage: row.imagePackage?.trim() || '',
             };
 
             // Check if product exists (by name)
@@ -231,11 +239,8 @@ router.put('/:id', auth, auth.admin, auth.hasPermission('products'), validatePro
     }
 
     const safeData = pickAllowed(req.body);
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      safeData,
-      { new: true, runValidators: true }
-    );
+    Object.assign(oldProduct, safeData);
+    const product = await oldProduct.save();
 
     await logAction(req, 'UPDATE_PRODUCT', 'PRODUCT', product._id, {
       name: product.name,

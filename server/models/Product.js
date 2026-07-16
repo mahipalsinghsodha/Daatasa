@@ -65,6 +65,22 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: 'https://res.cloudinary.com/demo/image/upload/v1/samples/food/fish-vegetables'
   },
+  imageLeft: {
+    type: String,
+    default: ''
+  },
+  imageRight: {
+    type: String,
+    default: ''
+  },
+  imageTop: {
+    type: String,
+    default: ''
+  },
+  imagePackage: {
+    type: String,
+    default: ''
+  },
   images: [{
     type: String
   }],
