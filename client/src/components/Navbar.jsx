@@ -9,8 +9,9 @@ import { useNotificationStore } from '../store/notifications'
 import api from '../api/axios'
 import {
   ShoppingCart, User, LogOut, Menu, X, Package,
-  Heart, Bell, ChevronDown, Shield, Search, Sparkles, Loader2, HelpCircle
+  Heart, Bell, ChevronDown, Shield, Search, Sparkles, Loader2, HelpCircle, Globe
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 const Navbar = () => {
   const { user, logout, hasPermission } = useAuth()
@@ -23,6 +24,9 @@ const Navbar = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const { t, i18n } = useTranslation()
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
+  const langMenuRef = useRef(null)
   const [suggestions, setSuggestions] = useState([])
   const [isSearching, setIsSearching] = useState(false)
   const userMenuRef = useRef(null)
@@ -60,6 +64,7 @@ const Navbar = () => {
   useEffect(() => {
     const handler = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false)
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target)) setLangMenuOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -71,6 +76,18 @@ const Navbar = () => {
   const isActive = (path) => location.pathname === path
   const isCustomer = !user || (user.role !== 'admin' && user.role !== 'superadmin')
   const isAdmin = user && (user.role === 'admin' || user.role === 'superadmin')
+
+  const handleLanguageChange = async (lang) => {
+    i18n.changeLanguage(lang)
+    setLangMenuOpen(false)
+    if (user) {
+      try {
+        await api.put('/api/auth/profile', { language: lang })
+      } catch (err) {
+        console.error('Failed to update language', err)
+      }
+    }
+  }
 
   const navLinkCls = (path) => `
     relative px-3.5 py-1.5 text-[13.5px] font-semibold rounded-lg transition-all duration-200 group
@@ -121,11 +138,11 @@ const Navbar = () => {
             {isCustomer && (
               <>
                 {[
-                  { to: '/', label: 'Home' },
-                  { to: '/products', label: 'Products' },
-                  { to: '/about', label: 'About Us' },
+                  { to: '/', label: t('navbar.home', 'Home') },
+                  { to: '/products', label: t('navbar.shop', 'Products') },
+                  { to: '/about', label: t('navbar.about', 'About Us') },
                   ...(user ? [{ to: '/support', label: 'Help' }] : []),
-                  { to: '/contact', label: 'Contact' },
+                  { to: '/contact', label: t('navbar.contact', 'Contact') },
                 ].map(({ to, label }) => (
                   <Link key={to} to={to} className={navLinkCls(to)}>
                     {label}
@@ -181,6 +198,58 @@ const Navbar = () => {
 
             {/* Theme toggle */}
             <ThemeToggle />
+
+            {/* Language Switcher */}
+            <div className="relative" ref={langMenuRef}>
+              <button
+                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                className="flex items-center gap-1.5 w-9 h-9 rounded-full justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
+                title={t('navbar.language', 'Language')}
+              >
+                <Globe size={16} />
+              </button>
+              <AnimatePresence>
+                {langMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-32 rounded-xl overflow-hidden z-50 p-1.5"
+                    style={{
+                      background: 'var(--bg-surface)',
+                      border: '1px solid var(--border-color)',
+                      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                    }}
+                  >
+                    <button
+                      onClick={() => handleLanguageChange('en')}
+                      className="w-full text-left px-3 py-2 text-[13px] font-semibold rounded-lg transition-colors"
+                      style={{
+                        color: i18n.language === 'en' ? 'var(--gold)' : 'var(--text-secondary)',
+                        background: i18n.language === 'en' ? 'rgba(245, 166, 35, 0.1)' : 'transparent'
+                      }}
+                      onMouseEnter={e => { if (i18n.language !== 'en') { e.currentTarget.style.background = 'var(--bg-alt)'; e.currentTarget.style.color = 'var(--text-primary)' } }}
+                      onMouseLeave={e => { if (i18n.language !== 'en') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' } }}
+                    >
+                      English
+                    </button>
+                    <button
+                      onClick={() => handleLanguageChange('hi')}
+                      className="w-full text-left px-3 py-2 text-[13px] font-semibold rounded-lg transition-colors"
+                      style={{
+                        color: i18n.language === 'hi' ? 'var(--gold)' : 'var(--text-secondary)',
+                        background: i18n.language === 'hi' ? 'rgba(245, 166, 35, 0.1)' : 'transparent'
+                      }}
+                      onMouseEnter={e => { if (i18n.language !== 'hi') { e.currentTarget.style.background = 'var(--bg-alt)'; e.currentTarget.style.color = 'var(--text-primary)' } }}
+                      onMouseLeave={e => { if (i18n.language !== 'hi') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' } }}
+                    >
+                      हिंदी
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Cart (Rendered for all customers: guest or logged-in user) */}
             {isCustomer && (

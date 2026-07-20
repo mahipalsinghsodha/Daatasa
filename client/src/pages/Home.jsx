@@ -1,10 +1,11 @@
 // pages/Home.jsx — Premium Edition
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
+import { useTranslation } from 'react-i18next'
 import ProductCard from '../components/ProductCard'
 import { FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, FiAward, FiCheck, FiPhone, FiZap, FiPlay, FiPause, FiX, FiChevronLeft, FiChevronRight, FiClock, FiMaximize2, FiImage } from 'react-icons/fi'
 
@@ -173,10 +174,24 @@ const GALLERY_ITEMS = [
 
 /* ── Component ─────────────────────────────────────────────── */
 const Home = () => {
+  const { t } = useTranslation()
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
+
+  const localizedGheeSteps = useMemo(() => [
+    { ...GHEE_STEPS[0], title: t('home.processStep1Title'), desc: t('home.processStep1Desc'), longDesc: t('home.processStep1LongDesc') },
+    { ...GHEE_STEPS[1], title: t('home.processStep2Title'), desc: t('home.processStep2Desc'), longDesc: t('home.processStep2LongDesc') },
+    { ...GHEE_STEPS[2], title: t('home.processStep3Title'), desc: t('home.processStep3Desc'), longDesc: t('home.processStep3LongDesc') },
+    { ...GHEE_STEPS[3], title: t('home.processStep4Title'), desc: t('home.processStep4Desc'), longDesc: t('home.processStep4LongDesc') },
+  ], [t]);
+
+  const localizedTestimonials = useMemo(() => [
+    { ...TESTIMONIALS[0], name: t('home.t1Name'), role: t('home.t1Role'), comment: t('home.t1Comment') },
+    { ...TESTIMONIALS[1], name: t('home.t2Name'), role: t('home.t2Role'), comment: t('home.t2Comment') },
+    { ...TESTIMONIALS[2], name: t('home.t3Name'), role: t('home.t3Role'), comment: t('home.t3Comment') },
+  ], [t]);
 
   // Stepper & Video & Gallery States
   const [activeStep, setActiveStep] = useState(0)
@@ -212,7 +227,7 @@ const Home = () => {
     if (videoRef.current) {
       const time = videoRef.current.currentTime
       setCurrentTime(time)
-      const matchingStepIndex = GHEE_STEPS.findIndex(
+      const matchingStepIndex = localizedGheeSteps.findIndex(
         step => time >= step.startTime && time < step.endTime
       )
       if (matchingStepIndex !== -1 && matchingStepIndex !== activeStep) {
@@ -229,8 +244,8 @@ const Home = () => {
   const handleStepClick = (index) => {
     setActiveStep(index)
     if (videoRef.current) {
-      videoRef.current.currentTime = GHEE_STEPS[index].startTime
-      setCurrentTime(GHEE_STEPS[index].startTime)
+      videoRef.current.currentTime = localizedGheeSteps[index].startTime
+      setCurrentTime(localizedGheeSteps[index].startTime)
       if (!isPlaying) {
         videoRef.current.play().catch(err => console.log('Video play error:', err))
         setIsPlaying(true)
@@ -316,7 +331,7 @@ const Home = () => {
             <motion.div {...fadeUp(0)}>
               <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-5"
                 style={{ background: 'rgba(245,166,35,0.18)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.30)' }}>
-                <FiAward size={12} /> Authentic Bilona Process
+                <FiAward size={12} /> {t('home.heroBadge', 'Authentic Bilona Process')}
               </span>
             </motion.div>
 
@@ -324,32 +339,32 @@ const Home = () => {
             <motion.h1 {...fadeUp(0.06)}
               className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-2 text-white"
               style={{ letterSpacing: '-0.02em', fontFamily: 'var(--font-display)' }}>
-              Daatasa
+              {t('home.heroTitle', 'Daatasa')}
             </motion.h1>
 
             {/* Subheading */}
             <motion.h2 {...fadeUp(0.12)}
               className="text-base sm:text-xl lg:text-2xl font-extrabold uppercase leading-snug mb-4 sm:mb-5 text-white"
               style={{ letterSpacing: '-0.005em' }}>
-              Reclaiming the Vedic Craft of{' '}
-              <span style={{ color: 'var(--gold)' }}>Desi Bilona Ghee</span>, Direct From Khuri
+              {t('home.heroSub1', 'Reclaiming the Vedic Craft of')}{' '}
+              <span style={{ color: 'var(--gold)' }}>{t('home.heroSub2', 'Desi Bilona Ghee')}</span>{t('home.heroSub3', ', Direct From Khuri')}
             </motion.h2>
 
             <motion.p {...fadeUp(0.18)} className="text-sm leading-relaxed mb-7 sm:mb-8 max-w-md"
               style={{ color: 'rgba(255,255,255,0.75)' }}>
-              Experience the rich legacy of Jaisalmer's craft. Our ghee is handcrafted from the A2 milk of free-grazing Tharparkar cows, slow-churned in traditional earthen handis over a controlled wood fire. Taste the pure, granular texture and unmatched aroma of ancient tradition.
+              {t('home.heroText', "Experience the rich legacy of Jaisalmer's craft. Our ghee is handcrafted from the A2 milk of free-grazing Tharparkar cows, slow-churned in traditional earthen handis over a controlled wood fire. Taste the pure, granular texture and unmatched aroma of ancient tradition.")}
             </motion.p>
 
             <motion.div {...fadeUp(0.24)} className="flex flex-wrap gap-3 mb-12 sm:mb-14">
               <Link to="/products"
                 className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105"
                 style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 6px 24px rgba(245,166,35,0.50)' }}>
-                Shop Collection
+                {t('home.shopBtn', 'Shop Collection')}
               </Link>
               <Link to="/about"
                 className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-xl font-bold text-sm transition-all hover:bg-white/12"
                 style={{ border: '1.5px solid rgba(255,255,255,0.30)', color: 'white' }}>
-                Our Heritage Story
+                {t('home.storyBtn', 'Our Heritage Story')}
               </Link>
             </motion.div>
 
@@ -357,14 +372,14 @@ const Home = () => {
             <motion.div {...fadeUp(0.3)}>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] mb-4"
                 style={{ color: 'rgba(255,255,255,0.6)' }}>
-                Key Benefits
+                {t('home.keyBenefits', 'Key Benefits')}
               </p>
               <div className="grid grid-cols-2 gap-3 sm:gap-3.5 max-w-2xl">
                 {[
-                  { icon: <FiAward size={17} />, title: 'Free-Grazing', sub: 'Tharparkar Herds' },
-                  { icon: <FiDroplet size={17} />, title: 'Vedic Bilona', sub: 'Craft, Slow-Churned' },
-                  { icon: <FiShield size={17} />, title: 'Unmatched Purity', sub: '& Granular Texture' },
-                  { icon: <FiTruck size={17} />, title: '48hr Express', sub: 'Delivery (Select Zones)' },
+                  { icon: <FiAward size={17} />, title: t('home.kb1Title'), sub: t('home.kb1Sub') },
+                  { icon: <FiDroplet size={17} />, title: t('home.kb2Title'), sub: t('home.kb2Sub') },
+                  { icon: <FiShield size={17} />, title: t('home.kb3Title'), sub: t('home.kb3Sub') },
+                  { icon: <FiTruck size={17} />, title: t('home.kb4Title'), sub: t('home.kb4Sub') },
                 ].map((b, i) => (
                   <div key={i} className="rounded-xl p-3.5 flex flex-col gap-2.5 min-w-0"
                     style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.16)' }}>
@@ -467,10 +482,10 @@ const Home = () => {
         <div className="absolute inset-0 flex items-end justify-center pb-12 sm:pb-20">
           <div className="text-center px-4 max-w-4xl">
             <h2 className="text-3xl sm:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl" style={{ fontFamily: 'var(--font-display)' }}>
-              100% Pure Tharparkar Cows
+              {t('home.videoTitle', '100% Pure Tharparkar Cows')}
             </h2>
             <p className="text-base sm:text-xl text-white/90 drop-shadow-xl mx-auto max-w-2xl font-medium leading-relaxed">
-              Experience the beautiful, organic lifestyle of our cows. They roam freely in the pure arid environment of Khuri, Jaisalmer, drinking pristine water and grazing naturally.
+              {t('home.videoText')}
             </p>
           </div>
         </div>
@@ -481,10 +496,10 @@ const Home = () => {
       <section style={{ background: '#EAF5FB', paddingBottom: '80px' }}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <motion.p {...fadeUp(0)} className="section-tag">Our Range</motion.p>
-            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">Explore Our Collection</motion.h2>
+            <motion.p {...fadeUp(0)} className="section-tag">{t('home.categoriesTag')}</motion.p>
+            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">{t('home.categoriesTitle')}</motion.h2>
             <motion.p {...fadeUp(0.16)} className="section-sub max-w-md mx-auto">
-              Premium ghee varieties, each crafted with care and traditional expertise.
+              {t('home.categoriesSub')}
             </motion.p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -522,13 +537,13 @@ const Home = () => {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-end justify-between mb-12">
             <div>
-              <p className="section-tag flex items-center gap-1"><FiStar size={13} /> Featured Collection</p>
-              <h2 className="section-title">Our Best Products</h2>
+              <p className="section-tag flex items-center gap-1"><FiStar size={13} /> {t('home.featuredTag')}</p>
+              <h2 className="section-title">{t('home.featuredTitle')}</h2>
             </div>
             <Link to="/products"
               className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
               style={{ background: 'var(--brand-gradient)', color: 'white', boxShadow: 'var(--shadow-brand)' }}>
-              View All <FiArrowRight size={14} />
+              {t('home.viewAll')} <FiArrowRight size={14} />
             </Link>
           </div>
 
@@ -562,13 +577,13 @@ const Home = () => {
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <motion.p {...fadeUp(0)} className="section-tag flex items-center gap-1.5 justify-center">
-              <FiDroplet size={13} /> Traditional Method
+              <FiDroplet size={13} /> {t('home.processTag')}
             </motion.p>
             <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">
-              How Our Ghee Is Made: The Vedic Bilona Process
+              {t('home.processTitle')}
             </motion.h2>
             <motion.p {...fadeUp(0.16)} className="section-sub max-w-2xl mx-auto">
-              Follow our step-by-step handcrafting journey, perfectly synced with our process video. Click any step to jump to that part!
+              {t('home.processSub')}
             </motion.p>
           </div>
 
@@ -600,7 +615,7 @@ const Home = () => {
                 <div className="absolute top-4 left-4 z-10 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-2"
                      style={{ background: 'rgba(27, 47, 110, 0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  Currently Showing: {GHEE_STEPS[activeStep]?.desc}
+                  {t('home.currentlyShowing')} {localizedGheeSteps[activeStep]?.desc}
                 </div>
 
                 {/* Expand Video Button */}
@@ -670,20 +685,20 @@ const Home = () => {
                 <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0"
                      style={{ border: '1px solid var(--border-color)' }}>
                   <img 
-                    src={GHEE_STEPS[activeStep]?.image} 
-                    alt={GHEE_STEPS[activeStep]?.title}
+                    src={localizedGheeSteps[activeStep]?.image} 
+                    alt={localizedGheeSteps[activeStep]?.title}
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div>
                   <h4 className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1">
-                    Step {activeStep + 1} Illustration
+                    {t('home.illustrationTitle', { step: activeStep + 1 })}
                   </h4>
                   <p className="text-xs font-bold" style={{ color: 'var(--navy)' }}>
-                    {GHEE_STEPS[activeStep]?.title}
+                    {localizedGheeSteps[activeStep]?.title}
                   </p>
                   <p className="text-[11px] leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {GHEE_STEPS[activeStep]?.desc} process: watch flow at time marker {GHEE_STEPS[activeStep]?.timeLabel}.
+                    {localizedGheeSteps[activeStep]?.desc} {t('home.processWatchFlow', { time: localizedGheeSteps[activeStep]?.timeLabel })}
                   </p>
                 </div>
               </div>
@@ -691,7 +706,7 @@ const Home = () => {
 
             {/* Right: Stepper Steps list (5 cols) */}
             <div className="lg:col-span-5 flex flex-col gap-3 w-full min-w-0">
-              {GHEE_STEPS.map((step, idx) => {
+              {localizedGheeSteps.map((step, idx) => {
                 const isActive = activeStep === idx;
                 return (
                   <div 
@@ -719,7 +734,7 @@ const Home = () => {
                              }}>
                           {idx + 1}
                         </div>
-                        {idx < GHEE_STEPS.length - 1 && (
+                        {idx < localizedGheeSteps.length - 1 && (
                           <div className="w-0.5 h-4 my-1 transition-colors duration-300"
                                style={{ background: isActive ? 'var(--gold)' : 'rgba(27, 47, 110, 0.12)' }} />
                         )}
@@ -773,15 +788,15 @@ const Home = () => {
       <section style={{ background: '#FFFFFF', padding: '60px 0 80px' }}>
         <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <motion.p {...fadeUp(0)} className="section-tag">Testimonials</motion.p>
-            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">Trusted by 5,000+ Families</motion.h2>
+            <motion.p {...fadeUp(0)} className="section-tag">{t('home.testimonialTag')}</motion.p>
+            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">{t('home.testimonialTitle')}</motion.h2>
             <motion.p {...fadeUp(0.16)} className="section-sub max-w-md mx-auto">
-              Here's what our happy families say about the pure aroma and quality of Daatasa ghee.
+              {t('home.testimonialSub')}
             </motion.p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((item, idx) => (
+            {localizedTestimonials.map((item, idx) => (
               <motion.div key={idx} {...fadeUp(idx * 0.1)}
                 className="rounded-3xl p-7 relative overflow-hidden transition-all duration-300"
                 style={{ background: idx === 0 ? 'var(--brand-gradient)' : 'var(--bg-alt)', border: '1px solid var(--border-color)', boxShadow: idx === 0 ? 'var(--shadow-brand)' : 'var(--shadow-card)' }}
@@ -1080,16 +1095,16 @@ const Home = () => {
               <FiZap size={28} />
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold mb-3" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
-              Join the Daatasa Family
+              {t('home.newsletterTitle')}
             </h2>
             <p className="text-sm sm:text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>
-              Subscribe to our newsletter to receive exclusive offers, health tips, and early access to our premium organic products.
+              {t('home.newsletterSub')}
             </p>
             
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row max-w-md mx-auto gap-3">
               <input 
                 type="email" 
-                placeholder="Enter your email address" 
+                placeholder={t('home.newsletterInput')} 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -1113,7 +1128,7 @@ const Home = () => {
                   opacity: subscribing ? 0.7 : 1,
                   cursor: subscribing ? 'not-allowed' : 'pointer'
                 }}>
-                {subscribing ? 'Subscribing...' : 'Subscribe'}
+                {subscribing ? t('common.loading') : t('home.newsletterBtn')}
               </button>
             </form>
           </motion.div>

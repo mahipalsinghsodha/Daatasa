@@ -3,39 +3,41 @@ import { motion } from 'framer-motion'
 import { FiCheck, FiArrowRight, FiStar } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation } from 'react-i18next'
+import { useMemo } from 'react'
 
-const STEPS = [
-  { emoji: '🥛', title: 'Tharparkar Cow Milk',  desc: 'Sourced every morning from our own free-grazing Tharparkar cows foraging in the open desert pastures of Jaisalmer.' },
-  { emoji: '🫙', title: 'Curd & Bilona Churn',   desc: 'Cultured overnight in mitti ki handi, then hand-churned clockwise and anti-clockwise using a traditional wooden bilona.' },
-  { emoji: '🔥', title: 'Chulha Slow-Cooked',    desc: 'The makkhan is slow-cooked over a traditional mud chulha using cow dung cakes and babool wood to lock in the rustic aroma.' },
-  { emoji: '✅', title: 'Lab Tested',      desc: 'Every batch passes FSSAI-certified lab tests before dispatch.' },
+const getSteps = (t) => [
+  { emoji: '🥛', title: t('aboutUs.step1Title'),  desc: t('aboutUs.step1Desc') },
+  { emoji: '🫙', title: t('aboutUs.step2Title'),   desc: t('aboutUs.step2Desc') },
+  { emoji: '🔥', title: t('aboutUs.step3Title'),    desc: t('aboutUs.step3Desc') },
+  { emoji: '✅', title: t('aboutUs.step4Title'),      desc: t('aboutUs.step4Desc') },
 ]
 
-const PROMISES = [
-  'No preservatives, no artificial colours, no hidden chemicals.',
-  'Our Tharparkar cows graze freely on native desert herbs in Jaisalmer and are never injected with hormones.',
-  'Every batch is rigorously lab-tested for purity and safety.',
-  'Delivered fresh in food-safe, tamper-evident packaging.',
-  'Carbon-neutral packaging initiative since 2024.',
+const getPromises = (t) => [
+  t('aboutUs.promise1'),
+  t('aboutUs.promise2'),
+  t('aboutUs.promise3'),
+  t('aboutUs.promise4'),
+  t('aboutUs.promise5'),
 ]
 
-const TIMELINE = [
-  { year: '2019', title: 'The Idea',        desc: 'Our family in Khuri, Jaisalmer, tired of adulterated supermarket ghee, decides to share our authentic desert village ghee.' },
-  { year: '2020', title: 'First Batch',     desc: 'Our first Bilona ghee is made on the farm — sold out in 3 days.' },
-  { year: '2021', title: 'Online Launch',   desc: 'Daatasa.com goes live. 500 families order in the first month.' },
-  { year: '2022', title: 'FSSAI Certified', desc: 'After rigorous lab testing, we earn full FSSAI certification.' },
-  { year: '2023', title: 'Pan India',       desc: 'Now serving 5,000+ families across all major Indian cities.' },
-  { year: '2024', title: 'Eco Packaging',   desc: 'Launched biodegradable, carbon-neutral packaging across all products.' },
+const getTimeline = (t) => [
+  { year: t('aboutUs.time1Year'), title: t('aboutUs.time1Title'),        desc: t('aboutUs.time1Desc') },
+  { year: t('aboutUs.time2Year'), title: t('aboutUs.time2Title'),     desc: t('aboutUs.time2Desc') },
+  { year: t('aboutUs.time3Year'), title: t('aboutUs.time3Title'),   desc: t('aboutUs.time3Desc') },
+  { year: t('aboutUs.time4Year'), title: t('aboutUs.time4Title'), desc: t('aboutUs.time4Desc') },
+  { year: t('aboutUs.time5Year'), title: t('aboutUs.time5Title'),       desc: t('aboutUs.time5Desc') },
+  { year: t('aboutUs.time6Year'), title: t('aboutUs.time6Title'),   desc: t('aboutUs.time6Desc') },
 ]
 
-const STATS = [
-  { value: '5,000+', label: 'Happy Families' },
-  { value: '100%',   label: 'Pure & Natural' },
-  { value: '4.9★',   label: 'Average Rating' },
-  { value: 'FSSAI',  label: 'Certified Quality' },
+const getStats = (t) => [
+  { value: '5,000+', label: t('aboutUs.stat1Label') },
+  { value: '100%',   label: t('aboutUs.stat2Label') },
+  { value: '4.9★',   label: t('aboutUs.stat3Label') },
+  { value: 'FSSAI',  label: t('aboutUs.stat4Label') },
 ]
 
-const TOC = ['Our Story', 'The Bilona Process', 'Our Journey', 'Our Promise']
+const getToc = (t) => [t('aboutUs.toc1'), t('aboutUs.toc2'), t('aboutUs.toc3'), t('aboutUs.toc4')]
 
 const SectionHeader = ({ title }) => (
   <div className="flex items-start gap-3 mb-5">
@@ -46,11 +48,18 @@ const SectionHeader = ({ title }) => (
 )
 
 export default function AboutUs() {
+  const { t } = useTranslation()
+  const STEPS = useMemo(() => getSteps(t), [t])
+  const PROMISES = useMemo(() => getPromises(t), [t])
+  const TIMELINE = useMemo(() => getTimeline(t), [t])
+  const STATS = useMemo(() => getStats(t), [t])
+  const TOC = useMemo(() => getToc(t), [t])
+
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>About Us — Daatasa Pure Bilona Ghee</title>
-        <meta name="description" content="Learn about Daatasa — our story, the traditional Bilona process, and our promise of 100% pure, natural desi ghee." />
+        <title>{t('aboutUs.pageTitle')}</title>
+        <meta name="description" content={t('aboutUs.pageDescription')} />
       </Helmet>
 
       {/* ── Premium Hero ── */}
@@ -68,17 +77,17 @@ export default function AboutUs() {
             </div>
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-5 border"
               style={{ background: 'rgba(245,166,35,0.18)', borderColor: 'rgba(245,166,35,0.30)', color: 'var(--gold)' }}>
-              Our Story
+              {t('aboutUs.heroTag')}
             </span>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
             className="text-4xl sm:text-5xl font-extrabold mb-4 leading-[1.1] text-white"
             style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
-            About <span className="shimmer-text">Daatasa</span>
+            {t('aboutUs.heroTitle').split(' ')[0]} <span className="shimmer-text">{t('aboutUs.heroTitle').split(' ').slice(1).join(' ')}</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
             className="text-sm sm:text-base max-w-md mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
-            Bringing the golden essence of the Thar desert — authentic Bilona ghee straight from Khuri, Jaisalmer.
+            {t('aboutUs.heroDesc')}
           </motion.p>
         </div>
 
@@ -98,7 +107,7 @@ export default function AboutUs() {
           <div className="lg:col-span-1 space-y-5">
             {/* TOC */}
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>On This Page</p>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>{t('aboutUs.tocTitle')}</p>
               <nav className="space-y-1">
                 {TOC.map((item, i) => (
                   <a key={i} href={`#section-${i + 1}`}
@@ -116,7 +125,7 @@ export default function AboutUs() {
 
             {/* Stats */}
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>By the Numbers</p>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>{t('aboutUs.statsTitle')}</p>
               <div className="space-y-3">
                 {STATS.map((s, i) => (
                   <div key={i} className="flex items-center justify-between py-2"
@@ -133,11 +142,11 @@ export default function AboutUs() {
               style={{ background: 'var(--brand-gradient)', boxShadow: 'var(--shadow-brand)' }}>
               <div className="absolute top-0 right-0 w-24 h-24 rounded-full pointer-events-none"
                 style={{ background: 'rgba(255,255,255,0.08)', transform: 'translate(30%, -30%)' }} />
-              <p className="text-white font-extrabold text-base mb-1 relative z-10" style={{ fontFamily: 'var(--font-display)' }}>Try it today</p>
-              <p className="text-xs mb-4 relative z-10" style={{ color: 'rgba(255,255,255,0.70)' }}>Join 5,000+ happy families.</p>
+              <p className="text-white font-extrabold text-base mb-1 relative z-10" style={{ fontFamily: 'var(--font-display)' }}>{t('aboutUs.ctaTitle')}</p>
+              <p className="text-xs mb-4 relative z-10" style={{ color: 'rgba(255,255,255,0.70)' }}>{t('aboutUs.ctaDesc')}</p>
               <Link to="/products" className="relative z-10 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-all hover:scale-[1.02]"
                 style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 4px 12px rgba(245,166,35,0.40)' }}>
-                Shop Now <FiArrowRight size={13} />
+                {t('aboutUs.ctaBtn')} <FiArrowRight size={13} />
               </Link>
             </div>
           </div>
@@ -149,12 +158,12 @@ export default function AboutUs() {
 
                 {/* Section 1 — Story */}
                 <section id="section-1" className="scroll-mt-28">
-                  <SectionHeader title="Our Story" />
+                  <SectionHeader title={t('aboutUs.section1Title')} />
                   <p className="text-[15px] leading-relaxed mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    Daatasa was born in Khuri, Jaisalmer — a desert village where time-honored traditions are a way of life. We realized the market was flooded with processed ghee lacking the rich aroma and granularity of true Rajasthani bilona ghee. Our family decided to share our authentic, chulha-cooked Tharparkar cow ghee with the world.
+                    {t('aboutUs.section1P1')}
                   </p>
                   <p className="text-[15px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    We set out to bridge the gap between ancient Vedic wisdom and modern convenience — delivering FSSAI-certified, lab-tested, pure Bilona ghee right to your doorstep. No shortcuts. No additives. Just tradition in every jar.
+                    {t('aboutUs.section1P2')}
                   </p>
                 </section>
 
@@ -162,9 +171,9 @@ export default function AboutUs() {
 
                 {/* Section 2 — Bilona Process */}
                 <section id="section-2" className="scroll-mt-28">
-                  <SectionHeader title="The Bilona Process" />
+                  <SectionHeader title={t('aboutUs.section2Title')} />
                   <p className="text-[15px] leading-relaxed mb-6" style={{ color: 'var(--text-secondary)' }}>
-                    We strictly follow the ancient Vedic Bilona method — the only method that preserves the true nutritional value of ghee:
+                    {t('aboutUs.section2Desc')}
                   </p>
                   <div className="grid sm:grid-cols-2 gap-4">
                     {STEPS.map((step, i) => (
@@ -190,7 +199,7 @@ export default function AboutUs() {
 
                 {/* Section 3 — Journey */}
                 <section id="section-3" className="scroll-mt-28">
-                  <SectionHeader title="Our Journey" />
+                  <SectionHeader title={t('aboutUs.section3Title')} />
                   <div className="space-y-0">
                     {TIMELINE.map((item, i) => (
                       <div key={i} className="flex gap-5">
@@ -219,9 +228,9 @@ export default function AboutUs() {
 
                 {/* Section 4 — Promise */}
                 <section id="section-4" className="scroll-mt-28">
-                  <SectionHeader title="Our Promise" />
+                  <SectionHeader title={t('aboutUs.section4Title')} />
                   <p className="text-[15px] leading-relaxed mb-5" style={{ color: 'var(--text-secondary)' }}>
-                    Every jar of Daatasa ghee is a commitment — to you, to the cows, and to the planet:
+                    {t('aboutUs.section4Desc')}
                   </p>
                   <ul className="space-y-3">
                     {PROMISES.map((p, i) => (
@@ -242,14 +251,14 @@ export default function AboutUs() {
                     {[...Array(5)].map((_, i) => <FiStar key={i} size={14} style={{ color: 'var(--gold)' }} />)}
                   </div>
                   <p className="text-[15px] leading-relaxed mb-4 italic" style={{ color: 'var(--text-secondary)' }}>
-                    "The aroma when I open the jar reminds me of my grandmother's village in Rajasthan. You can taste the authenticity of Tharparkar cow milk in every spoonful."
+                    "{t('aboutUs.testimonialComment')}"
                   </p>
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0"
                       style={{ background: 'var(--gold)', color: 'var(--navy)' }}>P</div>
                     <div>
-                      <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>Priya Sharma</p>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Jaipur · Verified Customer</p>
+                      <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{t('aboutUs.testimonialName')}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{t('aboutUs.testimonialRole')}</p>
                     </div>
                   </div>
                 </div>
@@ -262,13 +271,13 @@ export default function AboutUs() {
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                ← Back to Home
+                {t('aboutUs.backToHome')}
               </Link>
               <Link to="/contact" className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                Questions? Contact us <FiArrowRight size={13} />
+                {t('aboutUs.questionsContact')} <FiArrowRight size={13} />
               </Link>
             </div>
           </div>

@@ -5,6 +5,7 @@
 
 import { createContext, useState, useEffect, useContext, useCallback } from 'react'
 import api, { setAccessToken, getAccessToken, refreshAuthToken, setRefreshToken, getRefreshToken } from '../api/axios'
+import i18n from '../i18n'
 
 const AuthContext = createContext()
 
@@ -19,6 +20,13 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null)
   const [loading, setLoading] = useState(true)
+
+  // ── Sync language preference ────────────────────────────────
+  useEffect(() => {
+    if (user?.language && i18n.language !== user.language) {
+      i18n.changeLanguage(user.language)
+    }
+  }, [user?.language])
 
   // ── On mount: restore session from stored tokens ──────────
   useEffect(() => {

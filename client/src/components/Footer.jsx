@@ -1,26 +1,27 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiMail, FiPhone, FiMapPin, FiSend, FiArrowRight } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
-const NAV_COLS = [
+const getNavCols = (t) => [
   {
-    title: 'Explore Us',
+    title: t('footer.exploreTitle'),
     links: [
-      { label: 'About Us',        to: '/about'    },
-      { label: 'All Products',    to: '/products' },
-      { label: 'How It Works',    to: '/support'  },
-      { label: 'News & Articles', to: '/support'  },
-      { label: 'Contact Us',      to: '/contact'  },
+      { label: t('footer.exploreAbout'),        to: '/about'    },
+      { label: t('footer.exploreProducts'),    to: '/products' },
+      { label: t('footer.exploreHowItWorks'),    to: '/support'  },
+      { label: t('footer.exploreNews'), to: '/support'  },
+      { label: t('footer.exploreContact'),      to: '/contact'  },
     ],
   },
   {
-    title: 'Quick Links',
+    title: t('footer.quickLinksTitle'),
     links: [
-      { label: 'Privacy Policy',     to: '/privacy-policy' },
-      { label: 'Terms & Conditions', to: '/terms'          },
-      { label: 'Disclaimer',         to: '/refund-policy'  },
-      { label: 'Support',            to: '/support'        },
-      { label: 'FAQ',                to: '/faq'            },
+      { label: t('footer.quickPrivacy'),     to: '/privacy-policy' },
+      { label: t('footer.quickTerms'), to: '/terms'          },
+      { label: t('footer.quickDisclaimer'),         to: '/refund-policy'  },
+      { label: t('footer.quickSupport'),            to: '/support'        },
+      { label: t('footer.quickFAQ'),                to: '/faq'            },
     ],
   },
 ]
@@ -32,16 +33,20 @@ const SOCIALS = [
   { Icon: FiLinkedin,  label: 'LinkedIn',  href: '#' },
 ]
 
-const CONTACT_ITEMS = [
-  { Icon: FiMapPin, text: 'Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan' },
+const getContactItems = (t) => [
+  { Icon: FiMapPin, text: t('footer.contactAddress') },
   { Icon: FiMail,   text: 'support@daatasa.com',  href: 'mailto:support@daatasa.com' },
   { Icon: FiPhone,  text: '+91 7665306403',      href: 'tel:+917665306403' },
 ]
 
 export default function Footer() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [subState, setSubState] = useState('idle')
   const year = new Date().getFullYear()
+
+  const navCols = useMemo(() => getNavCols(t), [t])
+  const contactItems = useMemo(() => getContactItems(t), [t])
 
   const handleSubscribe = (e) => {
     e.preventDefault()
@@ -91,11 +96,11 @@ export default function Footer() {
             </Link>
 
             <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
-              Contact
+              {t('footer.contactHeading')}
             </h4>
 
             <ul className="space-y-4">
-              {CONTACT_ITEMS.map(({ Icon, text, href }) => (
+              {contactItems.map(({ Icon, text, href }) => (
                 <li key={text} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }}>
@@ -141,7 +146,7 @@ export default function Footer() {
 
           {/* Nav columns */}
           <div className="lg:col-span-6 grid grid-cols-2 gap-4 sm:gap-8">
-            {NAV_COLS.map(col => (
+            {navCols.map(col => (
               <div key={col.title}>
                 <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
                   {col.title}
@@ -168,10 +173,10 @@ export default function Footer() {
           {/* Newsletter Column */}
           <div className="lg:col-span-3">
             <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-4" style={{ color: 'var(--gold)' }}>
-              Newsletter
+              {t('footer.newsletterTitle')}
             </h4>
             <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.68)' }}>
-              Get the latest updates via email. Don't miss it. Unsubscribe anytime.
+              {t('footer.newsletterDesc')}
             </p>
 
             {subState === 'success' ? (
@@ -181,7 +186,7 @@ export default function Footer() {
                   <span className="text-white text-sm">✓</span>
                 </div>
                 <p className="text-sm font-semibold" style={{ color: '#68D391' }}>
-                  You're subscribed! Check your inbox.
+                  {t('footer.newsletterSuccess')}
                 </p>
               </div>
             ) : (
@@ -191,7 +196,7 @@ export default function Footer() {
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    placeholder="Your Email"
+                    placeholder={t('footer.newsletterInput')}
                     className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
                     style={{
                       background: 'rgba(255,255,255,0.92)',
@@ -213,7 +218,7 @@ export default function Footer() {
                     cursor: 'pointer',
                   }}>
                   <FiSend size={14} />
-                  Subscribe Now
+                  {t('footer.newsletterBtn')}
                 </button>
               </form>
             )}
@@ -224,9 +229,7 @@ export default function Footer() {
         <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-2"
           style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
           <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            Daatasa Ghee — © Copyright {year} by{' '}
-            <span style={{ color: 'rgba(255,255,255,0.72)', fontWeight: 600 }}>Daatasa Pvt. Ltd.</span>
-            {' '}All rights reserved.
+            {t('footer.copyright', { year })}
           </p>
         </div>
       </div>

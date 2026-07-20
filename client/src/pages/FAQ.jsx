@@ -2,49 +2,50 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiChevronDown, FiArrowRight, FiMail } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { useMemo } from 'react'
+import { Helmet } from 'react-helmet-async'
 
-const SECTIONS = [
+const getSections = (t) => [
   {
     id: 'section-1',
-    label: 'Product & Quality',
+    label: t('faq.sec1Label'),
     emoji: '🔬',
     faqs: [
-      { q: 'What is Bilona Ghee?', a: 'Bilona Ghee is prepared using the traditional Vedic method. Fresh Tharparkar cow milk from our Rajasthan village is boiled, cultured into curd, then hand-churned in wooden vats to extract makkhan (butter). This butter is slow-heated over firewood to produce pure, aromatic ghee, retaining maximum nutrients.' },
-      { q: 'Is your ghee lab tested?', a: 'Absolutely. Every batch undergoes rigorous testing in FSSAI-certified laboratories to ensure purity, quality, and compliance with food safety standards. Test reports are available on request.' },
-      { q: 'How should I store the ghee?', a: 'Store in a cool, dry place away from direct sunlight. No refrigeration needed. Always use a clean, dry spoon to prevent moisture from entering the jar.' },
+      { q: t('faq.sec1q1'), a: t('faq.sec1a1') },
+      { q: t('faq.sec1q2'), a: t('faq.sec1a2') },
+      { q: t('faq.sec1q3'), a: t('faq.sec1a3') },
     ]
   },
   {
     id: 'section-2',
-    label: 'Shipping & Delivery',
+    label: t('faq.sec2Label'),
     emoji: '🚚',
     faqs: [
-      { q: 'Do you deliver across India?', a: 'Yes, we offer Pan India delivery via trusted courier partners. Orders above ₹500 qualify for free shipping. Below ₹500, a nominal ₹50 fee is applied.' },
-      { q: 'How long does delivery take?', a: 'Standard delivery takes 4–7 business days depending on your location. Metro cities usually receive orders in 2–4 business days.' },
-      { q: 'Can I track my order?', a: 'Yes! A tracking link is emailed to you once your order is dispatched. You can also track it in "My Orders" on your Daatasa account.' },
+      { q: t('faq.sec2q1'), a: t('faq.sec2a1') },
+      { q: t('faq.sec2q2'), a: t('faq.sec2a2') },
+      { q: t('faq.sec2q3'), a: t('faq.sec2a3') },
     ]
   },
   {
     id: 'section-3',
-    label: 'Returns & Refunds',
+    label: t('faq.sec3Label'),
     emoji: '↩️',
     faqs: [
-      { q: 'What is your return policy?', a: 'We accept returns within 7 days of delivery if the product is damaged, tampered with, or incorrect. Contact support with a photo of the product and your order ID.' },
-      { q: 'How long does a refund take?', a: 'Once your return is approved, online payments are refunded within 5–7 business days. COD orders are credited to your bank account within 7–10 business days.' },
+      { q: t('faq.sec3q1'), a: t('faq.sec3a1') },
+      { q: t('faq.sec3q2'), a: t('faq.sec3a2') },
     ]
   },
   {
     id: 'section-4',
-    label: 'Orders & Account',
+    label: t('faq.sec4Label'),
     emoji: '📦',
     faqs: [
-      { q: 'Can I place a bulk or wholesale order?', a: 'Yes! Select "Bulk Order" in the contact form and we will share a custom quote within 24 hours.' },
-      { q: 'Can I cancel my order?', a: 'Orders can be cancelled before dispatch. Once shipped, cancellation is not possible. Email support@daatasa.com with your Order ID immediately.' },
+      { q: t('faq.sec4q1'), a: t('faq.sec4a1') },
+      { q: t('faq.sec4q2'), a: t('faq.sec4a2') },
     ]
   },
 ]
-
-const TOC = SECTIONS.map(s => s.label)
 
 const SectionHeader = ({ emoji, title }) => (
   <div className="flex items-start gap-4 mb-6">
@@ -56,11 +57,17 @@ const SectionHeader = ({ emoji, title }) => (
 )
 
 export default function FAQ() {
+  const { t } = useTranslation()
+  const SECTIONS = useMemo(() => getSections(t), [t])
   const [open, setOpen] = useState({})
   const toggle = (sid, qi) => setOpen(p => ({ ...p, [`${sid}-${qi}`]: !p[`${sid}-${qi}`] }))
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
+      <Helmet>
+        <title>{t('faq.pageTitle')} — Daatasa</title>
+        <meta name="description" content={t('faq.heroDesc')} />
+      </Helmet>
 
       {/* ── Premium Hero ──────────────────────────── */}
       <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)' }}>
@@ -70,17 +77,17 @@ export default function FAQ() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-5 text-2xl" style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' }}>❓</div>
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold tracking-widest uppercase mb-5 border" style={{ background: 'rgba(245,166,35,0.15)', borderColor: 'rgba(245,166,35,0.25)', color: 'var(--gold)' }}>
-              Support Center
+              {t('faq.pageTitle')}
             </span>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
             className="text-4xl sm:text-5xl font-extrabold mb-4 leading-[1.1] text-white"
             style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.04em' }}>
-            Frequently Asked <span className="shimmer-text">Questions</span>
+            {t('faq.heroTitle').split(' ').slice(0, -1).join(' ')} <span className="shimmer-text">{t('faq.heroTitle').split(' ').slice(-1)[0]}</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
             className="text-sm sm:text-base max-w-sm mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
-            Everything you need to know about our products, delivery, and policies.
+            {t('faq.heroDesc')}
           </motion.p>
         </div>
       </div>
@@ -92,7 +99,7 @@ export default function FAQ() {
           {/* ── SIDEBAR ── */}
           <div className="lg:col-span-1 space-y-5 lg:sticky lg:top-28">
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Categories</p>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>{t('faq.categories')}</p>
               <nav className="space-y-1">
                 {SECTIONS.map((s, i) => (
                   <a key={i} href={`#${s.id}`}
@@ -109,11 +116,11 @@ export default function FAQ() {
             </div>
 
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>Still need help?</p>
-              <p className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>Can't find your answer? Our team is happy to help.</p>
+              <p className="text-[10px] font-black uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>{t('faq.stillNeedHelp')}</p>
+              <p className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{t('faq.cantFindAnswer')}</p>
               <Link to="/contact" className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-xl transition-all"
                 style={{ background: 'var(--brand-gradient)', color: '#FFFFFF', boxShadow: 'var(--shadow-brand)' }}>
-                Contact Support <FiArrowRight size={13} />
+                {t('faq.contactSupport')} <FiArrowRight size={13} />
               </Link>
             </div>
           </div>
@@ -168,13 +175,13 @@ export default function FAQ() {
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                ← Back to Home
+                {t('faq.backToHome')}
               </Link>
               <a href="mailto:support@daatasa.com" className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
                 style={{ color: 'var(--text-muted)' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                <FiMail size={13} /> Email us directly
+                <FiMail size={13} /> {t('faq.emailUs')}
               </a>
             </div>
           </div>

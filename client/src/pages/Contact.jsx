@@ -6,6 +6,7 @@ import { FiArrowRight } from 'react-icons/fi'
 import api from '../api/axios'
 import { toast } from 'react-toastify'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation } from 'react-i18next'
 
 const Field = ({ id, label, type = 'text', value, onChange, required, isTextarea }) => {
   const [focused, setFocused] = useState(false)
@@ -73,6 +74,7 @@ const ContactRow = ({ icon: Icon, label, value, href }) => (
 )
 
 export default function Contact() {
+  const { t } = useTranslation()
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
@@ -80,22 +82,22 @@ export default function Contact() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) { toast.error('Please fill in all required fields'); return }
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) { toast.error(t('contact.formError')); return }
     setSending(true)
     try {
       await api.post('/api/contact', form)
       setSent(true)
-      toast.success("Message sent! We'll get back to you within 24 hours.")
+      toast.success(t('contact.formSuccess'))
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to send. Please try again.')
+      toast.error(err.response?.data?.message || t('contact.formFailed'))
     } finally { setSending(false) }
   }
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--bg-base)' }}>
       <Helmet>
-        <title>Contact Us — Daatasa</title>
-        <meta name="description" content="Get in touch with Daatasa. We typically respond within 24 hours on business days." />
+        <title>{t('contact.pageTitle')}</title>
+        <meta name="description" content={t('contact.pageDesc')} />
       </Helmet>
 
       {/* ── Premium Hero ── */}
@@ -113,17 +115,17 @@ export default function Contact() {
             </div>
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border"
               style={{ background: 'rgba(245,166,35,0.18)', borderColor: 'rgba(245,166,35,0.30)', color: 'var(--gold)' }}>
-              Get In Touch
+              {t('contact.heroTag')}
             </span>
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }}
             className="text-4xl sm:text-5xl font-extrabold mb-3 text-white"
             style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.03em' }}>
-            Contact <span className="shimmer-text">Us</span>
+            {t('contact.heroTitle').split(' ')[0]} <span className="shimmer-text">{t('contact.heroTitle').split(' ').slice(1).join(' ')}</span>
           </motion.h1>
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.16 }}
             className="text-sm sm:text-base max-w-sm mx-auto" style={{ color: 'rgba(255,255,255,0.65)' }}>
-            We typically respond within 24 hours on business days.
+            {t('contact.heroDesc')}
           </motion.p>
         </div>
 
@@ -148,32 +150,32 @@ export default function Contact() {
                     style={{ background: 'rgba(56,161,105,0.12)', color: 'var(--success)' }}>
                     <CheckCircle size={32} />
                   </motion.div>
-                  <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Message Sent!</h3>
+                  <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{t('contact.msgSent')}</h3>
                   <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    Thank you for reaching out. Our team will get back to you within 24 business hours.
+                    {t('contact.msgSentDesc')}
                   </p>
                   <button onClick={() => { setForm({ name: '', email: '', subject: '', message: '' }); setSent(false) }}
                     className="btn btn-secondary text-sm">
-                    Send another message
+                    {t('contact.sendAnother')}
                   </button>
                 </motion.div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="mb-6">
-                    <h2 className="text-lg font-extrabold mb-1" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Send a Message</h2>
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>We'll get back to you as soon as possible.</p>
+                    <h2 className="text-lg font-extrabold mb-1" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{t('contact.formTitle')}</h2>
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{t('contact.formDesc')}</p>
                   </div>
-                  <Field id="con-name"    label="Your name"     value={form.name}    onChange={set('name')}    required />
-                  <Field id="con-email"   label="Email address" type="email" value={form.email} onChange={set('email')}   required />
-                  <Field id="con-subject" label="Subject"       value={form.subject} onChange={set('subject')} />
-                  <Field id="con-message" label="Your message"  value={form.message} onChange={set('message')} required isTextarea />
+                  <Field id="con-name"    label={t('contact.nameLabel')}     value={form.name}    onChange={set('name')}    required />
+                  <Field id="con-email"   label={t('contact.emailLabel')} type="email" value={form.email} onChange={set('email')}   required />
+                  <Field id="con-subject" label={t('contact.subjectLabel')}       value={form.subject} onChange={set('subject')} />
+                  <Field id="con-message" label={t('contact.messageLabel')}  value={form.message} onChange={set('message')} required isTextarea />
 
                   <button type="submit" disabled={sending}
                     className="w-full h-13 font-extrabold text-[15px] flex items-center justify-center gap-2 transition-all hover:scale-[1.01] mt-2"
                     style={{ height: '52px', background: 'var(--brand-gradient)', color: '#FFFFFF', boxShadow: 'var(--shadow-brand)', borderRadius: '14px', border: 'none', cursor: sending ? 'not-allowed' : 'pointer' }}>
                     {sending
                       ? <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      : <><Send size={16} /> Send Message</>
+                      : <><Send size={16} /> {t('contact.btnSend')}</>
                     }
                   </button>
                 </form>
@@ -183,9 +185,9 @@ export default function Contact() {
 
           {/* Contact Info */}
           <div className="md:col-span-2 space-y-3">
-            <ContactRow icon={Mail}   label="Email"   value="support@daatasa.com" href="mailto:support@daatasa.com" />
-            <ContactRow icon={Phone}  label="Phone"   value="+91 7665306403"          href="tel:+917665306403" />
-            <ContactRow icon={MapPin} label="Address" value="Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan" />
+            <ContactRow icon={Mail}   label={t('contact.infoEmail')}   value="support@daatasa.com" href="mailto:support@daatasa.com" />
+            <ContactRow icon={Phone}  label={t('contact.infoPhone')}   value="+91 7665306403"          href="tel:+917665306403" />
+            <ContactRow icon={MapPin} label={t('contact.infoAddress')} value="Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan" />
 
             {/* Business Hours */}
             <div className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
@@ -194,23 +196,23 @@ export default function Contact() {
                   style={{ background: 'rgba(245,166,35,0.12)' }}>
                   <Clock size={14} style={{ color: 'var(--gold)' }} />
                 </div>
-                <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>Business Hours</p>
+                <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>{t('contact.hoursTitle')}</p>
               </div>
               {[
-                { days: 'Monday – Friday', hours: '9:00 AM – 6:00 PM' },
-                { days: 'Saturday',        hours: '10:00 AM – 4:00 PM' },
-                { days: 'Sunday',          hours: 'Closed' },
+                { days: t('contact.monFri'), hours: '9:00 AM – 6:00 PM' },
+                { days: t('contact.sat'),        hours: '10:00 AM – 4:00 PM' },
+                { days: t('contact.sun'),          hours: t('contact.closed') },
               ].map(row => (
                 <div key={row.days} className="flex justify-between items-center py-2"
                   style={{ borderBottom: '1px solid var(--border-color)' }}>
                   <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>{row.days}</span>
                   <span className="text-[13px] font-semibold"
-                    style={{ color: row.hours === 'Closed' ? 'var(--danger)' : 'var(--text-primary)' }}>{row.hours}</span>
+                    style={{ color: row.hours === t('contact.closed') ? 'var(--danger)' : 'var(--text-primary)' }}>{row.hours}</span>
                 </div>
               ))}
               <div className="flex items-center gap-2 mt-3 pt-1">
                 <span className="w-2 h-2 rounded-full animate-pulse" style={{ background: 'var(--success)' }} />
-                <span className="text-[12px] font-semibold" style={{ color: 'var(--success)' }}>Currently open</span>
+                <span className="text-[12px] font-semibold" style={{ color: 'var(--success)' }}>{t('contact.openNow')}</span>
               </div>
             </div>
 

@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema({
   phone:    String,
   avatar:   String, // Cloudinary URL for profile photo
   addresses:[addressSchema],
+  language: { type: String, default: 'en', enum: ['en', 'hi'] },
 
   isBlocked: { type: Boolean, default: false },
 

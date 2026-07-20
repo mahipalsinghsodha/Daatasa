@@ -66,6 +66,7 @@ const safeUser = (u) => ({
   avatar:      u.avatar || null,
   addresses:   u.addresses || [],
   wishlist:    u.wishlist   || [],
+  language:    u.language   || 'en',
   isBlocked:   u.isBlocked  || false,
 });
 
@@ -287,13 +288,14 @@ router.get('/me', auth, (req, res) => res.json(safeUser(req.user)));
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { name, phone, avatar } = req.body;
+    const { name, phone, avatar, language } = req.body;
     const user = await User.findByIdAndUpdate(
       req.user._id,
       {
         ...(name !== undefined && { name }),
         ...(phone !== undefined && { phone }),
         ...(avatar !== undefined && { avatar }),
+        ...(language !== undefined && { language }),
       },
       { new: true, runValidators: true }
     );
