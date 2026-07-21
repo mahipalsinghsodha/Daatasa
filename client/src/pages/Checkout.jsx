@@ -165,7 +165,11 @@ const Checkout = () => {
       setLoading(false); return
     }
     try { await placeOrder() } catch (err) {
-      if (err.response?.status === 409 && err.response?.data?.allItems) setStockModal(err.response.data.allItems)
+      if (err.response?.status === 409 && err.response?.data?.allItems) {
+        setStockModal(err.response.data.allItems)
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to place order')
+      }
     } finally { setLoading(false) }
   }
 

@@ -219,6 +219,7 @@ router.post('/', auth, async (req, res) => {
 
       // 7️⃣ REDUCE STOCK (ATOMIC)
       for (const item of cart.items) {
+        if (!item.product) continue; // Skip items where product was deleted
         const updated = await Product.findOneAndUpdate(
           { _id: item.product._id, stock: { $gte: item.quantity } },
           { $inc: { stock: -item.quantity } },

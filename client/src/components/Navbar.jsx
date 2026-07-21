@@ -141,7 +141,7 @@ const Navbar = () => {
                   { to: '/', label: t('navbar.home', 'Home') },
                   { to: '/products', label: t('navbar.shop', 'Products') },
                   { to: '/about', label: t('navbar.about', 'About Us') },
-                  ...(user ? [{ to: '/support', label: 'Help' }] : []),
+                  ...(user ? [{ to: '/support', label: t('navbar.help', 'Help') }] : []),
                   { to: '/contact', label: t('navbar.contact', 'Contact') },
                 ].map(({ to, label }) => (
                   <Link key={to} to={to} className={navLinkCls(to)}>
@@ -160,14 +160,14 @@ const Navbar = () => {
             {isAdmin && (
               <>
                 {[
-                  { to: '/admin', label: 'Dashboard' },
-                  ...(hasPermission('products') ? [{ to: '/admin/products', label: 'Products' }] : []),
-                  ...(hasPermission('products') ? [{ to: '/admin/reviews', label: 'Reviews' }] : []),
-                  ...(hasPermission('products') ? [{ to: '/admin/subscriptions', label: 'Subscriptions' }] : []),
-                  ...(hasPermission('orders') ? [{ to: '/admin/orders', label: 'Orders' }] : []),
-                  ...(hasPermission('users') ? [{ to: '/admin/users', label: 'Users' }] : []),
-                  ...(user?.role === 'superadmin' ? [{ to: '/admin/newsletters', label: 'Newsletters' }] : []),
-                  { to: '/admin/analytics', label: 'Analytics' },
+                  { to: '/admin', label: t('navbar.dashboard', 'Dashboard') },
+                  ...(hasPermission('products') ? [{ to: '/admin/products', label: t('navbar.products', 'Products') }] : []),
+                  ...(hasPermission('products') ? [{ to: '/admin/reviews', label: t('navbar.reviews', 'Reviews') }] : []),
+                  ...(hasPermission('products') ? [{ to: '/admin/subscriptions', label: t('navbar.subscriptions', 'Subscriptions') }] : []),
+                  ...(hasPermission('orders') ? [{ to: '/admin/ordersAdmin', label: t('navbar.ordersAdmin', 'Orders') }] : []),
+                  ...(hasPermission('users') ? [{ to: '/admin/users', label: t('navbar.users', 'Users') }] : []),
+                  ...(user?.role === 'superadmin' ? [{ to: '/admin/newsletters', label: t('navbar.newsletters', 'Newsletters') }] : []),
+                  { to: '/admin/analytics', label: t('navbar.analytics', 'Analytics') },
                 ].map(({ to, label }) => (
                   <Link key={to} to={to} className={navLinkCls(to)}>
                     {label}
@@ -200,56 +200,14 @@ const Navbar = () => {
             <ThemeToggle />
 
             {/* Language Switcher */}
-            <div className="relative" ref={langMenuRef}>
-              <button
-                onClick={() => setLangMenuOpen(!langMenuOpen)}
-                className="flex items-center gap-1.5 w-9 h-9 rounded-full justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
-                title={t('navbar.language', 'Language')}
-              >
-                <Globe size={16} />
-              </button>
-              <AnimatePresence>
-                {langMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-full mt-2 w-32 rounded-xl overflow-hidden z-50 p-1.5"
-                    style={{
-                      background: 'var(--bg-surface)',
-                      border: '1px solid var(--border-color)',
-                      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-                    }}
-                  >
-                    <button
-                      onClick={() => handleLanguageChange('en')}
-                      className="w-full text-left px-3 py-2 text-[13px] font-semibold rounded-lg transition-colors"
-                      style={{
-                        color: i18n.language === 'en' ? 'var(--gold)' : 'var(--text-secondary)',
-                        background: i18n.language === 'en' ? 'rgba(245, 166, 35, 0.1)' : 'transparent'
-                      }}
-                      onMouseEnter={e => { if (i18n.language !== 'en') { e.currentTarget.style.background = 'var(--bg-alt)'; e.currentTarget.style.color = 'var(--text-primary)' } }}
-                      onMouseLeave={e => { if (i18n.language !== 'en') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' } }}
-                    >
-                      English
-                    </button>
-                    <button
-                      onClick={() => handleLanguageChange('hi')}
-                      className="w-full text-left px-3 py-2 text-[13px] font-semibold rounded-lg transition-colors"
-                      style={{
-                        color: i18n.language === 'hi' ? 'var(--gold)' : 'var(--text-secondary)',
-                        background: i18n.language === 'hi' ? 'rgba(245, 166, 35, 0.1)' : 'transparent'
-                      }}
-                      onMouseEnter={e => { if (i18n.language !== 'hi') { e.currentTarget.style.background = 'var(--bg-alt)'; e.currentTarget.style.color = 'var(--text-primary)' } }}
-                      onMouseLeave={e => { if (i18n.language !== 'hi') { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)' } }}
-                    >
-                      हिंदी
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            <button
+              onClick={() => handleLanguageChange(i18n.language?.startsWith('hi') ? 'en' : 'hi')}
+              className="flex items-center gap-1.5 px-3 py-1.5 h-9 rounded-full transition-all text-[13px] font-bold border border-white/20 text-white hover:bg-white/12"
+              title={t('navbar.language', 'Language')}
+            >
+              <Globe size={14} />
+              {i18n.language?.startsWith('hi') ? 'English' : 'हिंदी'}
+            </button>
 
             {/* Cart (Rendered for all customers: guest or logged-in user) */}
             {isCustomer && (
@@ -348,14 +306,14 @@ const Navbar = () => {
                         </div>
                         <div className="p-1.5 space-y-0.5">
                           {[
-                            { to: '/profile', icon: User, label: 'My Profile' },
+                            { to: '/profile', icon: User, label: t('navbar.profile', 'My Profile') },
                             ...(isCustomer ? [
-                              { to: '/orders', icon: Package, label: 'My Orders' },
-                              { to: '/wishlist', icon: Heart, label: 'Wishlist' },
-                              { to: '/support', icon: HelpCircle, label: 'Support Center' },
+                              { to: '/orders', icon: Package, label: t('navbar.orders', 'My Orders') },
+                              { to: '/wishlist', icon: Heart, label: t('navbar.wishlist', 'Wishlist') },
+                              { to: '/support', icon: HelpCircle, label: t('navbar.helpCenter', 'Support Center') },
                             ] : []),
                             ...(isAdmin ? [
-                              { to: '/admin', icon: Shield, label: 'Admin Panel' },
+                              { to: '/admin', icon: Shield, label: t('navbar.adminPanel', 'Admin Panel') },
                             ] : []),
                           ].map(item => (
                             <Link key={item.to} to={item.to}
@@ -381,7 +339,7 @@ const Navbar = () => {
                             <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: 'rgba(229,62,62,0.08)' }}>
                               <LogOut size={13} />
                             </div>
-                            Log out
+                            {t('navbar.logout', 'Log out')}
                           </button>
                         </div>
                       </motion.div>
@@ -394,21 +352,29 @@ const Navbar = () => {
             {!user && (
               <>
                 <Link to="/login" className="text-[13.5px] font-semibold text-white/75 hover:text-white px-3.5 py-1.5 rounded-lg hover:bg-white/12 transition-all">
-                  Log in
+                  {t('navbar.login', 'Log in')}
                 </Link>
                 <Link to="/register"
                   className="text-[13.5px] font-bold px-5 py-2 rounded-lg transition-all hover:scale-105 flex items-center gap-1.5"
                   style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 4px 14px rgba(245,166,35,0.40)' }}
                 >
                   <Sparkles size={13} />
-                  Get Started
+                  {t('navbar.getStarted', 'Get Started')}
                 </Link>
               </>
             )}
           </div>
 
           {/* ── Mobile Right ── */}
-          <div className="flex md:hidden items-center gap-1">
+          <div className="flex md:hidden items-center gap-1.5">
+            <button
+              onClick={() => handleLanguageChange(i18n.language?.startsWith('hi') ? 'en' : 'hi')}
+              className="flex items-center gap-1 px-2.5 h-8 rounded-full transition-all text-[12px] font-bold border border-white/20 text-white hover:bg-white/12"
+              title={t('navbar.language', 'Language')}
+            >
+              <Globe size={12} />
+              {i18n.language?.startsWith('hi') ? 'EN' : 'हिंदी'}
+            </button>
             <ThemeToggle size="sm" />
             {isCustomer && (
               <Link to="/cart" className="relative w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all">
@@ -458,7 +424,7 @@ const Navbar = () => {
               <input
                 ref={searchRef}
                 type="text"
-                placeholder="Search products…"
+                placeholder={t('navbar.search', 'Search products…')}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 onKeyDown={e => {
@@ -507,7 +473,7 @@ const Navbar = () => {
                     onClick={() => { setSearchOpen(false); setSearchQuery('') }}
                     className="block p-3 text-center text-[12px] font-bold text-white/70 hover:text-white transition-colors bg-white/5 hover:bg-white/10"
                   >
-                    See all results for "{searchQuery}"
+                    {t('navbar.seeAllResults', 'See all results for')} "{searchQuery}"
                   </Link>
                 </div>
               </div>
@@ -558,11 +524,11 @@ const Navbar = () => {
                 {isCustomer && (
                   <>
                     {[
-                      { to: '/', label: 'Home' },
-                      { to: '/products', label: 'Products' },
-                      { to: '/about', label: 'About Us' },
-                      ...(user ? [{ to: '/support', label: 'Help' }] : []),
-                      { to: '/contact', label: 'Contact' },
+                      { to: '/', label: t('navbar.home', 'Home') },
+                      { to: '/products', label: t('navbar.shop', 'Products') },
+                      { to: '/about', label: t('navbar.about', 'About Us') },
+                      ...(user ? [{ to: '/support', label: t('navbar.help', 'Help') }] : []),
+                      { to: '/contact', label: t('navbar.contact', 'Contact') },
                     ].map(({ to, label }, i) => (
                       <motion.div
                         key={to}
@@ -582,41 +548,41 @@ const Navbar = () => {
                 )}
                 {isAdmin && (
                   <>
-                    <Link to="/admin" className={mobileLinkCls('/admin')}>Dashboard</Link>
-                    <Link to="/admin/products" className={mobileLinkCls('/admin/products')}>Products</Link>
-                    <Link to="/admin/reviews" className={mobileLinkCls('/admin/reviews')}>Reviews</Link>
-                    <Link to="/admin/orders" className={mobileLinkCls('/admin/orders')}>Orders</Link>
-                    <Link to="/admin/users" className={mobileLinkCls('/admin/users')}>Users</Link>
-                    <Link to="/admin/analytics" className={mobileLinkCls('/admin/analytics')}>Analytics</Link>
+                    <Link to="/admin" className={mobileLinkCls('/admin')}>{t('navbar.dashboard', 'Dashboard')}</Link>
+                    <Link to="/admin/products" className={mobileLinkCls('/admin/products')}>{t('navbar.products', 'Products')}</Link>
+                    <Link to="/admin/reviews" className={mobileLinkCls('/admin/reviews')}>{t('navbar.reviews', 'Reviews')}</Link>
+                    <Link to="/admin/orders" className={mobileLinkCls('/admin/orders')}>{t('navbar.ordersAdmin', 'Orders')}</Link>
+                    <Link to="/admin/users" className={mobileLinkCls('/admin/users')}>{t('navbar.users', 'Users')}</Link>
+                    <Link to="/admin/analytics" className={mobileLinkCls('/admin/analytics')}>{t('navbar.analytics', 'Analytics')}</Link>
                   </>
                 )}
 
                 <div className="pt-4 mt-2 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                   {user ? (
                     <>
-                      <Link to="/profile" className={mobileLinkCls('/profile')}><User size={16} className="shrink-0" />Profile</Link>
+                      <Link to="/profile" className={mobileLinkCls('/profile')}><User size={16} className="shrink-0" />{t('navbar.profile', 'Profile')}</Link>
                       {isCustomer && (
                         <>
-                          <Link to="/orders" className={mobileLinkCls('/orders')}><Package size={16} className="shrink-0" />My Orders</Link>
-                          <Link to="/wishlist" className={mobileLinkCls('/wishlist')}><Heart size={16} className="shrink-0" />Wishlist</Link>
-                          <Link to="/support" className={mobileLinkCls('/support')}><HelpCircle size={16} className="shrink-0" />Help</Link>
+                          <Link to="/orders" className={mobileLinkCls('/orders')}><Package size={16} className="shrink-0" />{t('navbar.orders', 'My Orders')}</Link>
+                          <Link to="/wishlist" className={mobileLinkCls('/wishlist')}><Heart size={16} className="shrink-0" />{t('navbar.wishlist', 'Wishlist')}</Link>
+                          <Link to="/support" className={mobileLinkCls('/support')}><HelpCircle size={16} className="shrink-0" />{t('navbar.help', 'Help')}</Link>
                         </>
                       )}
                       <button onClick={handleLogout}
                         className="flex items-center gap-3 w-full px-4 py-3 text-sm font-semibold rounded-xl transition-all"
                         style={{ color: '#FC8181' }}>
-                        <LogOut size={16} className="shrink-0" /> Log out
+                        <LogOut size={16} className="shrink-0" /> {t('navbar.logout', 'Log out')}
                       </button>
                     </>
                   ) : (
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <Link to="/login" className="flex items-center justify-center h-11 rounded-xl border border-white/20 text-white font-semibold text-[13.5px] hover:bg-white/10 transition-all">
-                        Log in
+                          {t('navbar.login', 'Log in')}
                       </Link>
                       <Link to="/register"
                         className="flex items-center justify-center h-11 rounded-xl font-bold text-[13.5px] transition-all hover:scale-[1.02] gap-1.5"
                         style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 4px 14px rgba(245,166,35,0.35)' }}>
-                        <Sparkles size={13} /> Sign up
+                          <Sparkles size={13} /> {t('navbar.signup', 'Sign up')}
                       </Link>
                     </div>
                   )}

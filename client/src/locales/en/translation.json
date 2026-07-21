@@ -9,7 +9,21 @@
     "profile": "Profile",
     "dashboard": "Dashboard",
     "language": "Language",
-    "search": "Search products..."
+    "search": "Search products...",
+    "help": "Help",
+    "reviews": "Reviews",
+    "subscriptions": "Subscriptions",
+    "ordersAdmin": "Orders",
+    "users": "Users",
+    "newsletters": "Newsletters",
+    "analytics": "Analytics",
+    "orders": "My Orders",
+    "wishlist": "Wishlist",
+    "helpCenter": "Support Center",
+    "adminPanel": "Admin Panel",
+    "getStarted": "Get Started",
+    "signup": "Sign Up",
+    "seeAllResults": "See all results for"
   },
   "footer": {
     "contactHeading": "Contact",

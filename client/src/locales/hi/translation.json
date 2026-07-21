@@ -9,7 +9,21 @@
     "profile": "प्रोफ़ाइल",
     "dashboard": "डैशबोर्ड",
     "language": "भाषा",
-    "search": "उत्पाद खोजें..."
+    "search": "उत्पाद खोजें...",
+    "help": "सहायता",
+    "reviews": "समीक्षाएँ",
+    "subscriptions": "सदस्यता",
+    "ordersAdmin": "ऑर्डर",
+    "users": "उपयोगकर्ता",
+    "newsletters": "न्यूज़लेटर",
+    "analytics": "एनालिटिक्स",
+    "orders": "मेरे ऑर्डर",
+    "wishlist": "विशलिस्ट",
+    "helpCenter": "सहायता केंद्र",
+    "adminPanel": "एडमिन पैनल",
+    "getStarted": "शुरू करें",
+    "signup": "साइन अप करें",
+    "seeAllResults": "सभी परिणाम देखें"
   },
   "footer": {
     "contactHeading": "संपर्क करें",
