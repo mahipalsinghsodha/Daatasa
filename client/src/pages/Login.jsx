@@ -74,6 +74,22 @@ const Login = () => {
 
   useEffect(() => { if (user) navigate(from, { replace: true }) }, [user])
 
+  // Handle token from URL if redirected (fallback from popup)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const token = params.get('token')
+    if (token) {
+      setLoading(true)
+      googleLogin(token).then(() => {
+        toast.success(t('auth.loginDesc', 'Welcome back! 👋').replace(' Please enter your details.', ''))
+        navigate(from, { replace: true })
+      }).catch((err) => {
+        toast.error('Google login failed')
+        setLoading(false)
+      })
+    }
+  }, [location.search, googleLogin, navigate, from, t])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email.trim() || !password) { toast.error('Please fill all fields'); return }

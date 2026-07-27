@@ -1,6 +1,6 @@
 // pages/Register.jsx — Premium Immersive Design
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, Sparkles } from 'lucide-react'
@@ -63,6 +63,7 @@ const Register = () => {
 
   const { register, googleLogin, user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [name,     setName]     = useState('')
   const [email,    setEmail]    = useState('')
@@ -73,6 +74,22 @@ const Register = () => {
   const [loading,  setLoading]  = useState(false)
 
   useEffect(() => { if (user) navigate('/', { replace: true }) }, [user])
+
+  // Handle token from URL if redirected (fallback from popup)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const token = params.get('token')
+    if (token) {
+      setLoading(true)
+      googleLogin(token).then(() => {
+        toast.success('Account created! Welcome to Daatasa 🎉')
+        navigate('/', { replace: true })
+      }).catch((err) => {
+        toast.error('Google login failed')
+        setLoading(false)
+      })
+    }
+  }, [location.search, googleLogin, navigate])
 
   /* Password strength */
   const strength = (() => {
