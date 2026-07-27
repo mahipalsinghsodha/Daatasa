@@ -110,8 +110,8 @@ const Login = () => {
     const top = window.screenY + (window.outerHeight - height) / 2
     
     const messageListener = async (event) => {
-      if (event.origin !== window.location.origin) return;
-      if (event.data?.token) {
+      // Allow message if it contains the expected token structure
+      if (event.data && event.data.token) {
         window.removeEventListener('message', messageListener);
         setLoading(true)
         try {

@@ -70,6 +70,7 @@ app.use(helmet({
     },
   },
   crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
 }));
 
 // Trust proxy for rate limiter to get accurate IP behind load balancers/proxies
