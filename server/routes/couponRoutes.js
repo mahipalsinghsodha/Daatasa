@@ -10,11 +10,11 @@ const validateCoupon = [
   body('code').trim().notEmpty().withMessage('Coupon code is required').isAlphanumeric().withMessage('Coupon code must be alphanumeric'),
   body('discountType').isIn(['percentage', 'fixed']).withMessage('Invalid discount type'),
   body('discountValue').isNumeric().withMessage('Discount value must be a number'),
-  body('maxDiscount').optional({ nullable: true }).isNumeric(),
-  body('minOrderValue').optional({ nullable: true }).isNumeric(),
+  body('maxDiscount').optional({ nullable: true, checkFalsy: true }).isNumeric(),
+  body('minOrderValue').optional({ nullable: true, checkFalsy: true }).isNumeric(),
   body('validUntil').isISO8601().withMessage('validUntil must be a valid date'),
-  body('usageLimit').optional({ nullable: true }).isInt({ min: 1 }),
-  body('usagePerUser').optional({ nullable: true }).isInt({ min: 1 })
+  body('usageLimit').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 }),
+  body('usagePerUser').optional({ nullable: true, checkFalsy: true }).isInt({ min: 1 })
 ];
 
 // ========================================================================

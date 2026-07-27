@@ -8,6 +8,7 @@ import Footer from './components/Footer'
 import ProtectedRoute from './components/ProtectedRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import PromoPopup from './components/PromoPopup'
 import { CartProvider } from './context/CartContext'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
@@ -25,7 +26,7 @@ const ProductDetail   = lazy(() => import('./pages/ProductDetail'))
 const Cart            = lazy(() => import('./pages/Cart'))
 const TrackOrder      = lazy(() => import('./pages/TrackOrder')) // ✅ P1: Track Order page
 const Category        = lazy(() => import('./pages/Category'))   // ✅ P1: Category Landing page
-const Deals           = lazy(() => import('./pages/Deals'))      // ✅ P1: Deals page
+
 const ChangePassword  = lazy(() => import('./pages/ChangePassword')) // ✅ P1: Change Password page
 const Login           = lazy(() => import('./pages/Login'))
 const Register        = lazy(() => import('./pages/Register'))
@@ -141,7 +142,7 @@ function AnimatedRoutes() {
             <Route path="/"                       element={<Home />} />
             <Route path="/products"               element={<Products />} />
             <Route path="/category/:slug"         element={<Category />} /> {/* ✅ P1 */}
-            <Route path="/deals"                  element={<Deals />} />    {/* ✅ P1 */}
+
             <Route path="/search"                 element={<SearchResults />} />
             <Route path="/products/:id"           element={<ProductDetail />} />
             <Route path="/cart"                   element={<Cart />} />
@@ -244,6 +245,7 @@ function App() {
                     color: 'var(--text-primary)',
                   }}
                 />
+                <PromoPopup />
                 <ScrollToTop />
                 <Navbar />
                 <Breadcrumb />
