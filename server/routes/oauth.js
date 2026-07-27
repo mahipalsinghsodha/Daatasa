@@ -61,26 +61,8 @@ router.get(
       path: '/',
     });
 
-    // 5. Send postMessage to frontend popup opener
-    res.send(`
-      <script>
-        try {
-          if (window.opener && window.opener !== window) {
-            window.opener.postMessage(
-              {
-                token: "${accessToken}"
-              },
-              "${process.env.CLIENT_URL}"
-            );
-            window.close();
-          } else {
-            window.location.href = "${process.env.CLIENT_URL}/login?token=${accessToken}";
-          }
-        } catch (error) {
-          window.location.href = "${process.env.CLIENT_URL}/login?token=${accessToken}";
-        }
-      </script>
-    `);
+    // 5. Redirect to frontend with token
+    res.redirect(`${process.env.CLIENT_URL}/login?token=${accessToken}`);
   }
 );
 
