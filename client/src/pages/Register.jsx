@@ -126,8 +126,31 @@ const Register = () => {
   }
 
   const handleGoogleLogin = () => {
-    // Navigate to backend API for Google OAuth
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google`;
+    const width = 500
+    const height = 600
+    const left = window.screenX + (window.outerWidth - width) / 2
+    const top = window.screenY + (window.outerHeight - height) / 2
+    
+    const messageListener = async (event) => {
+      if (event.data && event.data.token) {
+        window.removeEventListener('message', messageListener);
+        setLoading(true)
+        try {
+          await googleLogin(event.data.token)
+        } catch (err) {
+          toast.error('Google login failed')
+        } finally {
+          setLoading(false)
+        }
+      }
+    };
+    window.addEventListener('message', messageListener);
+
+    window.open(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/google`,
+      'Google Login',
+      `width=${width},height=${height},left=${left},top=${top}`
+    )
   }
 
   return (
