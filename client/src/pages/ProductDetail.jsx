@@ -339,6 +339,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
+            className="min-w-0"
           >
             <div className="relative bg-white rounded-[2rem] border border-brand-primary/10 shadow-sm overflow-hidden aspect-square flex items-center justify-center p-10 group mb-6">
               {product.featured && (
@@ -395,16 +396,16 @@ const ProductDetail = () => {
             })()}
 
             {/* Trust badges */}
-            <div className="grid grid-cols-3 gap-3 mt-4">
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-3 mt-4">
               {[
                 { icon: Truck,     title: 'Pan India', sub: 'Shipping' },
                 { icon: Shield,    title: 'Lab Tested', sub: 'Pure Quality' },
                 { icon: RefreshCw, title: 'Bilona',    sub: 'Traditional' },
               ].map((b, i) => (
-                <div key={i} className="bg-white border border-brand-primary/10 rounded-[1.5rem] p-4 text-center shadow-sm">
-                  <b.icon size={20} className="text-brand-secondary mx-auto mb-2" />
-                  <p className="text-xs font-bold text-brand-primary uppercase tracking-wider">{b.title}</p>
-                  <p className="text-[10px] text-brand-text/40">{b.sub}</p>
+                <div key={i} className="bg-white border border-brand-primary/10 rounded-2xl sm:rounded-[1.5rem] p-2 sm:p-4 text-center shadow-sm flex flex-col items-center justify-center">
+                  <b.icon size={20} className="text-brand-secondary mb-1.5 sm:mb-2 w-4 h-4 sm:w-5 sm:h-5" />
+                  <p className="text-[9px] sm:text-xs font-bold text-brand-primary uppercase tracking-wide sm:tracking-wider leading-tight">{b.title}</p>
+                  <p className="text-[8px] sm:text-[10px] text-brand-text/40 mt-0.5">{b.sub}</p>
                 </div>
               ))}
             </div>
@@ -415,7 +416,7 @@ const ProductDetail = () => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4, delay: 0.1 }}
-            className="space-y-5"
+            className="space-y-5 min-w-0"
           >
             {/* Category badge */}
             <div className="flex items-center gap-2 mb-2">
@@ -488,7 +489,7 @@ const ProductDetail = () => {
 
             {/* Deliver to */}
             {user && (
-              <div className="flex items-start gap-4 p-5 bg-[var(--ivory)] border border-brand-primary/10 rounded-[1.5rem]">
+              <div className="flex items-start gap-3 sm:gap-4 p-4 sm:p-5 bg-[var(--ivory)] border border-brand-primary/10 rounded-[1.5rem]">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-brand-primary/5 text-brand-primary mt-0.5">
                   <MapPin size={18} />
                 </div>
@@ -514,11 +515,11 @@ const ProductDetail = () => {
             )}
 
             {/* ── Delivery Estimation (PIN check) ── */}
-            <div className="border border-brand-primary/10 rounded-[1.5rem] p-6 bg-white space-y-4 shadow-sm">
+            <div className="border border-brand-primary/10 rounded-[1.5rem] p-4 sm:p-6 bg-white space-y-4 shadow-sm">
               <p className="text-[10px] font-bold text-brand-primary uppercase tracking-widest flex items-center gap-2">
                 <Truck size={14} className="text-brand-secondary" /> Check Delivery
               </p>
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <div className="relative flex-1">
                   <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text/40 pointer-events-none" />
                   <input
@@ -563,10 +564,10 @@ const ProductDetail = () => {
               // Dynamic max: capped at 10, but never exceeds actual stock
               const maxQty = Math.min(product.stock, 10)
               return (
-              <div className="bg-white border border-brand-primary/10 rounded-[2rem] p-6 space-y-5 shadow-sm">
+              <div className="bg-white border border-brand-primary/10 rounded-[2rem] p-4 sm:p-6 space-y-5 shadow-sm">
 
                   {/* Quantity selector */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 xs:gap-0">
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Quantity</p>
                       <p className="text-xs text-gray-400">Max {maxQty} per order</p>
@@ -574,16 +575,16 @@ const ProductDetail = () => {
                     <div className="flex items-center gap-1 border border-brand-primary/10 rounded-full p-1 bg-white">
                       <button
                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-brand-primary/5 hover:bg-brand-primary hover:text-white transition-colors text-brand-primary"
+                        className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-brand-primary/5 hover:bg-brand-primary hover:text-white transition-colors text-brand-primary"
                       >
-                        <Minus size={15} />
+                        <Minus size={14} className="sm:w-[15px] sm:h-[15px]" />
                       </button>
-                      <span className="w-12 text-center text-lg font-bold text-brand-primary font-display">{quantity}</span>
+                      <span className="w-8 sm:w-12 text-center text-base sm:text-lg font-bold text-brand-primary font-display">{quantity}</span>
                       <button
                         onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-brand-primary/5 hover:bg-brand-primary hover:text-white transition-colors text-brand-primary"
+                        className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-brand-primary/5 hover:bg-brand-primary hover:text-white transition-colors text-brand-primary"
                       >
-                        <Plus size={15} />
+                        <Plus size={14} className="sm:w-[15px] sm:h-[15px]" />
                       </button>
                     </div>
                   </div>
@@ -672,7 +673,7 @@ const ProductDetail = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`relative px-8 py-4 text-sm font-bold transition-colors duration-200 uppercase tracking-widest ${
+                className={`relative px-4 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-bold transition-colors duration-200 uppercase tracking-wide sm:tracking-widest ${
                   activeTab === tab.key
                     ? 'text-brand-primary'
                     : 'text-brand-text/40 hover:text-brand-primary/70'
@@ -861,7 +862,7 @@ const ProductDetail = () => {
               <h2 className="text-xl font-extrabold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>You Might Also Like</h2>
               <Link to={`/products?category=${product.category}`} className="text-sm font-bold text-[var(--gold)] hover:brightness-110 transition-all">View All →</Link>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
               {related.map((p, idx) => (
                 <motion.div
                   key={p._id}
@@ -881,13 +882,13 @@ const ProductDetail = () => {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
-                    <div className="p-5">
-                      <p className="text-base font-bold font-display text-brand-primary truncate mb-1 group-hover:text-brand-secondary transition-colors">{p.name}</p>
-                      <div className="flex items-center justify-between">
-                        <p className="text-lg font-bold text-brand-primary">₹{p.price.toLocaleString('en-IN')}</p>
+                    <div className="p-3 sm:p-5">
+                      <p className="text-sm sm:text-base font-bold font-display text-brand-primary truncate mb-1 group-hover:text-brand-secondary transition-colors">{p.name}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-0">
+                        <p className="text-base sm:text-lg font-bold text-brand-primary">₹{p.price.toLocaleString('en-IN')}</p>
                         <div className="flex gap-0.5">
                           {[1,2,3,4,5].map(i => (
-                            <Star key={i} size={11} className={i <= Math.round(p.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'} />
+                            <Star key={i} size={10} className={`sm:w-[11px] sm:h-[11px] ${i <= Math.round(p.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'}`} />
                           ))}
                         </div>
                       </div>
@@ -904,26 +905,31 @@ const ProductDetail = () => {
       {/* ── Sticky Mobile Add to Cart Bar ── */}
       {product && product.stock > 0 && isCustomer && (
         <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur-xl border-t border-slate-100 shadow-[0_-8px_30px_rgba(27,47,110,0.08)] px-4 py-3 safe-area-inset-bottom">
-          <div className="flex items-center gap-3 max-w-lg mx-auto">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-slate-500 truncate">{product.name}</p>
-              <p className="text-base font-extrabold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>
+          <div className="flex items-center justify-between gap-1.5 xs:gap-3 max-w-lg mx-auto">
+            <div className="hidden xs:block flex-1 min-w-0">
+              <p className="text-[10px] sm:text-xs text-slate-500 truncate">{product.name}</p>
+              <p className="text-sm sm:text-base font-extrabold text-slate-900 leading-none" style={{ fontFamily: 'var(--font-display)' }}>
                 ₹{(product.price * quantity).toLocaleString('en-IN')}
               </p>
             </div>
-            <div className="flex items-center gap-1 border border-slate-200 rounded-xl p-1 shrink-0 bg-white">
+            {/* Show only price on extra small screens */}
+            <div className="xs:hidden font-extrabold text-slate-900 leading-none shrink-0" style={{ fontFamily: 'var(--font-display)' }}>
+              ₹{(product.price * quantity).toLocaleString('en-IN')}
+            </div>
+            
+            <div className="flex items-center gap-0.5 sm:gap-1 border border-slate-200 rounded-xl p-0.5 sm:p-1 shrink-0 bg-white">
               <button
                 onClick={() => setQuantity(q => Math.max(1, q - 1))}
                 aria-label="Decrease quantity"
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700"
+                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700"
               >
                 <Minus size={13} />
               </button>
-              <span className="w-8 text-center text-sm font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>{quantity}</span>
+              <span className="w-5 sm:w-8 text-center text-xs sm:text-sm font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>{quantity}</span>
               <button
                 onClick={() => setQuantity(q => Math.min(Math.min(product.stock, 10), q + 1))}
                 aria-label="Increase quantity"
-                className="w-8 h-8 flex items-center justify-center rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700"
+                className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors text-slate-700"
               >
                 <Plus size={13} />
               </button>
@@ -931,7 +937,7 @@ const ProductDetail = () => {
             <button
               onClick={() => handleAddToCart()}
               disabled={adding}
-              className="px-5 py-3 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50 flex items-center gap-2 shrink-0 active:scale-[0.98]"
+              className="px-3 py-2 sm:px-5 sm:py-3 text-white font-bold rounded-xl text-xs sm:text-sm transition-all disabled:opacity-50 flex items-center gap-1.5 sm:gap-2 shrink-0 active:scale-[0.98]"
               style={{
                 fontFamily: 'var(--font-display)',
                 background: 'var(--brand-gradient)',
@@ -939,10 +945,10 @@ const ProductDetail = () => {
               }}
             >
               {adding
-                ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <ShoppingCart size={16} />
+                ? <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                : <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
               }
-              Add to Cart
+              <span>Add <span className="hidden xs:inline">to Cart</span></span>
             </button>
           </div>
         </div>

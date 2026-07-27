@@ -15,7 +15,7 @@ const WhatsAppButton = () => {
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.9 }}
-      className="fixed bottom-6 right-6 z-[60] w-14 h-14 rounded-full flex items-center justify-center text-white cursor-pointer shadow-[0_8px_25px_rgba(37,211,102,0.4)]"
+      className="fixed bottom-24 lg:bottom-6 right-4 lg:right-6 z-[60] w-12 h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center text-white cursor-pointer shadow-[0_8px_25px_rgba(37,211,102,0.4)]"
       style={{ background: '#25D366' }} // Official WhatsApp Green
       title="Chat with us on WhatsApp"
     >

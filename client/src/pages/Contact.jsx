@@ -122,8 +122,8 @@ export default function Contact() {
         <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
 
           {/* Form */}
-          <div className="lg:col-span-3">
-            <div className="rounded-[2rem] p-8 sm:p-10 bg-white border border-brand-primary/10 shadow-sm">
+          <div className="lg:col-span-3 min-w-0">
+            <div className="rounded-[2rem] p-5 sm:p-10 bg-white border border-brand-primary/10 shadow-sm overflow-hidden">
               {sent ? (
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-10">
                   <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}
@@ -164,7 +164,7 @@ export default function Contact() {
           </div>
 
           {/* Contact Info */}
-          <div className="lg:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-3 min-w-0">
             <ContactRow icon={Mail}   label={t('contact.infoEmail')}   value="support@daatasa.com" href="mailto:support@daatasa.com" />
             <ContactRow icon={Phone}  label={t('contact.infoPhone')}   value="+91 7665306403"          href="tel:+917665306403" />
             <ContactRow icon={MapPin} label={t('contact.infoAddress')} value="Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan" />

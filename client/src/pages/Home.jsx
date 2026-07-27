@@ -131,20 +131,20 @@ export default function Home() {
               </span>
             </motion.div>
             
-            <motion.h1 {...fadeUp(0.1)} className="text-5xl lg:text-7xl font-display font-bold leading-[1.1] mb-6 text-brand-primary">
+            <motion.h1 {...fadeUp(0.1)} className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold leading-[1.1] mb-6 text-brand-primary">
               {t('home.heroTitleNew', 'Pure Vedic Bilona')} <br />
               <span className="text-brand-secondary italic">{t('home.heroSubNew', 'Desi Cow Ghee')}</span>
             </motion.h1>
             
-            <motion.p {...fadeUp(0.2)} className="text-lg text-brand-text/70 mb-10 leading-relaxed font-light">
+            <motion.p {...fadeUp(0.2)} className="text-base sm:text-lg text-brand-text/70 mb-8 sm:mb-10 leading-relaxed font-light">
               {t('home.heroDescNew', 'Experience the pinnacle of purity with our traditionally hand-churned liquid gold. Crafted slowly in earthen pots to preserve authentic aroma, texture, and unmatched nutritional benefits.')}
             </motion.p>
             
-            <motion.div {...fadeUp(0.3)} className="flex flex-wrap items-center gap-4 mb-14">
-              <Link to="/products" className="btn btn-primary group h-14 px-8 text-[15px] rounded-full shadow-gold">
+            <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4 mb-10 sm:mb-14">
+              <Link to="/products" className="btn btn-primary group h-12 sm:h-14 px-6 sm:px-8 text-[14px] sm:text-[15px] rounded-full shadow-gold justify-center">
                 {t('home.shopBtn', 'Shop Collection')} <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/about" className="btn btn-secondary h-14 px-8 text-[15px] rounded-full">
+              <Link to="/about" className="btn btn-secondary h-12 sm:h-14 px-6 sm:px-8 text-[14px] sm:text-[15px] rounded-full justify-center">
                 {t('home.storyBtn', 'Explore Our Story')}
               </Link>
               <Link to="/track-order" className="btn btn-secondary h-14 px-8 text-[15px] rounded-full flex items-center gap-2 border border-brand-secondary/50">

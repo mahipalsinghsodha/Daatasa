@@ -44,8 +44,8 @@ export default function Footer() {
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-secondary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
       <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] mix-blend-overlay pointer-events-none" />
 
-      <div className="relative z-10 max-w-[1280px] mx-auto px-6 lg:px-8 pt-20 pb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
+      <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-20 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 sm:gap-12 lg:gap-8 mb-12 sm:mb-16">
 
           {/* Brand Column */}
           <div className="lg:col-span-5 pr-0 lg:pr-12">
@@ -73,7 +73,7 @@ export default function Footer() {
           </div>
 
           {/* Navigation Columns */}
-          <div className="lg:col-span-4 flex flex-col sm:flex-row gap-12 sm:gap-16">
+          <div className="lg:col-span-4 grid grid-cols-2 sm:flex sm:flex-row flex-wrap gap-x-4 gap-y-10 sm:gap-16">
             {navCols.map(col => (
               <div key={col.title}>
                 <h4 className="font-display text-lg font-bold mb-6 text-white tracking-wide">
@@ -140,7 +140,7 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-white/50 text-xs font-medium text-center md:text-left">
+          <p className="text-white/50 text-[11px] sm:text-xs font-medium text-center md:text-left leading-relaxed px-2 sm:px-0">
             {t('footer.copyright', { year }, `Daatasa. Daatasa Ghee — © Copyright ${year} by Daatasa Pvt. Ltd. All rights reserved.`)}
           </p>
           <div className="flex items-center gap-6">

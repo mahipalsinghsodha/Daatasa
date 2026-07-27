@@ -115,15 +115,15 @@ const Navbar = () => {
         boxShadow: scrolled ? '0 4px 30px rgba(27,47,110,0.40)' : 'none',
       }}
     >
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6">
-        <div className="flex items-center justify-between h-[68px]">
+      <div className="max-w-[1280px] mx-auto px-2 sm:px-4 md:px-6">
+        <div className="flex items-center justify-between h-[60px] sm:h-[68px]">
 
           {/* ── Logo ── */}
-          <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-2.5 shrink-0 group bg-[#fffdf8] rounded-xl px-1.5 py-1">
+          <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 group bg-[#fffdf8] rounded-xl px-1 sm:px-1.5 py-1">
             <img 
               src="/logo_rectangle.png" 
               alt="Daatasa Logo" 
-              className="h-[40px] sm:h-[48px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
+              className="h-[34px] sm:h-[48px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
             />
             {isAdmin && (
               <span className="hidden sm:inline-block ml-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full"
@@ -366,10 +366,10 @@ const Navbar = () => {
           </div>
 
           {/* ── Mobile Right ── */}
-          <div className="flex md:hidden items-center gap-1.5">
+          <div className="flex md:hidden items-center gap-0.5 sm:gap-1.5">
             <button
               onClick={() => handleLanguageChange(i18n.language?.startsWith('hi') ? 'en' : 'hi')}
-              className="flex items-center gap-1 px-2.5 h-8 rounded-full transition-all text-[12px] font-bold border border-white/20 text-white hover:bg-white/12"
+              className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 h-8 rounded-full transition-all text-[11px] sm:text-[12px] font-bold border border-white/20 text-white hover:bg-white/12"
               title={t('navbar.language', 'Language')}
             >
               <Globe size={12} />
@@ -389,7 +389,7 @@ const Navbar = () => {
             )}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all"
+              className="w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all"
               aria-label="Toggle menu"
             >
               <AnimatePresence mode="wait" initial={false}>
@@ -400,7 +400,7 @@ const Navbar = () => {
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: 0.12 }}
                 >
-                  {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+                  {mobileOpen ? <X size={18} className="sm:w-5 sm:h-5" /> : <Menu size={18} className="sm:w-5 sm:h-5" />}
                 </motion.span>
               </AnimatePresence>
             </button>
@@ -506,7 +506,7 @@ const Navbar = () => {
                 boxShadow: '0 20px 50px rgba(27,47,110,0.55)',
               }}
             >
-              <div className="px-4 py-5 space-y-1">
+              <div className="px-3 sm:px-4 py-4 sm:py-5 space-y-1">
                 {user && (
                   <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-4"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>

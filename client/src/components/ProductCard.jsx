@@ -126,7 +126,7 @@ const ProductCard = ({ product, categories = [] }) => {
       </div>
 
       {/* ── Content ── */}
-      <div className="p-4 sm:p-5">
+      <div className="p-3 sm:p-5">
         {/* Rating */}
         <div className="flex items-center gap-1.5 mb-2">
           <div className="flex gap-0.5">
@@ -165,11 +165,11 @@ const ProductCard = ({ product, categories = [] }) => {
                 <div className="text-[10px] font-bold mb-1 uppercase tracking-widest text-brand-secondary">{product.weight}</div>
               )}
               {product.mrp && product.mrp > product.price ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-lg font-bold text-brand-primary">
+                <div className="flex flex-col xs:flex-row xs:items-center gap-0 sm:gap-1.5 flex-wrap mt-0.5 sm:mt-0">
+                  <span className="text-base sm:text-lg font-bold text-brand-primary leading-none">
                     ₹{product.price?.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-sm line-through text-brand-text/40">
+                  <span className="text-xs sm:text-sm line-through text-brand-text/40">
                     ₹{product.mrp?.toLocaleString('en-IN')}
                   </span>
                 </div>
