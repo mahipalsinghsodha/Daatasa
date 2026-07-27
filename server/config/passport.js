@@ -14,7 +14,8 @@ const googleauth = () => {
           process.env.GOOGLE_CLIENT_SECRET,
 
         callbackURL:
-          `${process.env.BASE_URL}/api/auth/google/callback`,
+          "/api/auth/google/callback",
+        proxy: true,
       },
 
       async (
