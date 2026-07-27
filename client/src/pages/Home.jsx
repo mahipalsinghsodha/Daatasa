@@ -1,216 +1,43 @@
-// pages/Home.jsx — Premium Edition
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { useTranslation } from 'react-i18next'
 import ProductCard from '../components/ProductCard'
-import { FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, FiAward, FiCheck, FiPhone, FiZap, FiPlay, FiPause, FiX, FiChevronLeft, FiChevronRight, FiClock, FiMaximize2, FiImage } from 'react-icons/fi'
+import { FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, FiAward, FiCheck, FiPlay, FiChevronLeft, FiChevronRight, FiMaximize2, FiClock, FiHeart, FiShoppingCart, FiEye } from 'react-icons/fi'
 
-/* ── Skeleton ─────────────────────────────────────────────── */
-const ProductSkeleton = () => (
-  <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-    <div className="aspect-square skeleton" />
-    <div className="p-4 space-y-3">
-      <div className="h-3 skeleton rounded-full w-4/5" />
-      <div className="h-3 skeleton rounded-full w-2/3" />
-      <div className="h-6 skeleton rounded-full w-1/3 mt-2" />
-    </div>
-  </div>
-)
-
+// Animation variants
 const fadeUp = (delay = 0) => ({
-  initial: { opacity: 0, y: 32 },
+  initial: { opacity: 0, y: 40 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
-  transition: { duration: 0.60, delay, ease: [0.22, 1, 0.36, 1] },
+  viewport: { once: true, margin: "-50px" },
+  transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
 })
 
-/* ── Data ─────────────────────────────────────────────────── */
-const STATS = [
-  { value: '5,000+', label: 'Happy Families', icon: '👨‍👩‍👧‍👦' },
-  { value: '100%',   label: 'Pure & Natural',  icon: '🌿' },
-  { value: '4.9 ★',  label: 'Average Rating',  icon: '⭐' },
-  { value: '48hrs',  label: 'Delivery Time',   icon: '🚚' },
-]
+const slideIn = (delay = 0, direction = "left") => ({
+  initial: { opacity: 0, x: direction === "left" ? -40 : 40 },
+  whileInView: { opacity: 1, x: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.7, delay, ease: [0.22, 1, 0.36, 1] },
+})
 
-const FEATURES = [
-  { icon: <FiAward   size={20} />, title: 'Farm Sourced',    sub: 'Direct from local farms',   color: 'rgba(245,166,35,0.12)', iconColor: '#F5A623' },
-  { icon: <FiDroplet size={20} />, title: 'Bilona Process',  sub: 'Traditional hand-churned',  color: 'rgba(27,47,110,0.08)',  iconColor: '#2D4499' },
-  { icon: <FiShield  size={20} />, title: 'FSSAI Certified', sub: 'Quality guaranteed',         color: 'rgba(56,161,105,0.10)', iconColor: '#38A169' },
-  { icon: <FiTruck   size={20} />, title: 'Pan India',       sub: 'Fast & safe delivery',      color: 'rgba(49,130,206,0.10)', iconColor: '#3182CE' },
-]
-
-const WHY_US = [
-  {
-    icon: <FiAward size={20} />,
-    title: 'Farm to Table',
-    text: 'Sourced directly from trusted local farms with zero middlemen ensuring freshness and quality at every step.',
-    color: 'rgba(245,166,35,0.15)', iconColor: 'var(--gold)',
-  },
-  {
-    icon: <FiDroplet size={20} />,
-    title: 'Traditional Bilona Method',
-    text: 'Slow, hand-churned process that preserves all natural nutrients, vitamins and the rich golden aroma.',
-    color: 'rgba(27,47,110,0.10)', iconColor: 'var(--navy)',
-  },
-  {
-    icon: <FiShield size={20} />,
-    title: 'Certified Purity',
-    text: 'Rigorously tested and FSSAI certified for absolute safety and uncompromising quality you can trust.',
-    color: 'rgba(56,161,105,0.12)', iconColor: 'var(--success)',
-  },
-]
-
-const TESTIMONIALS = [
-  { name: 'Anjali Sharma',    role: 'Home Maker & Mother',          rating: 5, initials: 'AS', color: '#1B2F6E', comment: 'This Tharparkar Bilona Ghee smells exactly like the hand-churned ghee my grandmother used to make in Rajasthan. The graininess and the rich aroma are absolutely perfect!' },
-  { name: 'Dr. Ramesh Patel', role: 'Nutritionist & Wellness Coach', rating: 5, initials: 'RP', color: '#38A169', comment: 'Finding genuine, chemical-free ghee from Tharparkar cows is hard. I tested Daatasa myself and the purity from their village process is exceptional.' },
-  { name: 'Vikram Malhotra',  role: 'Fitness Enthusiast',           rating: 5, initials: 'VM', color: '#E09010', comment: 'I add Daatasa ghee to my bullet coffee every morning. The traditional village preparation gives sustained energy and the taste is incredible.' },
-]
-
-/* ── Wave SVG dividers ──────────────────────────────────────── */
-const WaveDown = ({ from = '#fff', to = '#EAF5FB' }) => (
-  <div style={{ background: from, lineHeight: 0 }}>
-    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 60 }}>
-      <path d="M0,0 C480,80 960,80 1440,0 L1440,80 L0,80 Z" fill={to} />
-    </svg>
-  </div>
-)
-
-const WaveUp = ({ from = '#EAF5FB', to = '#fff' }) => (
-  <div style={{ background: from, lineHeight: 0 }}>
-    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 60 }}>
-      <path d="M0,80 C480,0 960,0 1440,80 L1440,0 L0,0 Z" fill={to} />
-    </svg>
-  </div>
-)
-
-/* ── Data for Ghee Making & Gallery ───────────────────────── */
-const GHEE_STEPS = [
-  {
-    title: 'Milk Boiling & Cooling',
-    timeLabel: '0:00 - 0:10',
-    startTime: 0,
-    endTime: 10,
-    desc: 'Boiling & Cooling Process',
-    longDesc: 'Fresh milk from our Tharparkar cows is boiled in mitti ki handi (traditional earthen pots) over slow-burning kanda (cow dung cakes) and babool firewood, capturing the true rustic aroma of Rajasthan.',
-    image: '/ghee-step-1.png',
-  },
-  {
-    title: 'Curd Culturing & Churning',
-    timeLabel: '0:10 - 0:20',
-    startTime: 10,
-    endTime: 20,
-    desc: 'Traditional Bilona Churning',
-    longDesc: 'The curd is hand-churned before dawn using a wooden Bilona, rotated clockwise and anti-clockwise to separate the nutrient-rich makkhan (butter) from the buttermilk.',
-    image: '/ghee-step-2.png',
-  },
-  {
-    title: 'Butter Clarifying',
-    timeLabel: '0:20 - 0:30',
-    startTime: 20,
-    endTime: 30,
-    desc: 'Boiling Makhan in Kadhai',
-    longDesc: 'The fresh hand-churned Makhan is placed in a heavy brass/copper Kadhai and slowly heated over a wood fire. The water evaporates, leaving aromatic golden ghee.',
-    image: '/ghee-step-3.png',
-  },
-  {
-    title: 'Pure Ghee Packaging',
-    timeLabel: '0:30 - 0:40',
-    startTime: 30,
-    endTime: 40,
-    desc: 'Aromatic Jar Seal & Delivery',
-    longDesc: 'Our premium Bilona ghee is filtered and poured into sterile glass jars while warm. We seal in the granular texture and ship it directly to you.',
-    image: '/ghee-step-4.png',
-  },
-]
-
-const GALLERY_ITEMS = [
-  {
-    id: 1,
-    title: 'Happy Tharparkar Cows',
-    category: 'Farm',
-    desc: 'Our pure Tharparkar cows lovingly feeding their calves.',
-    image: '/gallery-cows.png'
-  },
-  {
-    id: 2,
-    title: 'Traditional Wooden Bilona',
-    category: 'Process',
-    desc: 'Wood churner used to extract fresh butter.',
-    image: '/gallery-churn.png'
-  },
-  {
-    id: 3,
-    title: 'Simmering Butter',
-    category: 'Process',
-    desc: 'Boiling Makhan slowly to clarify into liquid gold.',
-    image: '/ghee-step-3.png'
-  },
-  {
-    id: 4,
-    title: 'Fresh Milk Storage',
-    category: 'Farm',
-    desc: 'Boiling fresh organic milk in traditional pots.',
-    image: '/ghee-step-1.png'
-  },
-  {
-    id: 5,
-    title: 'Laboratory Purity Testing',
-    category: 'Purity',
-    desc: 'Tested for quality and FSSAI standards.',
-    image: '/gallery-testing.png'
-  },
-  {
-    id: 6,
-    title: 'Daatasa Ghee Jars',
-    category: 'Products',
-    desc: 'Finished premium granular ghee ready for kitchens.',
-    image: '/gallery-jar.png'
-  }
-]
-
-/* ── Component ─────────────────────────────────────────────── */
-const Home = () => {
+export default function Home() {
   const { t } = useTranslation()
   const [featuredProducts, setFeaturedProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTestimonial, setActiveTestimonial] = useState(0)
-
-  const localizedGheeSteps = useMemo(() => [
-    { ...GHEE_STEPS[0], title: t('home.processStep1Title'), desc: t('home.processStep1Desc'), longDesc: t('home.processStep1LongDesc') },
-    { ...GHEE_STEPS[1], title: t('home.processStep2Title'), desc: t('home.processStep2Desc'), longDesc: t('home.processStep2LongDesc') },
-    { ...GHEE_STEPS[2], title: t('home.processStep3Title'), desc: t('home.processStep3Desc'), longDesc: t('home.processStep3LongDesc') },
-    { ...GHEE_STEPS[3], title: t('home.processStep4Title'), desc: t('home.processStep4Desc'), longDesc: t('home.processStep4LongDesc') },
-  ], [t]);
-
-  const localizedTestimonials = useMemo(() => [
-    { ...TESTIMONIALS[0], name: t('home.t1Name'), role: t('home.t1Role'), comment: t('home.t1Comment') },
-    { ...TESTIMONIALS[1], name: t('home.t2Name'), role: t('home.t2Role'), comment: t('home.t2Comment') },
-    { ...TESTIMONIALS[2], name: t('home.t3Name'), role: t('home.t3Role'), comment: t('home.t3Comment') },
-  ], [t]);
-
-  // Stepper & Video & Gallery States
-  const [activeStep, setActiveStep] = useState(0)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
   const [galleryFilter, setGalleryFilter] = useState('All')
-  const [lightboxIndex, setLightboxIndex] = useState(null)
-  const videoRef = useRef(null)
-  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
-  const [videoModalSource, setVideoModalSource] = useState('local')
 
-  // Newsletter State
+  // Newsletter
   const [email, setEmail] = useState('')
   const [subscribing, setSubscribing] = useState(false)
 
   const handleSubscribe = async (e) => {
     e.preventDefault()
     if (!email.trim()) return toast.error('Please enter your email')
-    
     try {
       setSubscribing(true)
       const res = await api.post('/api/subscribers/subscribe', { email })
@@ -223,64 +50,19 @@ const Home = () => {
     }
   }
 
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const time = videoRef.current.currentTime
-      setCurrentTime(time)
-      const matchingStepIndex = localizedGheeSteps.findIndex(
-        step => time >= step.startTime && time < step.endTime
-      )
-      if (matchingStepIndex !== -1 && matchingStepIndex !== activeStep) {
-        setActiveStep(matchingStepIndex)
-      }
-      if (time >= 40) {
-        videoRef.current.currentTime = 0
-        setCurrentTime(0)
-        setActiveStep(0)
-      }
-    }
-  }
-
-  const handleStepClick = (index) => {
-    setActiveStep(index)
-    if (videoRef.current) {
-      videoRef.current.currentTime = localizedGheeSteps[index].startTime
-      setCurrentTime(localizedGheeSteps[index].startTime)
-      if (!isPlaying) {
-        videoRef.current.play().catch(err => console.log('Video play error:', err))
-        setIsPlaying(true)
-      }
-    }
-  }
-
-  const togglePlay = () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-        setIsPlaying(false)
-      } else {
-        videoRef.current.play().catch(err => console.log('Video play error:', err))
-        setIsPlaying(true)
-      }
-    }
-  }
-
-  const filteredGallery = GALLERY_ITEMS.filter(
-    item => galleryFilter === 'All' || item.category === galleryFilter
-  )
-
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       try {
         const [prodRes, catRes] = await Promise.all([
-          api.get('/api/products?featured=true'),
+          api.get('/api/products'),
           api.get('/api/categories'),
         ])
-        const prods = Array.isArray(prodRes.data)
+        let prods = Array.isArray(prodRes.data)
           ? prodRes.data
           : (prodRes.data.products ?? prodRes.data.data ?? [])
-        setFeaturedProducts(prods.slice(0, 4))
+          
+        setFeaturedProducts(prods.slice(0, 5)) // Get 5 products
         setCategories(catRes.data)
       } catch (e) { console.error('Error fetching home data:', e) }
       finally { setLoading(false) }
@@ -288,892 +70,518 @@ const Home = () => {
     fetchData()
   }, [])
 
+  // Dummy data arrays for sections
+  const TRUST_ITEMS = [
+    { icon: <FiAward size={24} />, title: "Farm Fresh", sub: "Direct from farms" },
+    { icon: <FiDroplet size={24} />, title: "Bilona Crafted", sub: "Traditional method" },
+    { icon: <FiShield size={24} />, title: "FSSAI Certified", sub: "Quality guaranteed" },
+    { icon: <FiTruck size={24} />, title: "Pan India", sub: "Fast & safe delivery" }
+  ]
+
+  const WHY_CHOOSE = [
+    { icon: <FiAward size={28} />, title: "100% Pure", text: "Unadulterated, uncompromised purity in every drop." },
+    { icon: <FiCheck size={28} />, title: "Lab Tested", text: "Rigorously tested to meet the highest safety standards." },
+    { icon: <FiHeart size={28} />, title: "Farm Fresh", text: "Sourced directly from trusted local farmers." },
+    { icon: <FiShield size={28} />, title: "Chemical Free", text: "Zero preservatives, zero artificial additives." },
+    { icon: <FiDroplet size={28} />, title: "Traditional Process", text: "Hand-churned using the authentic Vedic Bilona method." },
+    { icon: <FiTruck size={28} />, title: "Fast Delivery", text: "Delivered fresh to your doorstep across India." }
+  ]
+
+  const TESTIMONIALS = [
+    { name: "Aarav Sharma", role: "Chef", rating: 5, text: "The rich aroma and granular texture are unmatched. It instantly elevates every dish I prepare. Highly recommended for culinary enthusiasts.", image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&h=150&fit=crop" },
+    { name: "Priya Desai", role: "Nutritionist", rating: 5, text: "Finding pure A2 ghee is difficult, but Daatasa delivers on its promise. It's truly authentic, easily digestible, and packed with nutrients.", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop" },
+    { name: "Vikram Singh", role: "Fitness Coach", rating: 5, text: "I start my day with Daatasa ghee in my coffee. It provides clean, sustained energy for my workouts and supports recovery.", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop" }
+  ]
+
+  const GALLERY_TABS = ['All', 'Farm', 'Products', 'Bilona', 'Lifestyle']
+  const GALLERY_IMAGES = [
+    { id: 1, cat: 'Farm', url: 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=600&h=800&fit=crop' },
+    { id: 2, cat: 'Products', url: 'https://images.unsplash.com/photo-1526362456488-87e35b7501a3?w=600&h=400&fit=crop' },
+    { id: 3, cat: 'Bilona', url: 'https://images.unsplash.com/photo-1513682121497-80211f36a790?w=600&h=600&fit=crop' },
+    { id: 4, cat: 'Lifestyle', url: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&h=600&fit=crop' },
+    { id: 5, cat: 'Farm', url: 'https://images.unsplash.com/photo-1511690078903-71dc5a49f5e3?w=600&h=400&fit=crop' },
+    { id: 6, cat: 'Products', url: 'https://images.unsplash.com/photo-1588195538326-c5b1e9f80a1b?w=600&h=800&fit=crop' }
+  ]
+
+  const PROCESS_STEPS = [
+    { title: "Milk Collection", desc: "Fresh A2 milk sourced from happy, free-grazing cows." },
+    { title: "Curd Culturing", desc: "Milk is boiled and traditionally set into curd overnight." },
+    { title: "Bilona Churning", desc: "Curd is hand-churned in wooden bilona to separate Makhan." },
+    { title: "Slow Heating", desc: "Makhan is slowly heated on cow-dung fire to craft liquid gold." }
+  ]
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text selection:bg-brand-secondary selection:text-white">
       <Helmet>
-        <title>Daatasa — Pure Desi Bilona Ghee Online</title>
-        <meta name="description" content="Shop 100% pure, natural Bilona Desi Ghee online at Daatasa. Traditional slow-churned Tharparkar cow ghee straight from our Rajasthan village. FSSAI certified." />
-        <link rel="canonical" href="https://daatasa.in/" />
+        <title>Daatasa — Premium Vedic Bilona Ghee</title>
       </Helmet>
 
-      {/* ══════════ HERO ══════════ */}
-      <section className="relative overflow-hidden">
-
-        {/* Full-bleed background image */}
-        <div className="absolute inset-0">
-          <img
-            src="/herosection.png"
-            alt="Traditional Bilona ghee churning in Khuri, Jaisalmer"
-            className="w-full h-full object-cover"
-          />
-          {/* Mobile/tablet: top-to-bottom dark scrim (text sits over full image width) */}
-          <div className="absolute inset-0 lg:hidden"
-            style={{ background: 'linear-gradient(180deg, rgba(20,30,80,0.94) 0%, rgba(20,30,80,0.90) 45%, rgba(20,30,80,0.85) 100%)' }} />
-          {/* Desktop: left-to-right gradient so the photo shows through on the right */}
-          <div className="absolute inset-0 hidden lg:block"
-            style={{ background: 'linear-gradient(90deg, rgba(20,30,80,0.97) 0%, rgba(20,30,80,0.90) 32%, rgba(20,30,80,0.55) 55%, rgba(20,30,80,0.15) 75%, rgba(20,30,80,0.05) 100%)' }} />
-          <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(180deg, transparent 55%, rgba(20,30,80,0.5) 100%)' }} />
-        </div>
-
-        {/* Faint mandala/dot decoration, left edge — desktop only */}
-        <div className="absolute -left-24 top-1/2 -translate-y-1/2 w-96 h-96 opacity-[0.06] pointer-events-none hidden lg:block"
-          style={{
-            backgroundImage: 'repeating-radial-gradient(circle, rgba(255,255,255,0.9) 0px, transparent 1px, transparent 14px, rgba(255,255,255,0.9) 15px)',
-            borderRadius: '50%',
-          }} />
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-
-        <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 pt-14 pb-16 sm:py-20 lg:py-24 relative z-10 w-full">
-          <div className="max-w-xl">
-
-            <motion.div {...fadeUp(0)}>
-              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider mb-5"
-                style={{ background: 'rgba(245,166,35,0.18)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.30)' }}>
-                <FiAward size={12} /> {t('home.heroBadge', 'Authentic Bilona Process')}
+      {/* ══════════ HERO SECTION (Split 50/50) ══════════ */}
+      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+        {/* Background Gradients & Elements */}
+        <div className="absolute inset-0 bg-brand-bg -z-20" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-primary -z-10 skew-x-[-12deg] translate-x-32 hidden lg:block" />
+        
+        <div className="max-w-[1440px] mx-auto w-full px-6 lg:px-12 grid lg:grid-cols-2 gap-12 items-center py-20">
+          {/* Left Content */}
+          <div className="max-w-xl relative z-10">
+            <motion.div {...fadeUp(0)} className="mb-4">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-brand-secondary bg-brand-secondary/10 border border-brand-secondary/20">
+                <FiAward size={14} /> {t('home.heroBadgeNew', 'Heritage of Rajasthan')}
               </span>
             </motion.div>
-
-            {/* Wordmark heading */}
-            <motion.h1 {...fadeUp(0.06)}
-              className="text-4xl sm:text-5xl lg:text-6xl font-extrabold mb-2 text-white"
-              style={{ letterSpacing: '-0.02em', fontFamily: 'var(--font-display)' }}>
-              {t('home.heroTitle', 'Daatasa')}
+            
+            <motion.h1 {...fadeUp(0.1)} className="text-5xl lg:text-7xl font-display font-bold leading-[1.1] mb-6 text-brand-primary">
+              {t('home.heroTitleNew', 'Pure Vedic Bilona')} <br />
+              <span className="text-brand-secondary italic">{t('home.heroSubNew', 'Desi Cow Ghee')}</span>
             </motion.h1>
-
-            {/* Subheading */}
-            <motion.h2 {...fadeUp(0.12)}
-              className="text-base sm:text-xl lg:text-2xl font-extrabold uppercase leading-snug mb-4 sm:mb-5 text-white"
-              style={{ letterSpacing: '-0.005em' }}>
-              {t('home.heroSub1', 'Reclaiming the Vedic Craft of')}{' '}
-              <span style={{ color: 'var(--gold)' }}>{t('home.heroSub2', 'Desi Bilona Ghee')}</span>{t('home.heroSub3', ', Direct From Khuri')}
-            </motion.h2>
-
-            <motion.p {...fadeUp(0.18)} className="text-sm leading-relaxed mb-7 sm:mb-8 max-w-md"
-              style={{ color: 'rgba(255,255,255,0.75)' }}>
-              {t('home.heroText', "Experience the rich legacy of Jaisalmer's craft. Our ghee is handcrafted from the A2 milk of free-grazing Tharparkar cows, slow-churned in traditional earthen handis over a controlled wood fire. Taste the pure, granular texture and unmatched aroma of ancient tradition.")}
+            
+            <motion.p {...fadeUp(0.2)} className="text-lg text-brand-text/70 mb-10 leading-relaxed font-light">
+              {t('home.heroDescNew', 'Experience the pinnacle of purity with our traditionally hand-churned liquid gold. Crafted slowly in earthen pots to preserve authentic aroma, texture, and unmatched nutritional benefits.')}
             </motion.p>
-
-            <motion.div {...fadeUp(0.24)} className="flex flex-wrap gap-3 mb-12 sm:mb-14">
-              <Link to="/products"
-                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105"
-                style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 6px 24px rgba(245,166,35,0.50)' }}>
-                {t('home.shopBtn', 'Shop Collection')}
+            
+            <motion.div {...fadeUp(0.3)} className="flex flex-wrap items-center gap-4 mb-14">
+              <Link to="/products" className="btn btn-primary group h-14 px-8 text-[15px] rounded-full shadow-gold">
+                {t('home.shopBtn', 'Shop Collection')} <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link to="/about"
-                className="inline-flex items-center gap-2 px-6 sm:px-7 py-3 rounded-xl font-bold text-sm transition-all hover:bg-white/12"
-                style={{ border: '1.5px solid rgba(255,255,255,0.30)', color: 'white' }}>
-                {t('home.storyBtn', 'Our Heritage Story')}
+              <Link to="/about" className="btn btn-secondary h-14 px-8 text-[15px] rounded-full">
+                {t('home.storyBtn', 'Explore Our Story')}
+              </Link>
+              <Link to="/track-order" className="btn btn-secondary h-14 px-8 text-[15px] rounded-full flex items-center gap-2 border border-brand-secondary/50">
+                <FiTruck size={18} /> {t('home.trackOrderBtn', 'Track Order')}
               </Link>
             </motion.div>
 
-            {/* KEY BENEFITS row */}
-            <motion.div {...fadeUp(0.3)}>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] mb-4"
-                style={{ color: 'rgba(255,255,255,0.6)' }}>
-                {t('home.keyBenefits', 'Key Benefits')}
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:gap-3.5 max-w-2xl">
-                {[
-                  { icon: <FiAward size={17} />, title: t('home.kb1Title'), sub: t('home.kb1Sub') },
-                  { icon: <FiDroplet size={17} />, title: t('home.kb2Title'), sub: t('home.kb2Sub') },
-                  { icon: <FiShield size={17} />, title: t('home.kb3Title'), sub: t('home.kb3Sub') },
-                  { icon: <FiTruck size={17} />, title: t('home.kb4Title'), sub: t('home.kb4Sub') },
-                ].map((b, i) => (
-                  <div key={i} className="rounded-xl p-3.5 flex flex-col gap-2.5 min-w-0"
-                    style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.16)' }}>
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: 'rgba(245,166,35,0.20)', color: 'var(--gold)' }}>
-                      {b.icon}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-[11px] font-bold uppercase tracking-wide text-white leading-tight">{b.title}</div>
-                      <div className="text-[10px] uppercase tracking-wide leading-snug mt-0.5 break-words" style={{ color: 'rgba(255,255,255,0.62)' }}>{b.sub}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-
-        {/* Certification badge — desktop only, stacked bottom-right over the image */}
-        <div className="hidden lg:flex flex-col items-center gap-1.5 absolute bottom-8 right-8 z-10 rounded-2xl px-4 py-3"
-          style={{ background: 'rgba(20,30,80,0.55)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.18)' }}>
-          <span className="text-[10px] font-bold uppercase tracking-wide text-white/80">Certification</span>
-          <div className="flex gap-2">
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold"
-              style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
-              <FiShield size={11} style={{ color: 'var(--success)' }} /> FSSAI
-            </span>
-            <span className="flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold"
-              style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
-              <FiCheck size={11} style={{ color: 'var(--success)' }} /> Lab Tested
-            </span>
-          </div>
-        </div>
-
-        {/* Mobile-only Certification badges — inline, below key benefits, centered */}
-        <div className="flex lg:hidden justify-center gap-2 flex-wrap relative z-10 px-5 pb-20 sm:pb-24">
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap"
-            style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
-            <FiShield size={12} style={{ color: 'var(--success)' }} /> FSSAI Certified
-          </span>
-          <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold whitespace-nowrap"
-            style={{ background: 'rgba(255,255,255,0.95)', color: 'var(--navy)' }}>
-            <FiCheck size={12} style={{ color: 'var(--success)' }} /> Lab Tested
-          </span>
-        </div>
-
-        {/* Wave bottom */}
-        <div className="absolute bottom-0 left-0 right-0 z-10" style={{ lineHeight: 0 }}>
-          <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ display: 'block', width: '100%', height: 72 }}>
-            <path d="M0,80 C360,0 1080,0 1440,80 L1440,80 L0,80 Z" fill="white" />
-          </svg>
-        </div>
-      </section>
-
-      {/* ══════════ FEATURES STRIP ══════════ */}
-      <section style={{ background: '#FFFFFF', paddingTop: 0 }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-0 rounded-2xl overflow-hidden"
-            style={{ border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-card)' }}>
-            {FEATURES.map((item, idx) => (
-              <div key={idx}
-                className="flex items-center gap-4 p-6 sm:p-8 cursor-default transition-all duration-250"
-                style={{ borderRight: idx < FEATURES.length - 1 ? '1px solid var(--border-color)' : 'none' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-alt)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-transform hover:scale-110"
-                  style={{ background: item.color, color: item.iconColor }}>
-                  {item.icon}
-                </div>
-                <div>
-                  <div className="text-sm font-bold mb-0.5" style={{ color: 'var(--navy)' }}>{item.title}</div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.sub}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ FULL-WIDTH COW VIDEO ══════════ */}
-      <section className="relative w-full overflow-hidden bg-[#1B2F6E] mt-16 sm:mt-24" style={{ height: '60vh' }}>
-        {/* Background YouTube Video - desktop only for performance */}
-        <div className="absolute inset-0 overflow-hidden hidden sm:block">
-          <iframe
-            style={{ position: 'absolute', top: '50%', left: '50%', width: '120%', height: '120%', transform: 'translate(-50%, -50%)', pointerEvents: 'none', border: 'none' }}
-            src="https://www.youtube.com/embed/nRbkTi7ge_Q?autoplay=1&mute=1&controls=0&loop=1&playlist=nRbkTi7ge_Q&modestbranding=1&rel=0&playsinline=1"
-            title="Pure Tharparkar Cows"
-            frameBorder="0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-        {/* Mobile fallback image */}
-        <div className="absolute inset-0 sm:hidden">
-          <img src="/gallery-cows.png" alt="Tharparkar Cows" className="w-full h-full object-cover opacity-60" />
-        </div>
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1B2F6E]/90 via-[#1B2F6E]/30 to-black/20" />
-        {/* Content */}
-        <div className="absolute inset-0 flex items-end justify-center pb-12 sm:pb-20">
-          <div className="text-center px-4 max-w-4xl">
-            <h2 className="text-3xl sm:text-6xl font-extrabold text-white mb-4 drop-shadow-2xl" style={{ fontFamily: 'var(--font-display)' }}>
-              {t('home.videoTitle', '100% Pure Tharparkar Cows')}
-            </h2>
-            <p className="text-base sm:text-xl text-white/90 drop-shadow-xl mx-auto max-w-2xl font-medium leading-relaxed">
-              {t('home.videoText')}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ CATEGORIES ══════════ */}
-      <WaveDown from="#fff" to="#EAF5FB" />
-      <section style={{ background: '#EAF5FB', paddingBottom: '80px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <motion.p {...fadeUp(0)} className="section-tag">{t('home.categoriesTag')}</motion.p>
-            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">{t('home.categoriesTitle')}</motion.h2>
-            <motion.p {...fadeUp(0.16)} className="section-sub max-w-md mx-auto">
-              {t('home.categoriesSub')}
-            </motion.p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {categories.map((cat, idx) => (
-              <motion.div key={cat.slug} {...fadeUp(idx * 0.07)}>
-                <Link
-                  to={`/products?category=${cat.slug}`}
-                  className="group flex items-center gap-3 rounded-2xl transition-all duration-250 p-4 overflow-hidden"
-                  style={{ background: '#fff', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--gold)'; e.currentTarget.style.boxShadow = 'var(--shadow-gold)'; e.currentTarget.style.transform = 'translateY(-4px)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-color)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; e.currentTarget.style.transform = 'none' }}
-                >
-                  <div className="w-12 h-12 shrink-0 rounded-xl overflow-hidden flex items-center justify-center"
-                    style={{ background: 'rgba(245,166,35,0.10)' }}>
-                    {cat.image
-                      ? <img src={cat.image} alt={cat.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                      : <FiDroplet size={20} style={{ color: 'var(--gold)' }} />
-                    }
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold truncate" style={{ color: 'var(--navy)' }}>{cat.name}</p>
-                    <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{cat.description || 'Explore products'}</p>
-                  </div>
-                  <FiArrowRight size={14} className="shrink-0 transition-transform group-hover:translate-x-1" style={{ color: 'var(--text-muted)' }} />
-                </Link>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-      <WaveUp from="#EAF5FB" to="#fff" />
-
-      {/* ══════════ FEATURED PRODUCTS ══════════ */}
-      <section style={{ background: '#FFFFFF', padding: '60px 0 80px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-end justify-between mb-12">
-            <div>
-              <p className="section-tag flex items-center gap-1"><FiStar size={13} /> {t('home.featuredTag')}</p>
-              <h2 className="section-title">{t('home.featuredTitle')}</h2>
-            </div>
-            <Link to="/products"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all hover:scale-105"
-              style={{ background: 'var(--brand-gradient)', color: 'white', boxShadow: 'var(--shadow-brand)' }}>
-              {t('home.viewAll')} <FiArrowRight size={14} />
-            </Link>
-          </div>
-
-          {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {[...Array(4)].map((_, i) => <ProductSkeleton key={i} />)}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-              {featuredProducts.map((product, idx) => (
-                <motion.div key={product._id} {...fadeUp(idx * 0.08)}>
-                  <ProductCard product={product} categories={categories} />
-                </motion.div>
-              ))}
-            </div>
-          )}
-
-          <div className="text-center mt-10 sm:hidden">
-            <Link to="/products"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all hover:scale-105"
-              style={{ background: 'var(--brand-gradient)', color: 'white', boxShadow: 'var(--shadow-brand)' }}>
-              View All Products <FiArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-
-      {/* ══════════ GHEE MAKING PROCESS (BILONA PROCESS & VIDEO SYNC) ══════════ */}
-      <section style={{ background: '#EAF5FB', padding: '0 0 80px', overflowX: 'hidden' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <motion.p {...fadeUp(0)} className="section-tag flex items-center gap-1.5 justify-center">
-              <FiDroplet size={13} /> {t('home.processTag')}
-            </motion.p>
-            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">
-              {t('home.processTitle')}
-            </motion.h2>
-            <motion.p {...fadeUp(0.16)} className="section-sub max-w-2xl mx-auto">
-              {t('home.processSub')}
-            </motion.p>
-          </div>
-
-          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-            {/* Left: Video Player Pane (7 cols) */}
-            <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl p-4 sm:p-6"
-                 style={{ 
-                   background: '#ffffff', 
-                   border: '1px solid var(--border-color)', 
-                   boxShadow: 'var(--shadow-card)',
-                 }}>
-              <div className="relative aspect-video rounded-2xl overflow-hidden bg-black group"
-                   style={{ boxShadow: 'inset 0 0 20px rgba(0,0,0,0.6)' }}>
-                {/* HTML5 Video Tag */}
-                <video
-                  ref={videoRef}
-                  src="https://assets.mixkit.co/videos/preview/mixkit-organic-milk-poured-into-a-glass-jar-42301-large.mp4"
-                  className="w-full h-full object-cover"
-                  onTimeUpdate={handleTimeUpdate}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  playsInline
-                  muted
-                  loop
-                />
-
-                {/* Overlays */}
-                {/* Active Step Banner on Video */}
-                <div className="absolute top-4 left-4 z-10 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-2"
-                     style={{ background: 'rgba(27, 47, 110, 0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.15)' }}>
-                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                  {t('home.currentlyShowing')} {localizedGheeSteps[activeStep]?.desc}
-                </div>
-
-                {/* Expand Video Button */}
-                <button
-                  onClick={() => {
-                    setIsVideoModalOpen(true);
-                    if (videoRef.current) {
-                      videoRef.current.pause();
-                      setIsPlaying(false);
-                    }
-                  }}
-                  className="absolute top-4 right-4 z-10 p-2.5 rounded-xl text-white hover:text-amber-400 hover:scale-105 transition-all flex items-center justify-center cursor-pointer"
-                  style={{ background: 'rgba(27, 47, 110, 0.85)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.15)' }}
-                  title="Expand Video Dialog"
-                >
-                  <FiMaximize2 size={13} />
-                </button>
-
-                {/* Custom Playback Overlay */}
-                <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 ${isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100'}`}>
-                  <button 
-                    onClick={togglePlay}
-                    className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95"
-                    style={{ 
-                      background: 'var(--gold)', 
-                      color: 'var(--navy)', 
-                      boxShadow: '0 8px 30px rgba(245, 166, 35, 0.6)' 
-                    }}>
-                    {isPlaying ? <FiPause size={24} /> : <FiPlay size={24} className="ml-1" />}
-                  </button>
-                </div>
-
-                {/* Progress bar overlay at the bottom */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex items-center gap-4 z-10">
-                  <button onClick={togglePlay} className="text-white hover:text-amber-400 transition-colors">
-                    {isPlaying ? <FiPause size={18} /> : <FiPlay size={18} />}
-                  </button>
-                  
-                  {/* Progress Line */}
-                  <div className="flex-1 h-1.5 rounded-full bg-white/20 relative cursor-pointer overflow-hidden"
-                       onClick={(e) => {
-                         const rect = e.currentTarget.getBoundingClientRect();
-                         const clickX = e.clientX - rect.left;
-                         const width = rect.width;
-                         const clickPercent = clickX / width;
-                         if (videoRef.current) {
-                           videoRef.current.currentTime = clickPercent * 40;
-                         }
-                       }}>
-                    <div className="h-full bg-amber-400 transition-all duration-100"
-                         style={{ width: `${(currentTime / 40) * 100}%` }} />
-                  </div>
-
-                  {/* Timer display */}
-                  <div className="text-[11px] font-mono text-white/80 flex items-center gap-1.5 shrink-0">
-                    <FiClock size={12} />
-                    <span>0:{Math.floor(currentTime).toString().padStart(2, '0')}</span>
-                    <span className="text-white/40">/</span>
-                    <span>0:40</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Step visual image preview underneath the video */}
-              <div className="mt-4 p-4 rounded-xl flex items-center gap-4"
-                   style={{ background: 'rgba(27, 47, 110, 0.04)', border: '1px solid rgba(27, 47, 110, 0.08)' }}>
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0"
-                     style={{ border: '1px solid var(--border-color)' }}>
-                  <img 
-                    src={localizedGheeSteps[activeStep]?.image} 
-                    alt={localizedGheeSteps[activeStep]?.title}
-                    className="w-full h-full object-cover" 
-                  />
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-amber-500 uppercase tracking-wider mb-1">
-                    {t('home.illustrationTitle', { step: activeStep + 1 })}
-                  </h4>
-                  <p className="text-xs font-bold" style={{ color: 'var(--navy)' }}>
-                    {localizedGheeSteps[activeStep]?.title}
-                  </p>
-                  <p className="text-[11px] leading-relaxed mt-1" style={{ color: 'var(--text-muted)' }}>
-                    {localizedGheeSteps[activeStep]?.desc} {t('home.processWatchFlow', { time: localizedGheeSteps[activeStep]?.timeLabel })}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Stepper Steps list (5 cols) */}
-            <div className="lg:col-span-5 flex flex-col gap-3 w-full min-w-0">
-              {localizedGheeSteps.map((step, idx) => {
-                const isActive = activeStep === idx;
-                return (
-                  <div 
-                    key={idx}
-                    onClick={() => handleStepClick(idx)}
-                    className="group cursor-pointer rounded-2xl p-5 transition-all duration-300 relative overflow-hidden"
-                    style={{ 
-                      background: isActive ? '#ffffff' : 'rgba(255, 255, 255, 0.4)', 
-                      border: isActive ? '1px solid var(--gold)' : '1px solid var(--border-color)',
-                      boxShadow: isActive ? 'var(--shadow-gold)' : 'none',
-                    }}
-                  >
-                    {isActive && (
-                      <div className="absolute inset-0 opacity-[0.03] pointer-events-none"
-                           style={{ background: 'radial-gradient(circle at 100% 0%, var(--gold) 0%, transparent 60%)' }} />
-                    )}
-
-                    <div className="flex gap-4">
-                      <div className="flex flex-col items-center shrink-0">
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold transition-all duration-300"
-                             style={{ 
-                               background: isActive ? 'var(--brand-gradient)' : 'rgba(27, 47, 110, 0.08)',
-                               color: isActive ? '#ffffff' : 'var(--navy)',
-                               boxShadow: isActive ? 'var(--shadow-brand)' : 'none'
-                             }}>
-                          {idx + 1}
-                        </div>
-                        {idx < localizedGheeSteps.length - 1 && (
-                          <div className="w-0.5 h-4 my-1 transition-colors duration-300"
-                               style={{ background: isActive ? 'var(--gold)' : 'rgba(27, 47, 110, 0.12)' }} />
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-start justify-between gap-1 mb-1">
-                          <h3 className="text-sm font-bold transition-colors duration-300 min-w-0 flex-1"
-                              style={{ color: isActive ? 'var(--navy)' : 'rgba(27,47,110,0.8)' }}>
-                            {step.title}
-                          </h3>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold shrink-0"
-                                style={{ 
-                                  background: isActive ? 'rgba(245, 166, 35, 0.15)' : 'rgba(27, 47, 110, 0.05)',
-                                  color: isActive ? 'var(--gold)' : 'var(--text-muted)'
-                                }}>
-                            {step.timeLabel}
-                          </span>
-                        </div>
-                        <p className="text-xs font-semibold mb-2" 
-                           style={{ color: isActive ? 'var(--gold)' : 'var(--text-muted)' }}>
-                          {step.desc}
-                        </p>
-                        
-                        {isActive ? (
-                          <motion.p 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="text-xs leading-relaxed" 
-                            style={{ color: 'var(--text-secondary)' }}>
-                            {step.longDesc}
-                          </motion.p>
-                        ) : (
-                          <p className="text-xs line-clamp-2" style={{ color: 'var(--text-muted)' }}>
-                            {step.longDesc}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <WaveUp from="#EAF5FB" to="#fff" />
-
-      {/* ══════════ TESTIMONIALS ══════════ */}
-      <section style={{ background: '#FFFFFF', padding: '60px 0 80px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <motion.p {...fadeUp(0)} className="section-tag">{t('home.testimonialTag')}</motion.p>
-            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">{t('home.testimonialTitle')}</motion.h2>
-            <motion.p {...fadeUp(0.16)} className="section-sub max-w-md mx-auto">
-              {t('home.testimonialSub')}
-            </motion.p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {localizedTestimonials.map((item, idx) => (
-              <motion.div key={idx} {...fadeUp(idx * 0.1)}
-                className="rounded-3xl p-7 relative overflow-hidden transition-all duration-300"
-                style={{ background: idx === 0 ? 'var(--brand-gradient)' : 'var(--bg-alt)', border: '1px solid var(--border-color)', boxShadow: idx === 0 ? 'var(--shadow-brand)' : 'var(--shadow-card)' }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = idx === 0 ? '0 20px 50px rgba(27,47,110,0.40)' : 'var(--shadow)' }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = idx === 0 ? 'var(--shadow-brand)' : 'var(--shadow-card)' }}
-              >
-                {/* Quote decoration */}
-                <div className="absolute top-5 right-5 text-4xl font-black opacity-20" style={{ color: idx === 0 ? 'white' : 'var(--navy)' }}>"</div>
-
-                {/* Stars */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(item.rating)].map((_, i) => (
-                    <span key={i} style={{ color: idx === 0 ? 'var(--gold)' : 'var(--gold)' }}>★</span>
-                  ))}
-                </div>
-
-                <p className="text-sm leading-relaxed mb-6 italic"
-                  style={{ color: idx === 0 ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)' }}>
-                  "{item.comment}"
-                </p>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-extrabold shrink-0"
-                    style={{ background: idx === 0 ? 'rgba(255,255,255,0.20)' : item.color, color: idx === 0 ? 'white' : 'white' }}>
-                    {item.initials}
+            {/* Feature Mini Cards */}
+            <motion.div {...fadeUp(0.4)} className="grid grid-cols-2 gap-4">
+              {TRUST_ITEMS.map((item, idx) => (
+                <div key={idx} className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-brand-primary/10 shadow-sm transition-transform hover:-translate-y-1">
+                  <div className="w-10 h-10 rounded-full bg-brand-secondary/10 text-brand-secondary flex items-center justify-center shrink-0">
+                    {item.icon}
                   </div>
                   <div>
-                    <div className="text-sm font-bold" style={{ color: idx === 0 ? 'white' : 'var(--navy)' }}>{item.name}</div>
-                    <div className="text-[11px]" style={{ color: idx === 0 ? 'rgba(255,255,255,0.60)' : 'var(--text-muted)' }}>{item.role}</div>
+                    <h4 className="text-[13px] font-bold text-brand-primary uppercase tracking-wide">{item.title}</h4>
                   </div>
                 </div>
+              ))}
+            </motion.div>
+          </div>
 
-                {idx === 0 && (
-                  <div className="absolute bottom-0 right-0 w-32 h-32 rounded-full pointer-events-none opacity-10"
-                    style={{ background: 'rgba(245,166,35,0.8)', filter: 'blur(30px)' }} />
-                )}
+          {/* Right Product Render */}
+          <motion.div {...slideIn(0.2, "right")} className="relative z-10 lg:pl-10">
+            <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl group max-w-[400px] mx-auto lg:max-w-md">
+              <img 
+                src="/cows.png" 
+                alt="Daatasa Cows" 
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/80 to-transparent opacity-60" />
+              
+              {/* Floating Element */}
+              <motion.div 
+                animate={{ y: [0, -15, 0] }} 
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="absolute -left-6 top-1/4 p-4 glass rounded-2xl shadow-xl flex items-center gap-3 border border-white/20 hidden md:flex"
+              >
+                <div className="w-12 h-12 rounded-full bg-brand-secondary flex items-center justify-center text-white">
+                  <FiCheck size={20} />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-brand-primary">{t('home.a2MilkLabel', '100% A2 Milk')}</p>
+                  <p className="text-xs text-brand-text/60">{t('home.labCertLabel', 'Lab Certified Purity')}</p>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* ══════════ TRUST BAR ══════════ */}
+      <div className="max-w-[1280px] mx-auto px-6 -mt-8 relative z-20">
+        <motion.div {...fadeUp(0)} className="bg-white rounded-3xl shadow-xl border border-brand-primary/5 p-8 flex justify-between items-center flex-wrap gap-8">
+          {TRUST_ITEMS.map((item, idx) => (
+            <div key={idx} className="flex items-center gap-4 group">
+              <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center text-brand-secondary transition-transform duration-300 group-hover:scale-110 group-hover:bg-brand-secondary group-hover:text-white">
+                {item.icon}
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-brand-primary tracking-wide">{item.title}</h4>
+                <p className="text-xs text-brand-text/60 mt-0.5">{item.sub}</p>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* ══════════ ABOUT SECTION (Farm to Family) ══════════ */}
+      <section className="py-24 overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[100px] -z-10 translate-x-1/3 -translate-y-1/3" />
+        
+        <div className="max-w-[1280px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div {...slideIn(0.1, "left")} className="relative">
+            <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl relative max-w-md mx-auto">
+              <img src="https://images.unsplash.com/photo-1511690078903-71dc5a49f5e3?w=800&q=80" alt="Farm" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                <button className="w-20 h-20 bg-white/30 backdrop-blur-md border border-white/50 rounded-full flex items-center justify-center text-white hover:bg-brand-secondary hover:border-brand-secondary transition-all hover:scale-110">
+                  <FiPlay size={32} className="ml-2" />
+                </button>
+              </div>
+            </div>
+            {/* Decorative line art / shape */}
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 border border-brand-secondary rounded-full opacity-40 animate-spin-slow" />
+          </motion.div>
+          
+          <div className="max-w-lg">
+            <motion.h4 {...fadeUp(0.1)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-4">Our Heritage</motion.h4>
+            <motion.h2 {...fadeUp(0.2)} className="text-4xl md:text-5xl font-display font-bold text-brand-primary leading-tight mb-6">
+              From Our Farms <br/> <span className="italic font-light">To Your Family</span>
+            </motion.h2>
+            <motion.p {...fadeUp(0.3)} className="text-brand-text/70 mb-10 leading-relaxed font-light">
+              Nurtured with love in the pure environment of Khuri, Jaisalmer. Our free-grazing cows feed on natural organic grass, ensuring the milk produced is rich in vital nutrients. Every step of our process honors ancient traditions to bring you unparalleled purity.
+            </motion.p>
+            
+            <motion.div {...fadeUp(0.4)} className="grid grid-cols-2 gap-8 mb-10">
+              <div>
+                <h3 className="text-4xl font-display font-bold text-brand-secondary mb-1">600+</h3>
+                <p className="text-sm text-brand-text/60 font-medium">Happy Cows</p>
+              </div>
+              <div>
+                <h3 className="text-4xl font-display font-bold text-brand-secondary mb-1">50+</h3>
+                <p className="text-sm text-brand-text/60 font-medium">Acres of Farm</p>
+              </div>
+            </motion.div>
+            
+            <motion.div {...fadeUp(0.5)}>
+              <Link to="/about" className="btn btn-secondary h-12 px-8 rounded-full">{t('home.storyBtn', 'Explore Our Story')}</Link>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ FEATURED CATEGORIES ══════════ */}
+      <section className="py-20 bg-white border-b border-brand-primary/5">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">{t('home.ourCollectionLabel', 'Our Collection')}</motion.h4>
+              <motion.h2 {...fadeUp(0.1)} className="text-3xl md:text-4xl font-display font-bold text-brand-primary">{t('home.topCategoriesLabel', 'Top Categories')}</motion.h2>
+            </div>
+            <motion.div {...fadeUp(0.2)}>
+              <Link to="/products" className="hidden sm:inline-flex items-center gap-2 text-sm font-bold text-brand-secondary hover:text-brand-primary transition-colors">
+                {t('home.exploreMoreLabel', 'Explore More')} <FiArrowRight size={16} />
+              </Link>
+            </motion.div>
+          </div>
+          
+          <div className="flex gap-4 sm:gap-8 overflow-x-auto pb-8 snap-x no-scrollbar items-start">
+            {categories.length > 0 ? categories.map((cat, idx) => (
+              <motion.div key={idx} {...fadeUp(idx * 0.1)} className="snap-start shrink-0 w-[100px] sm:w-[140px] text-center">
+                <Link to={`/products?category=${cat.slug}`} className="block group">
+                  <div className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px] mx-auto rounded-full overflow-hidden relative mb-4 shadow-sm group-hover:shadow-gold transition-all border border-brand-primary/10 group-hover:border-brand-secondary bg-[var(--ivory)]">
+                    <img 
+                      src={cat.image || 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=400&q=80'} 
+                      alt={cat.name} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                    />
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-bold leading-tight text-brand-primary group-hover:text-brand-secondary transition-colors line-clamp-2">{cat.name}</h3>
+                </Link>
+              </motion.div>
+            )) : (
+              // Dummy Categories
+              ['Pure Ghee', 'Raw Honey', 'Organic Spices', 'Dry Fruits', 'Healthy Seeds', 'Herbal Teas'].map((name, idx) => (
+                <motion.div key={idx} {...fadeUp(idx * 0.1)} className="snap-start shrink-0 w-[100px] sm:w-[140px] text-center">
+                  <Link to={`/products`} className="block group">
+                    <div className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px] mx-auto rounded-full overflow-hidden relative mb-4 shadow-sm group-hover:shadow-gold transition-all border border-brand-primary/10 group-hover:border-brand-secondary bg-[var(--ivory)]">
+                      <img 
+                        src={`https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=400&q=80`} 
+                        alt={name} 
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                      />
+                    </div>
+                    <h3 className="text-xs sm:text-sm font-bold leading-tight text-brand-primary group-hover:text-brand-secondary transition-colors line-clamp-2">{name}</h3>
+                  </Link>
+                </motion.div>
+              ))
+            )}
+            
+            <motion.div {...fadeUp(0.6)} className="snap-start shrink-0 w-[100px] sm:w-[140px] text-center sm:hidden">
+              <Link to="/products" className="block group">
+                <div className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px] mx-auto rounded-full flex items-center justify-center relative mb-4 shadow-sm group-hover:shadow-gold transition-all border border-brand-primary/10 group-hover:border-brand-secondary bg-brand-primary/5 text-brand-primary group-hover:text-brand-secondary">
+                  <FiArrowRight size={24} />
+                </div>
+                <h3 className="text-xs sm:text-sm font-bold leading-tight text-brand-primary group-hover:text-brand-secondary transition-colors">{t('home.seeAllLabel', 'See All')}</h3>
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ FEATURED PRODUCTS CAROUSEL ══════════ */}
+      <section className="py-24 bg-brand-bg">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <div className="text-center mb-16">
+            <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">{t('home.exclusiveOfferingsLabel', 'Exclusive Offerings')}</motion.h4>
+            <motion.h2 {...fadeUp(0.1)} className="text-4xl md:text-5xl font-display font-bold text-brand-primary">{t('home.signatureProductsLabel', 'Our Signature Products')}</motion.h2>
+          </div>
+          
+          <div className="flex gap-8 overflow-x-auto pb-12 snap-x px-4 no-scrollbar">
+            {loading ? (
+               [...Array(4)].map((_, i) => <div key={i} className="shrink-0 w-80 h-[450px] bg-white rounded-3xl skeleton" />)
+            ) : featuredProducts.length > 0 ? (
+              featuredProducts.map((product, idx) => (
+                <motion.div key={product._id} {...fadeUp(idx * 0.1)} className="snap-center shrink-0 w-[280px] sm:w-[320px]">
+                  <ProductCard product={product} />
+                </motion.div>
+              ))
+            ) : (
+              <div className="w-full text-center py-20 text-brand-text/50">{t('home.noProductsLabel', 'No products available at the moment.')}</div>
+            )}
+          </div>
+          
+          <div className="text-center mt-4">
+            <Link to="/products" className="btn btn-secondary h-12 px-8 rounded-full">{t('home.viewCollectionLabel', 'View Entire Collection')}</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ BILONA PROCESS SECTION (Ivory Luxury) ══════════ */}
+      <section className="py-24 bg-white text-brand-text overflow-hidden relative border-y border-brand-primary/5">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        
+        <div className="max-w-[1280px] mx-auto px-6 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Content */}
+            <div>
+              <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-4 flex items-center gap-2">
+                <FiDroplet /> {t('home.ancientWisdomLabel', 'Ancient Wisdom')}
+              </motion.h4>
+              <motion.h2 {...fadeUp(0.1)} className="text-4xl md:text-5xl font-display font-bold leading-tight mb-6 text-brand-primary">
+                {t('home.authenticLabel', 'The Authentic')} <br /> <span className="text-brand-secondary italic">{t('home.bilonaProcessLabel', 'Bilona Process')}</span>
+              </motion.h2>
+              <motion.p {...fadeUp(0.2)} className="text-brand-text/70 mb-10 leading-relaxed font-light text-lg">
+                {t('home.processDescNew', "We don't make ghee from malai (cream). We follow the rigorous 4-step Vedic process mentioned in ancient texts. Every drop is crafted with patience, tradition, and devotion.")}
+              </motion.p>
+              <motion.div {...fadeUp(0.3)}>
+                <Link to="/about" className="btn btn-secondary h-14 px-8 rounded-full">
+                  {t('home.discoverMethodBtn', 'Discover The Method')}
+                </Link>
+              </motion.div>
+            </div>
+            
+            {/* Right Video / Process Steps */}
+            <motion.div {...slideIn(0.2, "right")} className="relative">
+              {/* Cinematic Video Player */}
+              <div className="aspect-[16/10] rounded-[2rem] overflow-hidden shadow-lg relative bg-black group border border-brand-primary/10">
+                <img src="https://images.unsplash.com/photo-1513682121497-80211f36a790?w=800&q=80" alt="Bilona Video" className="w-full h-full object-cover opacity-80 transition-transform duration-1000 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/50 via-transparent to-transparent opacity-80" />
+                <button className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center text-brand-primary hover:scale-110 transition-transform shadow-lg group-hover:text-brand-secondary">
+                  <FiPlay size={32} className="ml-2" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+          
+          {/* Process Timeline below */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+            {PROCESS_STEPS.map((step, idx) => (
+              <motion.div key={idx} {...fadeUp(0.3 + idx * 0.1)} className="p-6 rounded-[2rem] bg-[var(--ivory)] border border-brand-primary/10 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-brand-secondary/30 transition-all">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-secondary/10 rounded-bl-[4rem] -z-10 group-hover:scale-150 transition-transform duration-500" />
+                <div className="text-4xl font-display font-bold text-brand-secondary mb-4">{`0${idx + 1}`}</div>
+                <h4 className="text-lg font-bold text-brand-primary mb-2">{step.title}</h4>
+                <p className="text-sm text-brand-text/60 font-light">{step.desc}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════ PHOTO GALLERY ══════════ */}
-      <section style={{ background: '#FFFFFF', padding: '60px 0 80px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <motion.p {...fadeUp(0)} className="section-tag flex items-center gap-1.5 justify-center">
-              <FiImage size={13} /> Visual Tour
+      {/* ══════════ WHY CHOOSE DAATASA ══════════ */}
+      <section className="py-24 bg-white">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="text-center mb-16 max-w-2xl mx-auto">
+            <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">{t('home.ourPromiseLabel', 'Our Promise')}</motion.h4>
+            <motion.h2 {...fadeUp(0.1)} className="text-4xl md:text-5xl font-display font-bold text-brand-primary mb-6">{t('home.whyChooseLabel', 'Why Choose Daatasa')}</motion.h2>
+            <motion.p {...fadeUp(0.2)} className="text-brand-text/70 text-lg font-light leading-relaxed">
+              {t('home.promiseDesc', 'We bring the ancient Vedic tradition right to your doorstep, ensuring unmatched purity and health benefits.')}
             </motion.p>
-            <motion.h2 {...fadeUp(0.08)} className="section-title mb-3">
-              Our Gallery & Farm Life
-            </motion.h2>
-            <motion.p {...fadeUp(0.16)} className="section-sub max-w-md mx-auto">
-              Browse through photos of our grass-fed cows, traditional Bilona churning, purity labs, and premium finished ghee.
-            </motion.p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {WHY_CHOOSE.map((item, idx) => (
+              <motion.div key={idx} {...fadeUp(idx * 0.05)} className="p-8 rounded-3xl bg-brand-bg border border-brand-primary/5 hover:border-brand-secondary/30 transition-all hover:shadow-xl group">
+                <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-brand-secondary mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                  {item.icon}
+                </div>
+                <h4 className="text-xl font-bold text-brand-primary mb-3">{item.title}</h4>
+                <p className="text-brand-text/60 font-light leading-relaxed">{item.text}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* Filter buttons */}
-            <motion.div {...fadeUp(0.22)} className="flex flex-wrap items-center justify-center gap-2 mt-8">
-              {['All', 'Farm', 'Process', 'Purity', 'Products'].map((tab) => (
+      {/* ══════════ TESTIMONIALS ══════════ */}
+      <section className="py-24 bg-brand-bg relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-10 left-10 text-9xl text-brand-primary/5 font-display italic">"</div>
+        <div className="absolute bottom-10 right-10 text-9xl text-brand-primary/5 font-display italic rotate-180">"</div>
+
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="text-center mb-16">
+            <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">Testimonials</motion.h4>
+            <motion.h2 {...fadeUp(0.1)} className="text-4xl font-display font-bold text-brand-primary">Loved by Families</motion.h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {TESTIMONIALS.map((review, idx) => (
+              <motion.div key={idx} {...fadeUp(idx * 0.1)} className="bg-white p-10 rounded-[2rem] shadow-card relative border border-brand-primary/5">
+                <div className="flex gap-1 mb-6 text-brand-secondary">
+                  {[...Array(review.rating)].map((_, i) => <FiStar key={i} size={18} fill="currentColor" />)}
+                </div>
+                <p className="text-brand-text/70 italic leading-relaxed mb-8 font-serif">"{review.text}"</p>
+                <div className="flex items-center gap-4 mt-auto">
+                  <img src={review.image} alt={review.name} className="w-12 h-12 rounded-full object-cover shadow-md" />
+                  <div>
+                    <h5 className="font-bold text-brand-primary text-sm">{review.name}</h5>
+                    <p className="text-xs text-brand-text/50">{review.role}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ GALLERY (Masonry Layout) ══════════ */}
+      <section className="py-24 bg-white">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
+            <div>
+              <motion.h2 {...fadeUp(0)} className="text-4xl font-display font-bold text-brand-primary mb-2">Our World</motion.h2>
+              <motion.p {...fadeUp(0.1)} className="text-brand-text/60">Glimpses of our heritage and process.</motion.p>
+            </div>
+            <motion.div {...fadeUp(0.2)} className="flex flex-wrap gap-2 justify-center">
+              {GALLERY_TABS.map(tab => (
                 <button
                   key={tab}
                   onClick={() => setGalleryFilter(tab)}
-                  className="px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300"
-                  style={{
-                    background: galleryFilter === tab ? 'var(--brand-gradient)' : 'rgba(27, 47, 110, 0.05)',
-                    color: galleryFilter === tab ? '#ffffff' : 'var(--navy)',
-                    boxShadow: galleryFilter === tab ? 'var(--shadow-brand)' : 'none',
-                    border: '1px solid',
-                    borderColor: galleryFilter === tab ? 'transparent' : 'var(--border-color)',
-                  }}
+                  className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${galleryFilter === tab ? 'bg-brand-primary text-white shadow-md' : 'bg-brand-bg text-brand-primary hover:bg-brand-secondary/10'}`}
                 >
-                  {tab === 'All' ? 'View All' : tab}
+                  {tab}
                 </button>
               ))}
             </motion.div>
           </div>
 
-          {/* Photo Grid */}
-          <motion.div 
-            layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredGallery.map((item, index) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  key={item.id}
-                  onClick={() => setLightboxIndex(index)}
-                  className="group cursor-pointer rounded-2xl overflow-hidden relative aspect-[4/3] flex flex-col justify-end"
-                  style={{ 
-                    border: '1px solid var(--border-color)',
-                    boxShadow: 'var(--shadow-card)'
-                  }}
-                >
-                  {/* Image */}
-                  <img 
-                    src={item.image} 
-                    alt={item.title} 
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-
-                  {/* Dark gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
-
-                  {/* Text content & Hover indicator */}
-                  <div className="relative z-10 p-5 transform transition-transform duration-300 group-hover:translate-y-[-4px]">
-                    <span className="px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white"
-                          style={{ background: 'var(--gold)', boxShadow: '0 2px 8px rgba(245,166,35,0.4)' }}>
-                      {item.category}
-                    </span>
-                    <h3 className="text-sm font-bold text-white mt-2 mb-0.5">
-                      {item.title}
-                    </h3>
-                    <p className="text-[11px] text-white/70 max-h-0 overflow-hidden group-hover:max-h-[40px] transition-all duration-300 ease-out">
-                      {item.desc}
-                    </p>
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+            {GALLERY_IMAGES.filter(img => galleryFilter === 'All' || img.cat === galleryFilter).map((img, idx) => (
+              <motion.div key={img.id} {...fadeUp(idx * 0.1)} className="break-inside-avoid relative rounded-3xl overflow-hidden group shadow-md cursor-pointer">
+                <img src={img.url} alt={`Gallery ${img.cat}`} className="w-full h-auto object-cover transition-transform duration-700 group-hover:scale-110" />
+                <div className="absolute inset-0 bg-brand-primary/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-white scale-0 group-hover:scale-100 transition-transform duration-500 delay-100">
+                    <FiEye size={20} />
                   </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-                  {/* Floating Zoom Icon */}
-                  <div className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <FiMaximize2 size={14} />
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
+      {/* ══════════ CERTIFICATIONS ══════════ */}
+      <section className="py-16 bg-brand-bg border-y border-brand-primary/5">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="flex flex-wrap justify-center gap-12 md:gap-24 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+            {/* Dummy Certification Logos */}
+            {['FSSAI', 'A2 Milk', '100% Natural', 'Lab Tested', 'Organic'].map((cert, i) => (
+              <div key={i} className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 border-2 border-brand-primary rounded-full flex items-center justify-center text-brand-primary font-bold">
+                  {cert.charAt(0)}
+                </div>
+                <span className="text-xs font-bold text-brand-primary uppercase tracking-widest">{cert}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ TRACK ORDER BANNER ══════════ */}
+      <section className="py-12 bg-white relative">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <motion.div {...fadeUp(0)} className="bg-brand-primary p-8 md:p-12 rounded-[2rem] relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
+            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-brand-secondary/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay pointer-events-none" />
+            
+            <div className="relative z-10 max-w-xl text-white">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-brand-secondary/20 flex items-center justify-center text-brand-secondary">
+                  <FiTruck size={20} />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-display font-bold">Track Your Order</h3>
+              </div>
+              <p className="text-white/70 text-base md:text-lg font-light leading-relaxed">
+                Waiting for your pure Bilona Ghee? Use our tracking portal to get real-time updates on your delivery status.
+              </p>
+            </div>
+            
+            <div className="relative z-10 w-full md:w-auto shrink-0">
+               <Link to="/track-order" className="btn btn-secondary h-14 px-10 text-[15px] rounded-full flex items-center justify-center gap-2 shadow-gold whitespace-nowrap w-full">
+                 Track Now <FiArrowRight />
+               </Link>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ══════════ LIGHTBOX MODAL ══════════ */}
-      <AnimatePresence>
-        {lightboxIndex !== null && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
-            onClick={() => setLightboxIndex(null)}
-          >
-            {/* Close Button */}
-            <button 
-              onClick={() => setLightboxIndex(null)}
-              className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-200"
-            >
-              <FiX size={20} />
-            </button>
-
-            {/* Prev Button */}
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex((prev) => (prev > 0 ? prev - 1 : filteredGallery.length - 1));
-              }}
-              className="absolute left-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-200"
-            >
-              <FiChevronLeft size={24} />
-            </button>
-
-            {/* Next Button */}
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                setLightboxIndex((prev) => (prev < filteredGallery.length - 1 ? prev + 1 : 0));
-              }}
-              className="absolute right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-200"
-            >
-              <FiChevronRight size={24} />
-            </button>
-
-            {/* Active Image and Caption */}
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="relative max-w-4xl max-h-[80vh] flex flex-col items-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <img 
-                src={filteredGallery[lightboxIndex]?.image} 
-                alt={filteredGallery[lightboxIndex]?.title} 
-                className="max-w-full max-h-[70vh] rounded-2xl object-contain shadow-2xl"
-              />
-              <div className="text-center mt-4">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider text-white"
-                      style={{ background: 'var(--gold)' }}>
-                  {filteredGallery[lightboxIndex]?.category}
-                </span>
-                <h3 className="text-lg font-bold text-white mt-2">
-                  {filteredGallery[lightboxIndex]?.title}
-                </h3>
-                <p className="text-sm text-white/60 mt-1">
-                  {filteredGallery[lightboxIndex]?.desc}
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ══════════ VIDEO DIALOG MODAL ══════════ */}
-      <AnimatePresence>
-        {isVideoModalOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"
-            onClick={() => setIsVideoModalOpen(false)}
-          >
-            {/* Close Button */}
-            <button 
-              onClick={() => setIsVideoModalOpen(false)}
-              className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all duration-200 z-10"
-            >
-              <FiX size={20} />
-            </button>
-
-            {/* Video Content Panel */}
-            <motion.div 
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              className="relative w-full max-w-4xl rounded-3xl overflow-hidden flex flex-col items-center bg-[#1B2F6E]/95 border border-white/10 shadow-2xl p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Tabs for Source Select */}
-              <div className="flex items-center gap-2 mb-6 bg-white/5 p-1.5 rounded-2xl border border-white/10">
-                <button
-                  onClick={() => setVideoModalSource('local')}
-                  className={`px-6 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${videoModalSource === 'local' ? 'bg-amber-400 text-[#1B2F6E]' : 'text-white/80 hover:text-white'}`}
-                >
-                  Traditional Farm Process
-                </button>
-                <button
-                  onClick={() => setVideoModalSource('youtube')}
-                  className={`px-6 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${videoModalSource === 'youtube' ? 'bg-amber-400 text-[#1B2F6E]' : 'text-white/80 hover:text-white'}`}
-                >
-                  YouTube Vedic Bilona Tour
-                </button>
-              </div>
-
-              {/* Video Player Area */}
-              <div className="w-full aspect-video rounded-2xl overflow-hidden bg-black border border-white/10 relative">
-                {videoModalSource === 'local' ? (
-                  <video
-                    src="https://assets.mixkit.co/videos/preview/mixkit-organic-milk-poured-into-a-glass-jar-42301-large.mp4"
-                    className="w-full h-full object-cover"
-                    controls
-                    autoPlay
-                    playsInline
-                  />
-                ) : (
-                  <iframe 
-                    className="w-full h-full" 
-                    src="https://www.youtube.com/embed/3S_W4Xo0d40?autoplay=1" 
-                    title="Traditional Vedic Bilona Ghee Making Process" 
-                    frameBorder="0" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                    allowFullScreen
-                  />
-                )}
-              </div>
-
-              {/* Title & Description */}
-              <div className="text-center mt-6 max-w-xl">
-                <h3 className="text-lg font-bold text-white mb-2">
-                  {videoModalSource === 'local' ? 'Traditional Khuri Village Process' : 'Tharparkar Cow Bilona Ghee Making Tour'}
-                </h3>
-                <p className="text-xs text-white/60 leading-relaxed">
-                  {videoModalSource === 'local' 
-                    ? 'Watch the artisans of Khuri village process whole Tharparkar milk, set the curd overnight in mitti ki handi, hand-churn it with a wooden bilona in the early morning, and gently heat the makkhan over a chulha.' 
-                    : 'Experience a detailed tour of an authentic organic Vedic cow farm, highlighting milk culturing, wooden Bilona hand churning, and traditional clarifying.'}
-                </p>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ══════════ NEWSLETTER ══════════ */}
-      <section style={{ background: '#FFFFFF', padding: '40px 0 60px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp(0)} 
-            className="rounded-3xl p-8 sm:p-12 text-center max-w-4xl mx-auto"
-            style={{ 
-              background: 'var(--bg-alt)', 
-              border: '1px solid var(--border-color)',
-              boxShadow: 'var(--shadow-card)'
-            }}>
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
-                 style={{ background: 'rgba(245,166,35,0.15)', color: 'var(--gold)' }}>
-              <FiZap size={28} />
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold mb-3" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>
-              {t('home.newsletterTitle')}
-            </h2>
-            <p className="text-sm sm:text-base mb-8 max-w-xl mx-auto" style={{ color: 'var(--text-muted)' }}>
-              {t('home.newsletterSub')}
-            </p>
+      {/* ══════════ NEWSLETTER & LIMITED OFFER ══════════ */}
+      <section className="py-16 bg-white relative">
+        <div className="max-w-[1280px] mx-auto px-6 grid lg:grid-cols-2 gap-10">
+          {/* Newsletter Card */}
+          <motion.div {...fadeUp(0)} className="bg-brand-bg p-12 rounded-[2.5rem] relative overflow-hidden border border-brand-primary/5">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand-secondary/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
             
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row max-w-md mx-auto gap-3">
+            <h3 className="text-3xl font-display font-bold text-brand-primary mb-4">{t('home.joinFamilyTitle', 'Join The Daatasa Family')}</h3>
+            <p className="text-brand-text/70 mb-8 font-light">{t('home.joinFamilyDesc', 'Subscribe to get exclusive health tips, early access to new products, and special family-only discounts.')}</p>
+            
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
               <input 
                 type="email" 
-                placeholder={t('home.newsletterInput')} 
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="flex-1 px-5 py-3.5 rounded-xl text-sm outline-none transition-all"
-                style={{ 
-                  background: 'var(--bg-base)', 
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-primary)'
-                }}
-                onFocus={(e) => e.target.style.borderColor = 'var(--gold)'}
-                onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                onChange={e => setEmail(e.target.value)}
+                placeholder={t('home.emailPlaceholder', 'Enter your email address')} 
+                className="flex-1 px-6 py-4 rounded-xl bg-white border border-brand-primary/10 focus:border-brand-secondary outline-none shadow-sm text-sm"
               />
-              <button 
-                type="submit" 
-                disabled={subscribing}
-                className="px-8 py-3.5 rounded-xl font-bold text-sm transition-all hover:scale-105 flex items-center justify-center min-w-[140px]"
-                style={{ 
-                  background: 'var(--brand-gradient)', 
-                  color: 'white', 
-                  boxShadow: 'var(--shadow-brand)',
-                  opacity: subscribing ? 0.7 : 1,
-                  cursor: subscribing ? 'not-allowed' : 'pointer'
-                }}>
-                {subscribing ? t('common.loading') : t('home.newsletterBtn')}
+              <button type="submit" disabled={subscribing} className="btn btn-primary h-[54px] px-8 rounded-full whitespace-nowrap">
+                {subscribing ? t('home.subscribingBtn', 'Joining...') : t('home.subscribeBtn', 'Subscribe Now')}
               </button>
             </form>
           </motion.div>
-        </div>
-      </section>
 
-      {/* ══════════ CTA BANNER ══════════ */}
-      <section style={{ background: '#EAF5FB', paddingBottom: '80px' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp(0)}
-            className="relative rounded-3xl overflow-hidden p-10 sm:p-16 flex flex-col sm:flex-row items-center justify-between gap-8"
-            style={{ background: 'var(--gradient-hero)' }}>
-            {/* Decorations */}
-            <div className="absolute top-0 right-0 w-80 h-80 pointer-events-none opacity-10"
-              style={{ borderRadius: '50% 0 0 80%', background: 'rgba(255,255,255,0.30)' }} />
-            <div className="absolute bottom-0 left-20 w-60 h-60 rounded-full pointer-events-none opacity-20"
-              style={{ background: 'rgba(245,166,35,0.5)', filter: 'blur(40px)' }} />
-            <div className="absolute inset-0 opacity-[0.03]"
-              style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-            <div className="relative z-10 text-center sm:text-left">
-              <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4"
-                style={{ background: 'rgba(245,166,35,0.20)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.35)' }}>
-                ⚡ Limited Time Offer
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold mb-2 text-white" style={{ letterSpacing: '-0.02em', fontFamily: 'var(--font-display)' }}>
-                Ready for a Healthier Life?
-              </h2>
-              <p className="text-base" style={{ color: 'rgba(255,255,255,0.68)' }}>
-                Join 5,000+ happy families across India. Use code{' '}
-                <span className="font-bold px-2 py-0.5 rounded-md" style={{ color: 'var(--navy)', background: 'var(--gold)' }}>FIRST10</span>
-                {' '}for 10% off your first order.
-              </p>
+          {/* Limited Offer Banner */}
+          <motion.div {...slideIn(0.2, "right")} className="bg-brand-primary rounded-[2.5rem] p-12 text-white relative overflow-hidden flex flex-col justify-center">
+            <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 opacity-20">
+              <FiAward size={240} />
             </div>
-
-            <Link to="/products"
-              className="relative z-10 px-9 py-4 rounded-2xl font-extrabold text-sm shrink-0 transition-all hover:scale-105 flex items-center gap-2.5"
-              style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 8px 30px rgba(245,166,35,0.55)' }}>
-              <FiArrowRight size={16} /> Order Now
-            </Link>
+            
+            <div className="relative z-10">
+              <span className="inline-block px-3 py-1 rounded bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-widest mb-4">{t('home.limitedOffer', 'Limited Time Offer')}</span>
+              <h3 className="text-4xl font-display font-bold mb-4 text-white">{t('home.get10Off', 'Get 10% OFF')}</h3>
+              <p className="text-white/70 mb-8 text-lg font-light">{t('home.offerDesc', 'On your first order of our premium Desi Cow Bilona Ghee.')}</p>
+              
+              <div className="flex items-center gap-4">
+                <div className="px-6 py-3 border border-white/20 rounded-xl bg-white/10 font-mono text-brand-secondary text-xl font-bold tracking-widest shadow-inner">
+                  FIRST10
+                </div>
+                <Link to="/products" className="btn btn-accent h-[54px] px-8 rounded-full flex items-center shadow-gold">
+                  {t('home.orderNowBtn', 'Order Now')} <FiArrowRight className="ml-2" />
+                </Link>
+              </div>
+            </div>
           </motion.div>
         </div>
       </section>
     </div>
   )
 }
-
-export default Home

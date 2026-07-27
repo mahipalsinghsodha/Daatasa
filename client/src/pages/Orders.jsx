@@ -506,27 +506,27 @@ const Orders = () => {
   if (!user && !loading) return (navigate('/login', { state: { from: '/orders' } }) || null)
 
   if (loading) return (
-    <div className="min-h-screen pb-20 bg-slate-50">
-      <div style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="h-5 w-24 bg-white/10 animate-pulse rounded-full mb-3" />
-          <div className="h-9 w-56 bg-white/10 animate-pulse rounded-lg" />
+    <div className="min-h-screen pb-20 bg-[var(--ivory)] font-sans">
+      <div className="bg-white border-b border-brand-primary/10 shadow-sm">
+        <div className="max-w-[1280px] mx-auto px-6 py-12 text-center">
+          <div className="h-5 w-24 bg-brand-primary/10 animate-pulse rounded-full mx-auto mb-3" />
+          <div className="h-9 w-56 bg-brand-primary/10 animate-pulse rounded-lg mx-auto" />
         </div>
       </div>
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
+      <div className="max-w-[1280px] mx-auto px-6 py-12 space-y-4">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="rounded-2xl p-5 bg-white border border-slate-100 shadow-sm animate-pulse">
+          <div key={i} className="rounded-[2rem] p-6 bg-white border border-brand-primary/10 shadow-sm animate-pulse">
             <div className="flex items-center justify-between mb-4">
-              <div className="h-4 w-32 bg-slate-100 rounded" />
-              <div className="h-6 w-20 bg-slate-100 rounded-full" />
+              <div className="h-4 w-32 bg-brand-primary/5 rounded" />
+              <div className="h-6 w-20 bg-brand-primary/5 rounded-full" />
             </div>
-            <div className="flex gap-3">
-              <div className="w-14 h-14 bg-slate-100 rounded-xl shrink-0" />
+            <div className="flex gap-4">
+              <div className="w-16 h-16 bg-brand-primary/5 rounded-[1rem] shrink-0" />
               <div className="flex-1 space-y-2">
-                <div className="h-4 bg-slate-100 rounded w-2/3" />
-                <div className="h-3 bg-slate-100 rounded w-1/3" />
+                <div className="h-4 bg-brand-primary/5 rounded w-2/3" />
+                <div className="h-3 bg-brand-primary/5 rounded w-1/3" />
               </div>
-              <div className="h-5 w-20 bg-slate-100 rounded" />
+              <div className="h-5 w-20 bg-brand-primary/5 rounded" />
             </div>
           </div>
         ))}
@@ -535,7 +535,7 @@ const Orders = () => {
   )
 
   return (
-    <div className="min-h-screen pb-20 bg-slate-50">
+    <div className="min-h-screen pb-20 bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
         <title>My Orders — Daatasa</title>
         <meta name="description" content="Track and manage your Daatasa orders. View order history, cancel, return, or reorder with one click." />
@@ -543,25 +543,24 @@ const Orders = () => {
       </Helmet>
 
       {/* Header */}
-      <div style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+      <div className="bg-white border-b border-brand-primary/10 shadow-sm">
+        <div className="max-w-[1280px] mx-auto px-6 py-12">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8 text-center sm:text-left">
             <div>
-              <span className="inline-block px-3 py-1 text-xs font-bold rounded-full border mb-3"
-                style={{ background: 'rgba(245,166,35,0.08)', color: 'var(--gold)', borderColor: 'rgba(245,166,35,0.20)', fontFamily: 'var(--font-display)' }}>My Orders</span>
-              <h1 className="text-3xl sm:text-4xl font-extrabold text-white" style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.025em' }}>Order History</h1>
-              <p className="text-sm mt-1 text-white/70">Track and manage your purchases</p>
+              <span className="inline-block px-4 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded-full mb-4 bg-brand-primary/5 text-brand-primary">My Orders</span>
+              <h1 className="text-4xl font-bold font-display text-brand-primary">Order History</h1>
+              <p className="text-base mt-2 text-brand-text/60 font-medium">Track and manage your purchases</p>
             </div>
-            <div className="text-left sm:text-right">
-              <p className="text-xs mb-1 text-white/50 uppercase tracking-wider font-bold" style={{ fontFamily: 'var(--font-display)' }}>Total Spent</p>
-              <p className="text-2xl font-extrabold text-[var(--gold)]" style={{ fontFamily: 'var(--font-display)' }}>
+            <div className="text-center sm:text-right p-5 rounded-[1.5rem] bg-[var(--ivory)] border border-brand-primary/5">
+              <p className="text-[10px] mb-1 text-brand-text/40 uppercase tracking-widest font-bold">Total Spent</p>
+              <p className="text-3xl font-bold font-display text-brand-primary">
                 ₹{orders.reduce((acc, o) => acc + (o.paymentStatus !== 'CANCELLED' ? o.totalPrice : 0), 0).toLocaleString('en-IN')}
               </p>
             </div>
           </div>
 
           {/* Filters */}
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pt-2">
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pt-2 sm:justify-center">
             {[
               { id: 'all', label: 'All Orders' },
               { id: 'pending', label: 'Pending' },
@@ -572,21 +571,11 @@ const Orders = () => {
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id)}
-                className="chip transition-all duration-200"
-                style={filter === f.id ? {
-                  background: 'var(--accent-gradient)',
-                  color: 'var(--navy)',
-                  borderColor: 'transparent',
-                  fontWeight: '800',
-                  boxShadow: 'var(--glow-gold-sm)',
-                  fontFamily: 'var(--font-display)'
-                } : {
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  borderColor: 'rgba(255, 255, 255, 0.12)',
-                  fontWeight: '600',
-                  fontFamily: 'var(--font-display)'
-                }}
+                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                  filter === f.id
+                    ? 'bg-brand-primary text-white shadow-sm'
+                    : 'bg-white text-brand-text/60 border border-brand-primary/10 hover:border-brand-primary/30 hover:text-brand-primary'
+                }`}
               >
                 {f.label}
               </button>
@@ -596,24 +585,24 @@ const Orders = () => {
       </div>
 
       {/* Order List */}
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+      <div className="max-w-[1280px] mx-auto px-6 py-12">
         {visible.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="py-24 rounded-2xl flex flex-col items-center text-center p-10 bg-white border border-slate-100 shadow-sm"
+            className="py-24 rounded-[2rem] flex flex-col items-center text-center p-10 bg-white border border-brand-primary/10 shadow-sm"
           >
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 bg-slate-50 text-slate-400 border border-slate-100">
-              <FiPackage size={24} />
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 bg-brand-primary/5 text-brand-primary/40">
+              <FiPackage size={32} />
             </div>
-            <h2 className="text-xl font-extrabold mb-2 text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>No orders found</h2>
-            <p className="text-sm max-w-xs mb-6 text-slate-500">You haven't placed any orders yet. Start shopping to see your orders here.</p>
-            <Link to="/products" className="btn-primary text-[13.5px]">
-              Browse Products <FiArrowRight size={14} />
+            <h2 className="text-2xl font-bold font-display text-brand-primary mb-3">No orders found</h2>
+            <p className="text-base max-w-sm mb-8 text-brand-text/60 font-medium">You haven't placed any orders yet. Start shopping to see your orders here.</p>
+            <Link to="/products" className="btn btn-primary px-8 h-12 rounded-full flex items-center justify-center gap-2 text-sm">
+              Browse Products <FiArrowRight size={16} />
             </Link>
           </motion.div>
         ) : (
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
             {visible.map((o, i) => {
               const isExp = expanded === o._id
               return (
@@ -623,64 +612,60 @@ const Orders = () => {
                   initial={{ y: 16, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: i * 0.04 }}
-                  className={`rounded-2xl transition-all duration-300 overflow-hidden bg-white hover:shadow-[0_8px_30px_rgba(27,47,110,0.06)] hover:border-slate-300 border shadow-sm ${highlightId === o._id ? 'animate-[pulse_2s_ease-in-out_3]' : ''}`}
+                  className={`rounded-[2rem] transition-all duration-300 overflow-hidden bg-white hover:border-brand-primary/30 border shadow-sm ${highlightId === o._id ? 'animate-[pulse_2s_ease-in-out_3]' : ''}`}
                   style={{
-                    borderColor: isExp ? 'var(--gold)' : (highlightId === o._id ? 'var(--gold)' : '#F1F5F9'),
-                    boxShadow: isExp ? 'var(--glow-gold-sm)' : (highlightId === o._id ? 'var(--glow-gold-sm)' : 'var(--shadow-card)')
+                    borderColor: isExp ? 'var(--brand-primary)' : (highlightId === o._id ? 'var(--brand-primary)' : 'rgba(27,47,110,0.1)'),
                   }}
                 >
                   {/* Order Row */}
-                  <div className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 cursor-pointer" onClick={() => setExpanded(isExp ? null : o._id)}>
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2.5 mb-2.5">
-                        <span className="text-sm font-bold text-slate-950" style={{ fontFamily: 'var(--font-display)' }}>#{o._id.slice(-8).toUpperCase()}</span>
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
+                        <span className="text-lg font-bold font-display text-brand-primary">#{o._id.slice(-8).toUpperCase()}</span>
                         <StatusBadge order={o} />
-                        <span className="badge badge-muted text-[11px] font-bold" style={{ fontFamily: 'var(--font-display)' }}>{o.paymentMethod}</span>
+                        <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest bg-brand-primary/5 text-brand-primary">{o.paymentMethod}</span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <FiCalendar size={11} className="text-slate-400" />
+                      <div className="flex flex-wrap items-center gap-5 text-sm text-brand-text/60 font-medium">
+                        <span className="flex items-center gap-2">
+                          <FiCalendar size={14} className="text-brand-text/40" />
                           {new Date(o.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
-                        <span className="flex items-center gap-1.5 font-medium">
-                          <FiPackage size={11} className="text-slate-400" />
+                        <span className="flex items-center gap-2">
+                          <FiPackage size={14} className="text-brand-text/40" />
                           {o.orderItems.length} item{o.orderItems.length !== 1 ? 's' : ''}
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5">
                       {['COD_CONFIRMED', 'PAID'].includes(o.paymentStatus) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReorder(o) }}
                           disabled={reordering === o._id}
-                          className="hidden sm:flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:border-[var(--navy)] text-slate-700 hover:text-[var(--navy)] rounded-xl text-xs font-bold transition-all bg-white hover:bg-slate-50 active:scale-[0.98]"
-                          style={{ fontFamily: 'var(--font-display)' }}
+                          className="hidden sm:flex items-center gap-2 px-5 py-2.5 border border-brand-primary/20 hover:bg-brand-primary/5 text-brand-primary rounded-full text-xs font-bold uppercase tracking-widest transition-all"
                         >
                           {reordering === o._id ? (
-                            <div className="w-3 h-3 border-2 border-current/30 border-t-current rounded-full animate-spin" />
+                            <div className="w-3.5 h-3.5 border-2 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin" />
                           ) : (
-                            <FiRotateCcw size={12} />
+                            <FiRotateCcw size={14} />
                           )}
                           Buy Again
                         </button>
                       )}
                       <div className="text-right">
-                        <p className="text-xs mb-0.5 text-slate-400 font-bold uppercase tracking-wider" style={{ fontFamily: 'var(--font-display)' }}>Total</p>
-                        <p className="text-lg font-bold text-slate-900" style={{
-                          fontFamily: 'var(--font-display)',
-                          color: o.paymentStatus === 'CANCELLED' ? 'var(--text-muted)' : 'var(--navy)',
+                        <p className="text-[10px] mb-1 text-brand-text/40 font-bold uppercase tracking-widest">Total</p>
+                        <p className="text-xl font-bold font-display" style={{
+                          color: o.paymentStatus === 'CANCELLED' ? 'var(--text-muted)' : 'var(--brand-primary)',
                           textDecoration: o.paymentStatus === 'CANCELLED' ? 'line-through' : 'none'
                         }}>
                           ₹{Number(o.totalPrice).toLocaleString('en-IN')}
                         </p>
                       </div>
                       <button
-                        onClick={() => setExpanded(isExp ? null : o._id)}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center border border-slate-200 hover:border-[var(--navy)] text-slate-500 hover:text-[var(--navy)] transition-all bg-white shrink-0 active:scale-[0.98]"
-                        style={isExp ? { background: 'var(--brand-gradient)', color: '#FFFFFF', borderColor: 'transparent', boxShadow: 'var(--shadow-brand)' } : {}}
+                        className="w-12 h-12 rounded-full flex items-center justify-center bg-[var(--ivory)] text-brand-primary transition-all shrink-0 border border-brand-primary/5 hover:border-brand-primary/20 hover:bg-brand-primary/5"
+                        style={isExp ? { background: 'var(--brand-primary)', color: '#FFFFFF', borderColor: 'transparent' } : {}}
                       >
-                        <motion.div animate={{ rotate: isExp ? 180 : 0 }}><FiChevronDown size={16} /></motion.div>
+                        <motion.div animate={{ rotate: isExp ? 180 : 0 }}><FiChevronDown size={20} /></motion.div>
                       </button>
                     </div>
                   </div>
@@ -694,40 +679,39 @@ const Orders = () => {
                         exit={{ height: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="p-5 sm:p-6 bg-slate-50/50 border-t border-slate-100">
-                          <div className="grid lg:grid-cols-2 gap-6">
+                        <div className="p-6 sm:p-8 bg-[var(--ivory)] border-t border-brand-primary/5">
+                          <div className="grid lg:grid-cols-2 gap-8">
                             {/* Items */}
                             <div>
-                              <h3 className="text-xs font-bold uppercase tracking-wider mb-3 text-slate-400" style={{ fontFamily: 'var(--font-display)' }}>Order Items</h3>
-                              <div className="space-y-2">
+                              <h3 className="text-[10px] font-bold uppercase tracking-widest mb-4 text-brand-text/40">Order Items</h3>
+                              <div className="space-y-3">
                                 {o.orderItems.map(item => {
                                   const productId = String(item.product?._id || item.product || '')
                                   const alreadyReviewed = reviewedIds.has(productId)
                                   return (
-                                    <div key={item._id} className="flex items-start gap-3.5 p-3.5 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-[0_4px_16px_rgba(27,47,110,0.04)] transition-all">
-                                      <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-slate-50 border border-slate-100">
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    <div key={item._id} className="flex items-start gap-4 p-4 bg-white border border-brand-primary/5 rounded-[1.5rem] shadow-sm hover:border-brand-primary/10 transition-all">
+                                      <div className="w-16 h-16 rounded-[1rem] overflow-hidden shrink-0 bg-white border border-brand-primary/5 p-2">
+                                        <img src={item.image} alt={item.name} className="w-full h-full object-contain" />
                                       </div>
                                       <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-bold truncate text-slate-900">{item.name}</p>
-                                        <p className="text-xs mb-1.5 text-slate-500 font-medium">{item.quantity} × ₹{item.price.toLocaleString('en-IN')}</p>
+                                        <p className="text-base font-bold font-display truncate text-brand-primary">{item.name}</p>
+                                        <p className="text-sm mb-2 text-brand-text/60 font-medium">{item.quantity} × ₹{item.price.toLocaleString('en-IN')}</p>
                                         {o.isDelivered && (
                                           alreadyReviewed ? (
-                                            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 uppercase tracking-wider" style={{ fontFamily: 'var(--font-display)' }}>
-                                              <FiCheckCircle size={11} /> Reviewed
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+                                              <FiCheckCircle size={12} /> Reviewed
                                             </span>
                                           ) : (
                                             <button
                                               onClick={() => setReviewModal({ productId, name: item.name, image: item.image })}
-                                              className="inline-flex items-center gap-1 text-[11px] font-bold text-[var(--gold)] hover:brightness-90 transition-all uppercase tracking-wider"
-                                              style={{ fontFamily: 'var(--font-display)' }}
+                                              className="inline-flex items-center gap-1.5 text-[10px] font-bold text-brand-secondary hover:text-brand-primary transition-all uppercase tracking-widest"
                                             >
-                                              <FiStar size={11} /> Rate product
+                                              <FiStar size={12} /> Rate product
                                             </button>
                                           )
                                         )}
                                       </div>
-                                      <span className="text-sm font-extrabold shrink-0 text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>₹{(item.quantity * item.price).toLocaleString('en-IN')}</span>
+                                      <span className="text-base font-bold font-display shrink-0 text-brand-primary">₹{(item.quantity * item.price).toLocaleString('en-IN')}</span>
                                     </div>
                                   )
                                 })}
@@ -735,42 +719,42 @@ const Orders = () => {
                             </div>
 
                             {/* Details */}
-                            <div className="space-y-4">
+                            <div className="space-y-5">
                               {/* Tracking Timeline */}
-                              <div className="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <h4 className="text-xs font-bold uppercase tracking-wider mb-4 flex items-center gap-2 text-slate-400" style={{ fontFamily: 'var(--font-display)' }}>
-                                  <FiTruck size={13} className="text-[var(--gold)]" /> Order Tracking
+                              <div className="p-6 bg-white border border-brand-primary/5 rounded-[1.5rem] shadow-sm">
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest mb-5 flex items-center gap-2 text-brand-text/40">
+                                  <FiTruck size={14} className="text-brand-secondary" /> Order Tracking
                                 </h4>
 
                                 <OrderTimeline order={o} />
                               </div>
 
                               {/* Delivery Address */}
-                              <div className="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <FiMapPin size={13} className="text-[var(--gold)]" />
-                                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400" style={{ fontFamily: 'var(--font-display)' }}>Delivery Address</h4>
+                              <div className="p-6 bg-white border border-brand-primary/5 rounded-[1.5rem] shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <FiMapPin size={14} className="text-brand-secondary" />
+                                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-brand-text/40">Delivery Address</h4>
                                 </div>
-                                <p className="text-sm leading-relaxed text-slate-600 font-medium">
-                                  {o.shippingAddress.name && <strong className="block text-slate-900 font-bold mb-0.5">{o.shippingAddress.name}</strong>}
+                                <p className="text-sm leading-relaxed text-brand-text/60 font-medium">
+                                  {o.shippingAddress.name && <strong className="block text-brand-primary font-bold mb-1 font-display">{o.shippingAddress.name}</strong>}
                                   {o.shippingAddress.street}, {o.shippingAddress.city}<br />
                                   {o.shippingAddress.state} – {o.shippingAddress.zipCode}
                                 </p>
                               </div>
 
                               {/* Price Breakdown */}
-                              <div className="p-5 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                <div className="flex items-center gap-2 mb-3">
-                                  <FiCreditCard size={13} className="text-[var(--gold)]" />
-                                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400" style={{ fontFamily: 'var(--font-display)' }}>Price Details</h4>
+                              <div className="p-6 bg-white border border-brand-primary/5 rounded-[1.5rem] shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <FiCreditCard size={14} className="text-brand-secondary" />
+                                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-brand-text/40">Price Details</h4>
                                 </div>
-                                <div className="space-y-2">
-                                  <div className="flex justify-between text-sm"><span className="text-slate-500 font-medium">Subtotal</span><span className="text-slate-900 font-bold" style={{ fontFamily: 'var(--font-display)' }}>₹{Number(o.itemsPrice).toLocaleString('en-IN')}</span></div>
-                                  {o.discount > 0 && <div className="flex justify-between text-sm"><span className="text-emerald-600 font-medium">Discount</span><span className="text-emerald-600 font-bold" style={{ fontFamily: 'var(--font-display)' }}>-₹{Number(o.discount).toLocaleString('en-IN')}</span></div>}
-                                  <div className="flex justify-between text-sm"><span className="text-slate-500 font-medium">Shipping</span><span className="font-bold" style={{ fontFamily: 'var(--font-display)', color: o.shippingPrice === 0 ? 'var(--success)' : 'var(--navy)' }}>{o.shippingPrice === 0 ? 'FREE' : `₹${o.shippingPrice}`}</span></div>
-                                  <div className="flex justify-between pt-2.5 border-t border-slate-150">
-                                    <span className="text-sm font-bold text-slate-900" style={{ fontFamily: 'var(--font-display)' }}>Total</span>
-                                    <span className="text-sm font-extrabold text-[var(--navy)]" style={{ fontFamily: 'var(--font-display)' }}>₹{Number(o.totalPrice).toLocaleString('en-IN')}</span>
+                                <div className="space-y-3">
+                                  <div className="flex justify-between text-sm"><span className="text-brand-text/60 font-medium">Subtotal</span><span className="text-brand-primary font-bold font-display">₹{Number(o.itemsPrice).toLocaleString('en-IN')}</span></div>
+                                  {o.discount > 0 && <div className="flex justify-between text-sm"><span className="text-emerald-600 font-medium">Discount</span><span className="text-emerald-600 font-bold font-display">-₹{Number(o.discount).toLocaleString('en-IN')}</span></div>}
+                                  <div className="flex justify-between text-sm"><span className="text-brand-text/60 font-medium">Shipping</span><span className="font-bold font-display" style={{ color: o.shippingPrice === 0 ? 'var(--success)' : 'var(--brand-primary)' }}>{o.shippingPrice === 0 ? 'FREE' : `₹${o.shippingPrice}`}</span></div>
+                                  <div className="flex justify-between pt-4 border-t border-brand-primary/10">
+                                    <span className="text-base font-bold font-display text-brand-primary">Total</span>
+                                    <span className="text-xl font-bold font-display text-brand-primary">₹{Number(o.totalPrice).toLocaleString('en-IN')}</span>
                                   </div>
                                 </div>
                               </div>
@@ -778,58 +762,49 @@ const Orders = () => {
                           </div>
 
                           {/* Actions */}
-                          <div className="mt-6 flex flex-wrap gap-3 justify-end pt-5 border-t border-slate-150">
+                          <div className="mt-8 flex flex-wrap gap-4 justify-end pt-6 border-t border-brand-primary/10">
                             {/* Reorder button */}
                             {['COD_CONFIRMED', 'PAID'].includes(o.paymentStatus) && (
                               <button
                                 onClick={() => handleReorder(o)}
                                 disabled={reordering === o._id}
-                                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-white font-bold rounded-xl text-sm transition-all disabled:opacity-50 active:scale-[0.98]"
-                                style={{
-                                  fontFamily: 'var(--font-display)',
-                                  background: 'var(--brand-gradient)',
-                                  boxShadow: 'var(--shadow-brand)'
-                                }}
+                                className="btn btn-primary px-6 py-3 rounded-full flex items-center justify-center gap-2 text-sm disabled:opacity-50"
                               >
                                 {reordering === o._id
-                                  ? <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                  : <FiRotateCcw size={14} />}
+                                  ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                  : <FiRotateCcw size={16} />}
                                 {reordering === o._id ? 'Adding...' : 'Reorder'}
                               </button>
                             )}
                             <Link
                               to={`/support?orderId=${o._id}`}
-                              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[var(--navy)] hover:text-[var(--navy-deep)] border border-slate-200 hover:border-slate-350 font-bold rounded-xl text-sm transition-all bg-white hover:bg-slate-50 active:scale-[0.98]"
-                              style={{ fontFamily: 'var(--font-display)' }}
+                              className="px-6 py-3 bg-white text-brand-primary border border-brand-primary/20 hover:bg-brand-primary/5 font-bold rounded-full text-sm transition-all flex items-center gap-2"
                             >
-                              <FiHelpCircle size={15} /> Need Help?
+                              <FiHelpCircle size={16} /> Need Help?
                             </Link>
                             {(!['PENDING', 'CANCELLED', 'FAILED'].includes(o.paymentStatus)) && (
                               <button
                                 onClick={() => printInvoice(o)}
                                 disabled={printing === o._id}
-                                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[var(--navy)] hover:text-[var(--navy-deep)] border border-slate-200 hover:border-slate-350 font-bold rounded-xl text-sm transition-all bg-white hover:bg-slate-50 active:scale-[0.98]"
-                                style={{ fontFamily: 'var(--font-display)' }}
+                                className="px-6 py-3 bg-white text-brand-primary border border-brand-primary/20 hover:bg-brand-primary/5 font-bold rounded-full text-sm transition-all flex items-center gap-2"
                               >
-                                <FiPrinter size={15} /> {printing === o._id ? 'Preparing...' : 'Download Invoice'}
+                                <FiPrinter size={16} /> {printing === o._id ? 'Preparing...' : 'Download Invoice'}
                               </button>
                             )}
                             {canReturn(o) && (
                               <button
                                 onClick={() => setReturnModal(o)}
-                                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-[var(--navy)] hover:text-[var(--navy-deep)] border border-slate-200 hover:border-slate-350 font-bold rounded-xl text-sm transition-all bg-white hover:bg-slate-50 active:scale-[0.98]"
-                                style={{ fontFamily: 'var(--font-display)' }}
+                                className="px-6 py-3 bg-white text-brand-primary border border-brand-primary/20 hover:bg-brand-primary/5 font-bold rounded-full text-sm transition-all flex items-center gap-2"
                               >
-                                <FiRefreshCw size={15} /> Request Return
+                                <FiRefreshCw size={16} /> Request Return
                               </button>
                             )}
                             {canCancel(o) && (
                               <button
                                 onClick={() => setCancelModal(o)}
-                                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-red-600 hover:text-red-750 border border-red-100 hover:border-red-200 font-bold rounded-xl text-sm transition-all bg-red-50 hover:bg-red-100/50 active:scale-[0.98]"
-                                style={{ fontFamily: 'var(--font-display)' }}
+                                className="px-6 py-3 bg-red-50 text-red-500 border border-red-100 hover:bg-red-100 font-bold rounded-full text-sm transition-all flex items-center gap-2"
                               >
-                                <FiX size={15} /> Cancel Order
+                                <FiX size={16} /> Cancel Order
                               </button>
                             )}
                           </div>

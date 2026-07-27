@@ -11,6 +11,7 @@ import { useSocket } from '../hooks/useSocket'
 import api from '../api/axios'
 import ChatBubble from '../components/chat/ChatBubble'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
 /*  STATIC DATA                                                               */
@@ -53,11 +54,11 @@ const FAQItem = ({ faq, idx }) => {
   return (
     <div style={{ borderBottom: '1px solid var(--border-color)' }}>
       <button
-        className="w-full flex items-center justify-between py-4 text-left transition-all"
+        className={`w-full flex items-center justify-between py-4 text-left transition-all ${open ? 'text-brand-secondary' : 'text-brand-primary'}`}
         onClick={() => setOpen(v => !v)} id={`faq-${idx}`}>
-        <span className="text-sm font-semibold pr-4" style={{ color: open ? 'var(--gold)' : 'var(--text-primary)' }}>{faq.q}</span>
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0">
-          <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
+        <span className="text-sm font-bold pr-4">{faq.q}</span>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }} className="shrink-0 text-brand-text/50">
+          <ChevronDown size={16} />
         </motion.span>
       </button>
       <AnimatePresence initial={false}>
@@ -66,7 +67,7 @@ const FAQItem = ({ faq, idx }) => {
             initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             style={{ overflow: 'hidden' }}>
-            <p className="pb-4 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{faq.a}</p>
+            <p className="pb-4 text-sm leading-relaxed text-brand-text/70 font-medium">{faq.a}</p>
           </motion.div>
         )}
       </AnimatePresence>
@@ -79,6 +80,7 @@ const FAQItem = ({ faq, idx }) => {
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function Support() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const { connect, emit, on, off } = useSocket()
 
@@ -393,31 +395,32 @@ export default function Support() {
   /*  RENDER                                                                */
   /* ═══════════════════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen pb-24" style={{ background: 'var(--bg-base)' }}>
+    <div className="min-h-screen pb-24 bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
         <title>Support Center — Daatasa</title>
         <meta name="description" content="Get help with your Daatasa orders, returns, and account. Browse FAQs or chat with our AI assistant." />
       </Helmet>
 
       {/* ── Hero ── */}
-      <div className="relative overflow-hidden" style={{ background: 'var(--navy)' }}>
-        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-12 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between">
+      <div className="relative overflow-hidden bg-white text-brand-primary border-b border-brand-primary/5">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3 pointer-events-none bg-brand-secondary/10" />
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(circle, var(--brand-primary) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
+        <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center sm:text-left flex flex-col sm:flex-row items-center justify-between">
           <div>
             <motion.h1 initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-              className="text-3xl sm:text-4xl font-extrabold mb-2 text-white"
-              style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-              Daatasa Help Center | 24x7 Support
+              className="text-2xl sm:text-3xl font-extrabold mb-2 text-brand-primary font-display -tracking-[0.02em]">
+              {t('support.heroTag', 'Daatasa Help Center | 24x7 Support')}
             </motion.h1>
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
-              className="text-sm sm:text-base" style={{ color: 'rgba(255,255,255,0.7)' }}>
-              We are here to help you with your orders, refunds, and queries.
+              className="text-sm sm:text-base text-brand-text/60 font-medium">
+              {t('support.heroDesc', 'We are here to help you with your orders, refunds, and queries.')}
             </motion.p>
           </div>
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="hidden sm:flex items-center gap-3 bg-white/10 px-5 py-3 rounded-xl border border-white/20 mt-4 sm:mt-0">
-            <Headphones size={28} style={{ color: 'var(--gold)' }} />
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="hidden sm:flex items-center gap-4 bg-brand-primary/5 px-6 py-4 rounded-[1.5rem] border border-brand-primary/10 mt-4 sm:mt-0 shadow-sm">
+            <Headphones size={28} className="text-brand-primary" />
             <div className="text-left">
-              <div className="text-white font-bold text-sm">Always Online</div>
-              <div className="text-white/60 text-xs">Fastest resolution</div>
+              <div className="text-brand-primary font-bold text-sm">{t('support.alwaysOnline', 'Always Online')}</div>
+              <div className="text-brand-text/60 text-xs font-medium">{t('support.fastResolution', 'Fastest resolution')}</div>
             </div>
           </motion.div>
         </div>
@@ -426,14 +429,10 @@ export default function Support() {
       <div className="max-w-[760px] mx-auto px-4 sm:px-6 py-8">
 
         {/* ── Tabs ── */}
-        <div className="flex gap-1 p-1 rounded-2xl mb-8"
-          style={{ background: 'var(--bg-alt)', border: '1px solid var(--border-color)' }}>
+        <div className="flex gap-1 p-1 rounded-2xl mb-8 bg-[var(--ivory)] border border-brand-primary/10">
           {tabs.map(tab => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold transition-all"
-              style={activeTab === tab.id
-                ? { background: 'var(--bg-card)', color: 'var(--gold)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border-color)' }
-                : { background: 'transparent', color: 'var(--text-muted)', border: '1px solid transparent' }}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-white text-brand-secondary shadow-sm border border-brand-primary/10' : 'bg-transparent text-brand-text/50 border border-transparent'}`}
               id={`tab-${tab.id}`}>
               <tab.icon size={14} />
               <span className="hidden sm:block">{tab.label}</span>
@@ -450,49 +449,49 @@ export default function Support() {
               exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }} className="space-y-4">
               {loadingOrders ? (
                 <div className="flex justify-center py-8">
-                  <div className="w-8 h-8 border-4 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-4 border-brand-secondary border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : orders.length === 0 ? (
-                <div className="text-center py-12 rounded-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                  <Package size={48} className="mx-auto mb-4 opacity-20" />
-                  <p className="text-lg font-bold text-[var(--text-primary)]">No recent orders</p>
-                  <p className="text-sm text-[var(--text-muted)] mt-1 mb-6">Looks like you haven't placed any orders yet.</p>
-                  <Link to="/products" className="btn btn-primary">Start Shopping</Link>
+                <div className="text-center py-12 rounded-[1.5rem] bg-white border border-brand-primary/10">
+                  <Package size={48} className="mx-auto mb-4 text-brand-text/20" />
+                  <p className="text-lg font-bold font-display text-brand-primary">No recent orders</p>
+                  <p className="text-sm text-brand-text/60 font-medium mt-1 mb-6">Looks like you haven't placed any orders yet.</p>
+                  <Link to="/products" className="btn btn-primary h-12 px-6 rounded-full inline-flex items-center">Start Shopping</Link>
                 </div>
               ) : (
                 orders.map(order => (
-                  <div key={order._id} className="rounded-2xl p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-4" style={{ borderBottom: '1px solid var(--border-color)' }}>
+                  <div key={order._id} className="rounded-[1.5rem] p-6 bg-white border border-brand-primary/10 shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-4 mb-4 pb-4 border-b border-brand-primary/5">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-mono font-bold text-[var(--text-primary)]">#{order._id.slice(-6).toUpperCase()}</span>
+                          <span className="text-xs font-mono font-bold text-brand-primary">#{order._id.slice(-6).toUpperCase()}</span>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${
-                            order.status === 'Delivered' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
-                            order.status === 'Cancelled' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                            'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                            order.status === 'Delivered' ? 'bg-green-50 text-green-600 border border-green-200' :
+                            order.status === 'Cancelled' ? 'bg-red-50 text-red-600 border border-red-200' :
+                            'bg-yellow-50 text-yellow-600 border border-yellow-200'
                           }`}>
                             {order.status}
                           </span>
                         </div>
-                        <span className="text-xs text-[var(--text-muted)]">{new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        <span className="text-xs font-bold text-brand-text/50">{new Date(order.createdAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-[var(--text-primary)]">₹{order.total}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{order.items?.length || 0} items</p>
+                        <p className="text-sm font-bold text-brand-primary">₹{order.total}</p>
+                        <p className="text-xs font-bold text-brand-text/50">{order.items?.length || 0} items</p>
                       </div>
                     </div>
                     {/* Items preview */}
                     {order.items?.slice(0, 2).map((item, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-2">
-                        {item.image && <img src={item.image} alt={item.name} style={{ width: 36, height: 36, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border-color)' }} />}
-                        <span className="text-xs font-medium text-[var(--text-secondary)] truncate">{item.name}</span>
+                      <div key={i} className="flex items-center gap-3 mb-3">
+                        {item.image && <img src={item.image} alt={item.name} className="w-10 h-10 rounded-lg object-cover border border-brand-primary/10 shadow-sm" />}
+                        <span className="text-xs font-bold text-brand-text/70 truncate">{item.name}</span>
                       </div>
                     ))}
-                    <div className="flex items-center justify-between gap-4 mt-3">
-                      <p className="text-sm font-semibold text-[var(--text-secondary)]">Need help with this order?</p>
+                    <div className="flex items-center justify-between gap-4 mt-4">
+                      <p className="text-sm font-bold text-brand-text/70">Need help with this order?</p>
                       <button
                         onClick={() => handleOrderHelp(order)}
-                        className="btn py-2 px-4 text-xs" style={{ background: 'var(--brand-gradient)', color: '#fff', border: 'none' }}
+                        className="btn btn-primary px-5 h-10 rounded-full shadow-gold text-xs"
                       >
                         Get Help
                       </button>
@@ -507,36 +506,30 @@ export default function Support() {
           {activeTab === 'faqs' && (
             <motion.div key="faqs" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
-              <div className="relative mb-5">
-                <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                  style={{ color: 'var(--text-muted)' }} />
+              <div className="relative mb-5 group">
+                <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-brand-text/40 group-focus-within:text-brand-secondary transition-colors" />
                 <input type="text" placeholder="Search FAQs…" value={faqSearch}
                   onChange={e => setFaqSearch(e.target.value)}
-                  className="w-full h-12 pl-10 pr-4 text-sm font-medium outline-none transition-all rounded-xl"
-                  style={{ background: 'var(--bg-card)', border: '2px solid var(--border-color)', color: 'var(--text-primary)' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--gold)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--border-color)'}
+                  className="w-full h-13 pl-10 pr-4 text-sm font-medium outline-none transition-all rounded-[1rem] bg-white border border-brand-primary/10 text-brand-primary focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary/30"
                   id="faq-search" />
               </div>
 
-              <div className="rounded-2xl p-5 sm:p-6"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+              <div className="rounded-[1.5rem] p-6 bg-white border border-brand-primary/10 shadow-sm">
                 {filteredFaqs.length === 0
-                  ? <p className="text-center py-8 text-sm" style={{ color: 'var(--text-muted)' }}>No FAQs match "{faqSearch}"</p>
+                  ? <p className="text-center py-8 text-sm text-brand-text/50 font-bold">No FAQs match "{faqSearch}"</p>
                   : filteredFaqs.map((faq, i) => <FAQItem key={i} faq={faq} idx={i} />)
                 }
               </div>
 
-              <div className="mt-6 rounded-2xl p-6 text-center"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-                <p className="text-sm font-semibold mb-3" style={{ color: 'var(--text-secondary)' }}>
+              <div className="mt-6 rounded-[1.5rem] p-6 text-center bg-white border border-brand-primary/10 shadow-sm">
+                <p className="text-sm font-bold mb-4 text-brand-text/70">
                   Can't find what you're looking for?
                 </p>
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className="btn btn-primary inline-flex items-center gap-2"
+                  className="btn btn-primary inline-flex items-center gap-2 h-12 px-6 rounded-full shadow-gold"
                 >
-                  <MessageSquare size={14} /> Chat with us
+                  <MessageSquare size={16} /> Chat with us
                 </button>
               </div>
             </motion.div>
@@ -547,45 +540,25 @@ export default function Support() {
             <motion.div key="chat" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.15 }}>
 
-              <div className="rounded-3xl overflow-hidden"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow)' }}>
+              <div className="rounded-[2rem] overflow-hidden bg-white border border-brand-primary/10 shadow-sm">
 
                 {/* ── Chat Header ── */}
-                <div style={{
-                  background: 'var(--brand-gradient)', color: '#fff',
-                  padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px',
-                }}>
-                  <div style={{
-                    width: '42px', height: '42px', borderRadius: '50%',
-                    background: 'rgba(255,255,255,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px',
-                  }}>🫙</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 700, fontSize: '15px' }}>Daatasa Support</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', opacity: 0.9 }}>
-                      <span style={{
-                        width: '7px', height: '7px', borderRadius: '50%',
-                        background: chatPhase === 'pre' ? '#34d399' : statusLabel.dot,
-                        display: 'inline-block',
-                      }}/>
+                <div className="bg-brand-primary text-white px-6 py-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-[1rem] bg-white/10 border border-white/20 flex items-center justify-center text-[22px]">🫙</div>
+                  <div className="flex-1">
+                    <div className="font-display font-bold text-lg -tracking-[0.02em]">Daatasa Support</div>
+                    <div className="flex items-center gap-2 text-[13px] text-white/80 font-medium">
+                      <span className="w-2 h-2 rounded-full" style={{ background: chatPhase === 'pre' ? '#10b981' : statusLabel.dot }} />
                       {chatPhase === 'pre' ? 'Online — Ready to help' : statusLabel.label}
                     </div>
                   </div>
                   {chatPhase === 'chat' && sessionStatus !== 'CLOSED' && (
                     <button onClick={handleEndChat}
-                      style={{
-                        background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
-                        borderRadius: '8px', padding: '6px 12px', fontSize: '12px',
-                        cursor: 'pointer', fontWeight: 600,
-                      }}>End Chat</button>
+                      className="bg-white/10 hover:bg-white/20 border-white/20 border text-white rounded-lg px-4 py-2 text-xs font-bold transition-colors">End Chat</button>
                   )}
                   {(chatPhase === 'chat' || chatPhase === 'rating') && (
                     <button onClick={resetChat}
-                      style={{
-                        background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff',
-                        borderRadius: '8px', padding: '6px 8px', fontSize: '12px',
-                        cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      }}
+                      className="bg-white/10 hover:bg-white/20 border-white/20 border text-white rounded-lg p-2 text-xs font-bold transition-colors flex items-center"
                       aria-label="New chat" title="Start new chat">
                       <X size={16} />
                     </button>

@@ -4,38 +4,54 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class', // Controlled via html.dark class (Zustand)
   theme: {
     extend: {
       colors: {
         brand: {
-          primary:   '#F5C518',
-          secondary: '#E6A800',
-          text:      '#1A1400',
-          50:  '#FFFDF0',
-          100: '#FFFAE8',
-          200: '#FFF3C0',
-          300: '#FFE880',
-          400: '#F5C518',
-          500: '#E6A800',
-          600: '#CC9400',
-          700: '#A37200',
-          800: '#7A5500',
-          900: '#523800',
+          primary:   '#132B69', // Deep Royal Blue
+          secondary: '#D9A520', // Royal Gold
+          bg: '#FFFDF8', // Warm Ivory
+          accent: '#FDF9F1', // Soft Beige
+          text:      '#1A202C',
+          50:  '#E8EBF3',
+          100: '#D1D7E7',
+          200: '#A4B0CF',
+          300: '#768AB7',
+          400: '#48639F',
+          500: '#132B69', // base
+          600: '#0F2254',
+          700: '#0B1A3F',
+          800: '#08112A',
+          900: '#040915',
+        },
+        gold: {
+          50:  '#FBF6E9',
+          100: '#F7EDD3',
+          200: '#EFDAA7',
+          300: '#E7C87B',
+          400: '#DFB64F',
+          500: '#D9A520', // base
+          600: '#AE841A',
+          700: '#826313',
+          800: '#57420D',
+          900: '#2B2106',
         },
         surface: {
           light: '#FFFFFF',
-          dark:  '#181400',
-          card:  '#FFFAE8',
-          'card-dark': '#1F1A00',
+          dark:  '#0B1A3F',
+          card:  '#FFFFFF',
+          'card-dark': '#0F2254',
         }
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Playfair Display', 'Georgia', 'serif'],
+        display: ['Playfair Display', 'Georgia', 'serif'],
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #F5C518, #E6A800)',
-        'brand-radial':   'radial-gradient(circle at 30% 40%, rgba(245,197,24,0.15) 0%, transparent 60%)',
+        'brand-gradient': 'linear-gradient(135deg, #132B69, #0F2254)',
+        'gold-gradient': 'linear-gradient(135deg, #D9A520, #C2931D)',
+        'brand-radial':   'radial-gradient(circle at 30% 40%, rgba(19,43,105,0.15) 0%, transparent 60%)',
       },
       borderRadius: {
         card:  '16px',
@@ -44,18 +60,19 @@ export default {
         '4xl': '2rem',
       },
       boxShadow: {
-        brand:    '0 8px 24px rgba(245,197,24,0.30)',
-        'brand-lg': '0 16px 40px rgba(245,197,24,0.35)',
-        card:     '0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.06)',
-        'card-dark': '0 1px 3px rgba(0,0,0,0.20), 0 4px 16px rgba(0,0,0,0.25)',
+        brand:    '0 8px 24px rgba(19,43,105,0.20)',
+        'brand-lg': '0 16px 40px rgba(19,43,105,0.25)',
+        gold:     '0 8px 24px rgba(217,165,32,0.30)',
+        card:     '0 4px 20px rgba(0,0,0,0.06)',
+        'card-dark': '0 4px 20px rgba(0,0,0,0.30)',
         modal:    '0 20px 60px rgba(0,0,0,0.25)',
       },
       animation: {
         'skeleton':     'skeletonShimmer 1.5s infinite',
         'bounce-dot':   'bounceTyping 1s ease infinite',
-        'page-enter':   'pageEnter 0.2s ease both',
-        'slide-up':     'slideUp 0.3s ease both',
-        'fade-in':      'fadeIn 0.2s ease both',
+        'page-enter':   'pageEnter 0.4s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'slide-up':     'slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
+        'fade-in':      'fadeIn 0.4s ease both',
         'pulse-brand':  'pulseBrand 2s ease-in-out infinite',
         'spin-slow':    'spin 3s linear infinite',
       },
@@ -69,11 +86,11 @@ export default {
           '30%': { transform: 'translateY(-5px)' },
         },
         pageEnter: {
-          from: { opacity: '0', transform: 'translateY(6px)' },
+          from: { opacity: '0', transform: 'translateY(12px)' },
           to:   { opacity: '1', transform: 'translateY(0)' },
         },
         slideUp: {
-          from: { opacity: '0', transform: 'translateY(20px)' },
+          from: { opacity: '0', transform: 'translateY(30px)' },
           to:   { opacity: '1', transform: 'translateY(0)' },
         },
         fadeIn: {
@@ -81,8 +98,8 @@ export default {
           to:   { opacity: '1' },
         },
         pulseBrand: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(245,197,24,0.4)' },
-          '50%':      { boxShadow: '0 0 0 8px rgba(245,197,24,0)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(19,43,105,0.4)' },
+          '50%':      { boxShadow: '0 0 0 8px rgba(19,43,105,0)' },
         },
       },
       transitionTimingFunction: {

@@ -53,14 +53,7 @@ const ProductCard = ({ product, categories = [] }) => {
   return (
     <Link
       to={`/products/${product._id}`}
-      className="group block rounded-[16px] overflow-hidden hover:-translate-y-1.5 transition-all duration-300 will-change-transform"
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--border-color)',
-        boxShadow: 'var(--shadow-sm)',
-      }}
-      onMouseEnter={e => e.currentTarget.style.boxShadow = 'var(--shadow)'}
-      onMouseLeave={e => e.currentTarget.style.boxShadow = 'var(--shadow-sm)'}
+      className="group block rounded-[2rem] overflow-hidden hover:-translate-y-2 transition-all duration-300 will-change-transform bg-white border border-brand-primary/5 shadow-sm hover:shadow-lg"
     >
       {/* ── Image ── */}
       <div className="relative aspect-square overflow-hidden" style={{ background: 'var(--bg-base)' }}>
@@ -78,13 +71,11 @@ const ProductCard = ({ product, categories = [] }) => {
         {/* Top-left: discount / category badge */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
           {discount > 0 ? (
-            <span className="px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wide"
-              style={{ background: 'var(--brand-gradient)', color: 'var(--brand-text)' }}>
+            <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest bg-brand-secondary text-brand-primary shadow-sm">
               -{discount}% OFF
             </span>
           ) : (
-            <span className="px-2.5 py-1 text-[10px] font-semibold rounded-full uppercase tracking-wide"
-              style={{ background: 'var(--bg-surface)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
+            <span className="px-3 py-1 text-[10px] font-semibold rounded-full uppercase tracking-widest bg-white text-brand-primary border border-brand-primary/10 shadow-sm">
               {catName}
             </span>
           )}
@@ -93,8 +84,7 @@ const ProductCard = ({ product, categories = [] }) => {
         {/* Top-right: Top Pick + Wishlist */}
         <div className="absolute top-2.5 right-2.5 flex flex-col gap-1.5 items-end">
           {product.featured && (
-            <span className="px-2.5 py-1 text-[10px] font-bold rounded-full uppercase tracking-wide"
-              style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
+            <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest bg-brand-primary text-white shadow-sm">
               ✦ Top Pick
             </span>
           )}
@@ -102,12 +92,7 @@ const ProductCard = ({ product, categories = [] }) => {
             <button
               onClick={handleWishlist}
               aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-              className="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110"
-              style={{
-                background: 'var(--bg-surface)',
-                border: '1px solid var(--border-color)',
-                color: isWishlisted ? '#ef4444' : 'var(--text-muted)',
-              }}
+              className={`w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-sm bg-white border border-brand-primary/10 ${isWishlisted ? 'text-red-500' : 'text-brand-primary/40 hover:text-red-500'}`}
             >
               <FiHeart size={13} className={isWishlisted ? 'fill-red-500' : ''} />
             </button>
@@ -119,11 +104,7 @@ const ProductCard = ({ product, categories = [] }) => {
           <button
             onClick={handleQuickAdd}
             disabled={!inStock || addingToCart}
-            className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-full transition-all duration-200 disabled:opacity-50"
-            style={{
-              background: 'var(--brand-gradient)',
-              color: 'var(--brand-text)',
-            }}
+            className="w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-full transition-all duration-300 disabled:opacity-50 btn btn-primary shadow-lg"
           >
             {addingToCart
               ? <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
@@ -166,37 +147,34 @@ const ProductCard = ({ product, categories = [] }) => {
 
         {/* Name */}
         <h3
-          className="text-sm font-semibold mb-1 line-clamp-2 leading-snug transition-colors duration-200"
-          style={{ color: 'var(--text-primary)' }}
+          className="text-base font-display font-bold mb-1 line-clamp-2 leading-snug transition-colors duration-200 text-brand-primary group-hover:text-brand-secondary"
         >
           {product.name}
         </h3>
 
         {/* Description */}
-        <p className="text-xs line-clamp-2 leading-relaxed mb-3 min-h-[2rem]"
-          style={{ color: 'var(--text-muted)' }}>
+        <p className="text-xs line-clamp-2 leading-relaxed mb-4 min-h-[2rem] text-brand-text/60 font-light">
           {product.description}
         </p>
 
         {/* Footer */}
-        <div className="pt-3" style={{ borderTop: '1px solid var(--border-color)' }}>
+        <div className="pt-4 border-t border-brand-primary/5">
           <div className="flex items-center justify-between">
             <div>
               {product.weight && (
-                <div className="text-[10px] font-semibold mb-0.5 uppercase tracking-wide"
-                  style={{ color: 'var(--text-muted)' }}>{product.weight}</div>
+                <div className="text-[10px] font-bold mb-1 uppercase tracking-widest text-brand-secondary">{product.weight}</div>
               )}
               {product.mrp && product.mrp > product.price ? (
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                  <span className="text-lg font-bold text-brand-primary">
                     ₹{product.price?.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-xs line-through" style={{ color: 'var(--text-muted)' }}>
+                  <span className="text-sm line-through text-brand-text/40">
                     ₹{product.mrp?.toLocaleString('en-IN')}
                   </span>
                 </div>
               ) : (
-                <span className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>
+                <span className="text-lg font-bold text-brand-primary">
                   ₹{product.price?.toLocaleString('en-IN')}
                 </span>
               )}
@@ -216,8 +194,7 @@ const ProductCard = ({ product, categories = [] }) => {
             <button
               onClick={handleQuickAdd}
               disabled={addingToCart}
-              className="sm:hidden mt-3 w-full flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-full transition-all duration-200 disabled:opacity-50"
-              style={{ background: 'var(--brand-gradient)', color: 'var(--brand-text)' }}
+              className="sm:hidden mt-4 w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-full transition-all duration-300 disabled:opacity-50 btn btn-primary"
             >
               {addingToCart
                 ? <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />

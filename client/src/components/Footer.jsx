@@ -1,27 +1,26 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiMail, FiPhone, FiMapPin, FiSend, FiArrowRight } from 'react-icons/fi'
+import { FiInstagram, FiFacebook, FiTwitter, FiLinkedin, FiMail, FiPhone, FiMapPin, FiArrowRight } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
 
 const getNavCols = (t) => [
   {
-    title: t('footer.exploreTitle'),
+    title: t('footer.exploreTitle') || 'Explore',
     links: [
-      { label: t('footer.exploreAbout'),        to: '/about'    },
-      { label: t('footer.exploreProducts'),    to: '/products' },
-      { label: t('footer.exploreHowItWorks'),    to: '/support'  },
-      { label: t('footer.exploreNews'), to: '/support'  },
-      { label: t('footer.exploreContact'),      to: '/contact'  },
+      { label: t('footer.exploreAbout') || 'About Us', to: '/about' },
+      { label: t('footer.exploreProducts') || 'Shop Ghee', to: '/products' },
+      { label: t('footer.exploreHowItWorks') || 'How It Works', to: '/how-it-works' },
+      { label: t('footer.exploreContact') || 'Contact Us', to: '/contact' },
     ],
   },
   {
-    title: t('footer.quickLinksTitle'),
+    title: t('footer.quickLinksTitle') || 'Quick Links',
     links: [
-      { label: t('footer.quickPrivacy'),     to: '/privacy-policy' },
-      { label: t('footer.quickTerms'), to: '/terms'          },
-      { label: t('footer.quickDisclaimer'),         to: '/refund-policy'  },
-      { label: t('footer.quickSupport'),            to: '/support'        },
-      { label: t('footer.quickFAQ'),                to: '/faq'            },
+      { label: t('footer.quickTrackOrder') || 'Track Order', to: '/track-order' },
+      { label: t('footer.quickPrivacy') || 'Privacy Policy', to: '/privacy-policy' },
+      { label: t('footer.quickTerms') || 'Terms & Conditions', to: '/terms' },
+      { label: t('footer.quickDisclaimer') || 'Disclaimer', to: '/disclaimer' },
+      { label: t('footer.quickFAQ') || 'FAQ', to: '/faq' },
     ],
   },
 ]
@@ -33,134 +32,60 @@ const SOCIALS = [
   { Icon: FiLinkedin,  label: 'LinkedIn',  href: '#' },
 ]
 
-const getContactItems = (t) => [
-  { Icon: FiMapPin, text: t('footer.contactAddress') },
-  { Icon: FiMail,   text: 'support@daatasa.com',  href: 'mailto:support@daatasa.com' },
-  { Icon: FiPhone,  text: '+91 7665306403',      href: 'tel:+917665306403' },
-]
-
 export default function Footer() {
   const { t } = useTranslation()
-  const [email, setEmail] = useState('')
-  const [subState, setSubState] = useState('idle')
   const year = new Date().getFullYear()
-
   const navCols = useMemo(() => getNavCols(t), [t])
-  const contactItems = useMemo(() => getContactItems(t), [t])
-
-  const handleSubscribe = (e) => {
-    e.preventDefault()
-    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) return
-    setSubState('success')
-  }
 
   return (
-    <footer style={{ background: 'var(--bg-navy)', position: 'relative', overflow: 'hidden' }} role="contentinfo">
+    <footer className="bg-brand-primary relative overflow-hidden text-white mt-12 sm:mt-24 border-t-4 border-brand-secondary" role="contentinfo">
 
-      {/* Decorative blobs */}
-      <div className="absolute top-0 left-0 w-96 h-96 rounded-full pointer-events-none opacity-10"
-        style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.5) 0%, transparent 70%)', filter: 'blur(80px)', transform: 'translate(-30%, -30%)' }} />
-      <div className="absolute bottom-0 right-0 w-80 h-80 rounded-full pointer-events-none opacity-10"
-        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)', filter: 'blur(70px)', transform: 'translate(30%, 30%)' }} />
+      {/* Premium Ambient Background */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-brand-secondary/10 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+      <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] mix-blend-overlay pointer-events-none" />
 
-      {/* Gradient top border */}
-      <div className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(245,166,35,0.60), rgba(27,47,110,0.40), rgba(245,166,35,0.60), transparent)' }} />
+      <div className="relative z-10 max-w-[1280px] mx-auto px-6 lg:px-8 pt-20 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8 mb-16">
 
-      {/* Dot pattern */}
-      <div className="absolute inset-0 opacity-[0.03]"
-        style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-      {/* Wave separator at top */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg"
-          style={{ display: 'block', width: '100%', height: '60px', marginTop: '-1px' }}
-          preserveAspectRatio="none">
-          <path d="M0 60 C360 0 1080 0 1440 60 L1440 0 L0 0 Z" fill="var(--bg-alt)" />
-        </svg>
-      </div>
-
-      {/* Main Footer Content */}
-      <div className="relative z-10 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-12">
-
-          {/* Contact Column */}
-          <div className="lg:col-span-3">
-            {/* Logo */}
-            <Link to="/" className="inline-flex items-center gap-2.5 mb-7 group">
+          {/* Brand Column */}
+          <div className="lg:col-span-5 pr-0 lg:pr-12">
+            <Link to="/" className="inline-block mb-6 bg-[#fffdf8] rounded-[12px] px-4 py-2">
               <img 
                 src="/logo_rectangle.png" 
-                alt="Daatasa Logo" 
-                className="h-20 sm:h-24 w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
+                alt="Daatasa"
+                className="h-16 w-auto" 
               />
             </Link>
-
-            <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
-              {t('footer.contactHeading')}
-            </h4>
-
-            <ul className="space-y-4">
-              {contactItems.map(({ Icon, text, href }) => (
-                <li key={text} className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
-                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    <Icon size={13} style={{ color: 'var(--gold)' }} />
-                  </div>
-                  {href
-                    ? <a href={href} className="text-sm transition-colors leading-relaxed"
-                        style={{ color: 'rgba(255,255,255,0.70)' }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#FFFFFF'}
-                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.70)'}
-                      >{text}</a>
-                    : <span className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.70)' }}>{text}</span>
-                  }
-                </li>
-              ))}
-            </ul>
+            <p className="text-white/70 leading-relaxed font-medium mb-8 text-sm sm:text-base">
+              {t('footer.tagline', 'Experience the pinnacle of purity with our traditionally hand-churned Vedic Bilona Ghee. Crafted slowly to preserve authentic aroma and unmatched nutritional benefits for your holistic well-being.')}
+            </p>
 
             {/* Social Icons */}
-            <div className="flex items-center gap-2.5 mt-7">
+            <div className="flex gap-3">
               {SOCIALS.map(({ Icon, label, href }) => (
                 <a key={label} href={href} aria-label={label}
-                  className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-250"
-                  style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.65)', border: '1px solid rgba(255,255,255,0.10)' }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = 'var(--gold)'
-                    e.currentTarget.style.color = 'var(--navy)'
-                    e.currentTarget.style.borderColor = 'var(--gold)'
-                    e.currentTarget.style.transform = 'translateY(-3px)'
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(245,166,35,0.35)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.08)'
-                    e.currentTarget.style.color = 'rgba(255,255,255,0.65)'
-                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.10)'
-                    e.currentTarget.style.transform = 'none'
-                    e.currentTarget.style.boxShadow = 'none'
-                  }}>
-                  <Icon size={15} />
+                  className="w-11 h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-brand-secondary hover:bg-brand-secondary hover:text-brand-primary transition-all duration-300 shadow-sm hover:shadow-gold"
+                >
+                  <Icon size={18} />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Nav columns */}
-          <div className="lg:col-span-6 grid grid-cols-2 gap-4 sm:gap-8">
+          {/* Navigation Columns */}
+          <div className="lg:col-span-4 flex flex-col sm:flex-row gap-12 sm:gap-16">
             {navCols.map(col => (
               <div key={col.title}>
-                <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-5" style={{ color: 'var(--gold)' }}>
+                <h4 className="font-display text-lg font-bold mb-6 text-white tracking-wide">
                   {col.title}
                 </h4>
-                <ul className="space-y-3">
+                <ul className="space-y-4">
                   {col.links.map(link => (
                     <li key={link.label}>
-                      <Link to={link.to}
-                        className="text-sm transition-colors duration-200 leading-relaxed flex items-center gap-2 group"
-                        style={{ color: 'rgba(255,255,255,0.68)' }}
-                        onMouseEnter={e => e.currentTarget.style.color = '#FFFFFF'}
-                        onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.68)'}>
-                        <FiArrowRight size={12} className="shrink-0 transition-transform group-hover:translate-x-1"
-                          style={{ color: 'var(--gold)', opacity: 0.7 }} />
+                      <Link to={link.to} className="text-white/60 hover:text-brand-secondary transition-colors duration-300 font-medium text-sm flex items-center group">
+                        <span className="w-0 overflow-hidden group-hover:w-3 transition-all duration-300 text-brand-secondary">
+                          <FiArrowRight size={12} />
+                        </span>
                         {link.label}
                       </Link>
                     </li>
@@ -170,67 +95,63 @@ export default function Footer() {
             ))}
           </div>
 
-          {/* Newsletter Column */}
+          {/* Contact Column */}
           <div className="lg:col-span-3">
-            <h4 className="text-xs font-extrabold uppercase tracking-[0.14em] mb-4" style={{ color: 'var(--gold)' }}>
-              {t('footer.newsletterTitle')}
+            <h4 className="font-display text-lg font-bold mb-6 text-white tracking-wide">
+              {t('footer.contactHeading') || 'Contact Us'}
             </h4>
-            <p className="text-sm leading-relaxed mb-5" style={{ color: 'rgba(255,255,255,0.68)' }}>
-              {t('footer.newsletterDesc')}
-            </p>
-
-            {subState === 'success' ? (
-              <div className="px-4 py-4 rounded-xl flex items-center gap-3"
-                style={{ background: 'rgba(56,161,105,0.15)', border: '1px solid rgba(56,161,105,0.30)' }}>
-                <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0" style={{ background: 'var(--success)' }}>
-                  <span className="text-white text-sm">✓</span>
+            <ul className="space-y-5">
+              <li className="flex gap-4 items-start group">
+                <div className="mt-1 w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-brand-secondary transition-colors group-hover:bg-brand-secondary/20">
+                  <FiMapPin size={16} />
                 </div>
-                <p className="text-sm font-semibold" style={{ color: '#68D391' }}>
-                  {t('footer.newsletterSuccess')}
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubscribe}>
-                <div className="relative mb-3">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder={t('footer.newsletterInput')}
-                    className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all"
-                    style={{
-                      background: 'rgba(255,255,255,0.92)',
-                      color: 'var(--navy)',
-                      border: '2px solid transparent',
-                      paddingRight: '16px',
-                    }}
-                    onFocus={e => e.currentTarget.style.borderColor = 'var(--gold)'}
-                    onBlur={e => e.currentTarget.style.borderColor = 'transparent'}
-                  />
+                <div>
+                  <h5 className="text-sm font-bold text-white mb-1">{t('footer.ourFarm', 'Our Farm')}</h5>
+                  <p className="text-white/60 font-medium text-xs leading-relaxed">
+                    {t('footer.contactAddress', 'Bakhtawar singh ki dhani, Khuri, Jaisalmer, Rajasthan')}
+                  </p>
                 </div>
-                <button type="submit"
-                  className="w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
-                  style={{
-                    background: 'var(--gold)',
-                    color: 'var(--navy)',
-                    boxShadow: '0 6px 20px rgba(245,166,35,0.40)',
-                    border: 'none',
-                    cursor: 'pointer',
-                  }}>
-                  <FiSend size={14} />
-                  {t('footer.newsletterBtn')}
-                </button>
-              </form>
-            )}
+              </li>
+              <li className="flex gap-4 items-start group">
+                <div className="mt-1 w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-brand-secondary transition-colors group-hover:bg-brand-secondary/20">
+                  <FiMail size={16} />
+                </div>
+                <div>
+                  <h5 className="text-sm font-bold text-white mb-1">{t('footer.emailUs', 'Email Us')}</h5>
+                  <a href="mailto:support@daatasa.com" className="text-white/60 hover:text-brand-secondary font-medium text-xs transition-colors">
+                    support@daatasa.com
+                  </a>
+                </div>
+              </li>
+              <li className="flex gap-4 items-start group">
+                <div className="mt-1 w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center shrink-0 text-brand-secondary transition-colors group-hover:bg-brand-secondary/20">
+                  <FiPhone size={16} />
+                </div>
+                <div>
+                  <h5 className="text-sm font-bold text-white mb-1">{t('footer.callUs', 'Call Us')}</h5>
+                  <a href="tel:+917665306403" className="text-white/60 hover:text-brand-secondary font-medium text-xs transition-colors">
+                    +91 7665306403
+                  </a>
+                </div>
+              </li>
+            </ul>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-2"
-          style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
-          <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            {t('footer.copyright', { year })}
+        {/* Bottom Bar */}
+        <div className="pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-white/50 text-xs font-medium text-center md:text-left">
+            {t('footer.copyright', { year }, `Daatasa. Daatasa Ghee — © Copyright ${year} by Daatasa Pvt. Ltd. All rights reserved.`)}
           </p>
+          <div className="flex items-center gap-6">
+            <Link to="/privacy-policy" className="text-white/50 hover:text-brand-secondary text-xs font-medium transition-colors">
+              Privacy
+            </Link>
+            <span className="w-1 h-1 rounded-full bg-white/20" />
+            <Link to="/terms" className="text-white/50 hover:text-brand-secondary text-xs font-medium transition-colors">
+              Terms
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

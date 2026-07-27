@@ -5,8 +5,10 @@ import { useAuth } from '../context/AuthContext'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Sparkles } from 'lucide-react'
 import { FiShield, FiTruck, FiAward } from 'react-icons/fi'
+import { FaUser } from 'react-icons/fa'
 import { toast } from 'react-toastify'
 import { Helmet } from 'react-helmet-async'
+import { useTranslation } from 'react-i18next'
 
 const FloatingInput = ({ id, label, type = 'text', value, onChange, icon: Icon, rightElement, autoComplete, required }) => {
   const [focused, setFocused] = useState(false)
@@ -33,16 +35,15 @@ const FloatingInput = ({ id, label, type = 'text', value, onChange, icon: Icon, 
           placeholder={`Enter ${label.toLowerCase()}`}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          className="w-full rounded-xl text-[14px] font-medium outline-none transition-all"
+          className="w-full rounded-[1rem] text-sm font-medium outline-none transition-all placeholder:text-brand-text/30"
           style={{
             height: '52px',
             paddingLeft: Icon ? '42px' : '14px',
             paddingRight: rightElement ? '44px' : '14px',
-            background: focused ? '#FEFEFE' : '#F7F9FC',
-            border: `2px solid ${focused ? 'var(--gold)' : '#E2E8F0'}`,
-            color: 'var(--navy)',
-            boxShadow: focused ? '0 0 0 4px rgba(245,166,35,0.12), 0 2px 8px rgba(245,166,35,0.08)' : '0 1px 3px rgba(0,0,0,0.04)',
-            borderRadius: '14px',
+            background: focused ? '#FFFFFF' : 'var(--ivory)',
+            border: `1px solid ${focused ? 'var(--brand-secondary)' : 'rgba(27, 47, 110, 0.2)'}`,
+            color: 'var(--brand-primary)',
+            boxShadow: focused ? '0 0 0 1px var(--brand-secondary)' : 'none',
           }}
         />
         {rightElement && (
@@ -60,6 +61,7 @@ const TRUST_BADGES = [
 ]
 
 const Login = () => {
+  const { t } = useTranslation()
   const { login, googleLogin, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -78,7 +80,7 @@ const Login = () => {
     setLoading(true)
     try {
       await login(email.trim(), password)
-      toast.success('Welcome back! 👋')
+      toast.success(t('auth.loginDesc', 'Welcome back! 👋').replace(' Please enter your details.', ''))
       navigate(from, { replace: true })
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Invalid email or password')
@@ -115,79 +117,65 @@ const Login = () => {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#EAF5FB' }}>
+    <div className="min-h-screen flex bg-[var(--ivory)] font-sans">
       <Helmet>
         <title>Login — Daatasa</title>
         <meta name="description" content="Log in to your Daatasa account to shop pure Bilona ghee." />
       </Helmet>
 
-      {/* ── Left Panel (Navy Immersive) ── */}
-      <div className="hidden lg:flex lg:w-[48%] xl:w-[52%] relative overflow-hidden flex-col items-center justify-center p-12"
-        style={{ background: 'var(--gradient-hero)' }}>
+      {/* ── Left Panel (Brand Background) ── */}
+      <div className="hidden lg:flex flex-col justify-between w-[45%] xl:w-[48%] p-10 xl:p-14 relative overflow-hidden bg-gradient-to-br from-[#1B2F6E] via-[#111e47] to-[#050a17]">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-secondary/20 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="absolute inset-0 opacity-[0.03] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] pointer-events-none" />
 
-        {/* Background blobs */}
-        <div className="absolute top-10 left-10 w-72 h-72 rounded-full pointer-events-none animate-blob"
-          style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.35) 0%, transparent 70%)', filter: 'blur(60px)', opacity: 0.5 }} />
-        <div className="absolute bottom-10 right-10 w-56 h-56 rounded-full pointer-events-none animate-blob-delay"
-          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.20) 0%, transparent 70%)', filter: 'blur(50px)', opacity: 0.5 }} />
-        {/* Dot pattern */}
-        <div className="absolute inset-0 opacity-[0.05]"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="relative z-10 text-center max-w-md w-full"
-        >
-          {/* Logo */}
-          <Link to="/" className="inline-flex items-center gap-3 mb-14">
-            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-16 w-auto" />
+        <div className="relative z-10 flex items-center gap-2">
+          <Link to="/" className="inline-block bg-[#fffdf8] rounded-[12px] px-3 py-1.5 shadow-sm">
+            <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-10 w-auto" />
           </Link>
+        </div>
 
-          {/* Floating hero visual */}
-          <div className="relative mb-10 inline-block">
-            <div className="w-40 h-40 rounded-3xl flex items-center justify-center mx-auto"
-              style={{
-                background: 'rgba(255,255,255,0.10)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                backdropFilter: 'blur(12px)',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-              }}>
-              <div className="text-5xl sm:text-7xl animate-float-slow">🐄</div>
-            </div>
-            {/* Ring glow */}
-            <div className="absolute -inset-4 rounded-[32px] pointer-events-none"
-              style={{ background: 'radial-gradient(circle, rgba(245,166,35,0.25) 0%, transparent 70%)', filter: 'blur(16px)' }} />
-          </div>
-
-          <h2 className="text-3xl font-extrabold text-white mb-3" style={{ fontFamily: 'var(--font-display)' }}>Welcome Back!</h2>
-          <p style={{ color: 'rgba(255,255,255,0.65)' }} className="text-base leading-relaxed mb-10">
-            Log in to access your account and enjoy fresh, pure Bilona ghee delivered to your door.
-          </p>
-
-          {/* Trust badges */}
-          <div className="grid grid-cols-3 gap-3">
-            {TRUST_BADGES.map(b => (
-              <div key={b.label} className="rounded-2xl py-4 px-3 text-center transition-all duration-200"
-                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)' }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.14)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}>
-                <div className="text-2xl mb-1.5">{b.emoji}</div>
-                <div className="text-xs font-semibold" style={{ color: 'rgba(255,255,255,0.72)' }}>{b.label}</div>
+        <div className="relative z-10 flex-1 flex flex-col justify-center pb-[38vh] pr-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <div className="flex justify-center w-full mb-8">
+              <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-transparent border border-brand-secondary/50 text-brand-secondary">
+                <FaUser size={24} />
               </div>
-            ))}
-          </div>
-        </motion.div>
+            </div>
+
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-brand-secondary border border-brand-secondary/40 mb-5 shadow-sm">
+              <Sparkles size={12} className="text-brand-secondary" />
+              {t('home.heroBadgeNew', 'Heritage of Rajasthan')}
+            </span>
+            <h1 className="text-3xl xl:text-4xl font-display font-bold leading-[1.3] mb-5 text-white">
+              {t('home.heroTitleNew', 'Pure Vedic Bilona')} <br />
+              <span className="text-brand-secondary italic font-serif tracking-wide">{t('home.heroSubNew', 'Desi Cow Ghee')}</span>
+            </h1>
+
+            <div className="flex items-center gap-4 mb-5 w-48">
+              <div className="flex-1 h-px bg-brand-secondary/40" />
+              <div className="text-brand-secondary text-lg font-serif">✻</div>
+              <div className="flex-1 h-px bg-brand-secondary/40" />
+            </div>
+
+            <p className="text-white/80 text-xs md:text-sm leading-relaxed max-w-sm font-medium z-10 relative">
+              {t('home.heroDescNew', 'Experience the pinnacle of purity with our traditionally hand-churned liquid gold. Crafted slowly in earthen pots to preserve authentic aroma, texture, and unmatched nutritional benefits.')}
+            </p>
+          </motion.div>
+        </div>
+
+        {/* Decorative Ghee Image at Bottom */}
+        <div className="absolute bottom-0 left-0 w-full h-[35vh] min-h-[250px] max-h-[380px] pointer-events-none z-0">
+          <img src="/matka.png" alt="Daatasa Ghee" className="w-full h-full object-fill object-bottom" />
+        </div>
       </div>
 
       {/* ── Right Panel (Form) ── */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 lg:p-16">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-          className="w-full max-w-[420px]"
+          className="w-full max-w-[440px]"
         >
           {/* Mobile logo */}
           <Link to="/" className="flex lg:hidden items-center justify-center mb-8">
@@ -195,73 +183,72 @@ const Login = () => {
           </Link>
 
           {/* Card */}
-          <div className="rounded-3xl p-8 sm:p-10"
-            style={{
-              background: '#FFFFFF',
-              boxShadow: '0 24px 80px rgba(27,47,110,0.14), 0 4px 20px rgba(27,47,110,0.08)',
-              border: '1px solid #E8EFF8',
-            }}>
-            <div className="mb-8">
-              <h1 className="text-2xl font-extrabold mb-1.5" style={{ color: 'var(--navy)', fontFamily: 'var(--font-display)' }}>Sign In</h1>
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                New here?{' '}
-                <Link to="/register" style={{ color: 'var(--gold)', fontWeight: 700 }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--navy)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--gold)'}>
-                  Create an account
-                </Link>
+          <div className="rounded-[1.75rem] p-10 sm:p-12 bg-white border border-brand-primary/10 shadow-[0_24px_80px_rgba(27,47,110,0.08)]">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
+              <h2 className="text-[30px] sm:text-[34px] font-display font-bold text-brand-primary mb-2 tracking-tight leading-tight">
+                {t('auth.welcomeBackTitle', 'Welcome Back!')}
+              </h2>
+              <p className="text-brand-text/60 font-medium text-[15px]">
+                {t('auth.loginDesc', 'Sign in to continue to Daatasa')}
               </p>
-            </div>
+            </motion.div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <motion.form
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              onSubmit={handleSubmit}
+              className="space-y-5"
+            >
               <FloatingInput
-                id="login-email" label="Email address" type="email"
-                value={email} onChange={e => setEmail(e.target.value)}
-                icon={Mail} autoComplete="email" required
+                id="email"
+                label={t('auth.emailLabel', 'Email Address')}
+                type="email"
+                icon={Mail}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                required
               />
+
               <FloatingInput
-                id="login-password" label="Password" type={showPass ? 'text' : 'password'}
-                value={password} onChange={e => setPassword(e.target.value)}
-                icon={Lock} autoComplete="current-password" required
+                id="password"
+                label={t('auth.passLabel', 'Password')}
+                type={showPass ? 'text' : 'password'}
+                icon={Lock}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
                 rightElement={
-                  <button type="button" onClick={() => setShowPass(v => !v)}
-                    style={{ color: 'var(--text-muted)' }}
-                    className="hover:text-[var(--navy)] transition-colors p-1">
-                    {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                  <button type="button" onClick={() => setShowPass(!showPass)}
+                    className="text-brand-text/40 hover:text-brand-primary transition-colors focus:outline-none p-1">
+                    {showPass ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 }
               />
 
-              <div className="flex items-center justify-end">
-                <Link to="/forgot-password" className="text-xs font-semibold transition-colors"
-                  style={{ color: 'var(--gold)' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--navy)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--gold)'}>
-                  Forgot password?
+              <div className="flex justify-end">
+                <Link to="/forgot-password" className="text-sm font-bold text-brand-secondary hover:text-brand-primary transition-colors">
+                  {t('auth.forgotPassword', 'Forgot password?')}
                 </Link>
               </div>
 
               <button type="submit" disabled={loading}
-                className="w-full h-13 rounded-xl font-extrabold text-[15px] flex items-center justify-center gap-2 transition-all hover:scale-[1.02] mt-2"
-                style={{
-                  height: '52px',
-                  background: 'var(--brand-gradient)',
-                  color: '#FFFFFF',
-                  boxShadow: '0 6px 24px rgba(27,47,110,0.35)',
-                  borderRadius: '14px',
-                }}>
+                className="w-full btn h-12 rounded-lg flex items-center justify-center gap-2 mt-4 text-sm font-bold shadow-md hover:shadow-lg transition-all"
+                style={{ background: 'linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%)', color: 'white' }}>
                 {loading
                   ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  : <><ArrowRight size={16} /> Sign In</>
+                  : <>{t('auth.signInBtn', 'Sign In')} <ArrowRight size={16} /></>
                 }
               </button>
-            </form>
+            </motion.form>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-6">
-              <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
-              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Or continue with</span>
-              <div className="flex-1 h-px" style={{ background: 'var(--border-color)' }} />
+            <div className="flex items-center gap-4 my-8">
+              <div className="flex-1 h-px bg-brand-primary/10" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-brand-text/40">{t('auth.orSignInWith', 'Or continue with')}</span>
+              <div className="flex-1 h-px bg-brand-primary/10" />
             </div>
 
             {/* Google Login Button */}
@@ -269,36 +256,35 @@ const Login = () => {
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="w-full h-12 rounded-xl flex items-center justify-center gap-3 transition-colors mb-6"
-              style={{
-                background: '#FFFFFF',
-                border: '1px solid var(--border-color)',
-                color: 'var(--navy)',
-                fontWeight: 600,
-                fontSize: '14px',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
-              onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
+              className="w-full h-12 rounded-lg flex items-center justify-center gap-3 transition-colors mb-8 bg-white border border-brand-primary/20 text-brand-primary font-bold text-sm hover:bg-brand-primary/5 shadow-sm hover:shadow-md"
             >
               <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
-              Sign in with Google
+              {t('auth.googleBtn', 'Continue with Google')}
             </button>
 
             {/* Social proof */}
-            <div className="flex items-center justify-center gap-2 text-xs" style={{ color: 'var(--text-muted)' }}>
-              <div className="flex -space-x-1.5">
-                {['#1B2F6E','#F5A623','#38A169','#3182CE'].map((c, i) => (
-                  <div key={i} className="w-6 h-6 rounded-full border-2 border-white" style={{ background: c }} />
+            <div className="flex items-center justify-center gap-3 text-[13px] font-medium text-brand-text/60">
+              <div className="flex -space-x-2">
+                {[
+                  'https://randomuser.me/api/portraits/men/32.jpg',
+                  'https://randomuser.me/api/portraits/women/44.jpg',
+                  'https://randomuser.me/api/portraits/men/46.jpg'
+                ].map((url, i) => (
+                  <img key={i} src={url} alt="Customer" className="w-8 h-8 rounded-full border-[3px] border-white object-cover shadow-sm" />
                 ))}
               </div>
-              <span>Join <strong style={{ color: 'var(--navy)' }}>5,000+</strong> happy customers</span>
+              <span>{t('auth.socialProof', 'Join 5,000+ happy customers').split('5,000+').map((part, i, arr) => (
+                <span key={i}>
+                  {part}
+                  {i < arr.length - 1 && <strong className="text-brand-primary font-bold font-display">5,000+</strong>}
+                </span>
+              ))}</span>
             </div>
 
-            <div className="mt-6 pt-6 text-center" style={{ borderTop: '1px solid var(--border-color)' }}>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Don't have an account?{' '}
-                <Link to="/register" style={{ color: 'var(--gold)', fontWeight: 700 }}>Sign up free</Link>
+            <div className="mt-8 pt-6 text-center border-t border-brand-primary/10">
+              <p className="text-xs font-medium text-brand-text/60">
+                {t('auth.dontHaveAccount', "Don't have an account?")}{' '}
+                <Link to="/register" className="text-brand-secondary font-bold hover:text-brand-primary transition-colors">{t('auth.signUpFree', 'Sign up free')}</Link>
               </p>
             </div>
           </div>

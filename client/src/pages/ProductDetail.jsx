@@ -140,7 +140,8 @@ const ProductDetail = () => {
           }
         } catch {}
       }
-    } catch {
+    } catch (error) {
+      if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED') return;
       toast.error('Could not load product')
     } finally {
       setLoading(false)
@@ -259,20 +260,20 @@ const ProductDetail = () => {
 
   // ── Loading ──
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4" />
-      <p className="text-sm text-gray-400 font-medium">Loading product...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--ivory)]">
+      <div className="w-12 h-12 border-4 border-brand-secondary/20 border-t-brand-secondary rounded-full animate-spin mb-4" />
+      <p className="text-sm text-brand-text/40 font-medium">Loading product...</p>
     </div>
   )
 
   // ── Not found ──
   if (!product) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--ivory)] p-6">
       <div className="text-center">
-        <Package size={48} className="text-gray-200 mx-auto mb-4" />
-        <h2 className="text-xl font-bold text-gray-900 mb-2">Product Not Found</h2>
-        <p className="text-gray-400 mb-6 text-sm">This product may have been removed from our store.</p>
-        <Link to="/products" className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-amber-500 hover:text-navy transition-all">
+        <Package size={48} className="text-brand-primary/20 mx-auto mb-4" />
+        <h2 className="text-2xl font-display font-bold text-brand-primary mb-2">Product Not Found</h2>
+        <p className="text-brand-text/40 mb-6 text-sm">This product may have been removed from our store.</p>
+        <Link to="/products" className="btn btn-primary px-8 h-12 rounded-full inline-flex items-center justify-center">
           Back to Products
         </Link>
       </div>
@@ -291,7 +292,7 @@ const ProductDetail = () => {
   }))
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-[var(--ivory)] pb-20">
       {product && (
         <Helmet>
           <title>{product.name} – Daatasa | Premium Bilona Ghee</title>
@@ -339,11 +340,10 @@ const ProductDetail = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <div className="relative bg-white rounded-2xl border border-gray-100 overflow-hidden aspect-square flex items-center justify-center p-10 group mb-4">
+            <div className="relative bg-white rounded-[2rem] border border-brand-primary/10 shadow-sm overflow-hidden aspect-square flex items-center justify-center p-10 group mb-6">
               {product.featured && (
-                <span className="absolute top-4 left-4 px-3 py-1 text-white text-xs font-bold rounded-full"
-                      style={{ background: 'var(--brand-gradient)' }}>
-                  Featured
+                <span className="absolute top-5 left-5 px-4 py-1.5 text-white text-[10px] font-bold uppercase tracking-widest rounded-full bg-brand-primary shadow-sm">
+                  ✦ Top Pick
                 </span>
               )}
               {product.stock === 0 && (
@@ -376,8 +376,8 @@ const ProductDetail = () => {
                       <button
                         key={i}
                         onClick={() => setSelectedImage(img.url)}
-                        className={`relative w-16 h-16 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
-                          selectedImage === img.url ? 'border-amber-500 scale-105' : 'border-gray-200 hover:border-amber-300'
+                        className={`relative w-20 h-20 shrink-0 rounded-[1rem] overflow-hidden border-2 transition-all ${
+                          selectedImage === img.url ? 'border-brand-secondary scale-105 shadow-md' : 'border-brand-primary/10 hover:border-brand-secondary/50'
                         }`}
                         title={img.label}
                       >
@@ -401,10 +401,10 @@ const ProductDetail = () => {
                 { icon: Shield,    title: 'Lab Tested', sub: 'Pure Quality' },
                 { icon: RefreshCw, title: 'Bilona',    sub: 'Traditional' },
               ].map((b, i) => (
-                <div key={i} className="bg-white border border-gray-100 rounded-xl p-3 text-center">
-                  <b.icon size={18} className="text-amber-500 mx-auto mb-1.5" />
-                  <p className="text-xs font-semibold text-gray-900">{b.title}</p>
-                  <p className="text-[10px] text-gray-400">{b.sub}</p>
+                <div key={i} className="bg-white border border-brand-primary/10 rounded-[1.5rem] p-4 text-center shadow-sm">
+                  <b.icon size={20} className="text-brand-secondary mx-auto mb-2" />
+                  <p className="text-xs font-bold text-brand-primary uppercase tracking-wider">{b.title}</p>
+                  <p className="text-[10px] text-brand-text/40">{b.sub}</p>
                 </div>
               ))}
             </div>
@@ -418,24 +418,24 @@ const ProductDetail = () => {
             className="space-y-5"
           >
             {/* Category badge */}
-            <div className="flex items-center gap-2">
-              <Tag size={13} className="text-amber-500" />
-              <span className="text-xs font-bold text-amber-500 uppercase tracking-wider">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag size={13} className="text-brand-secondary" />
+              <span className="text-xs font-bold text-brand-secondary uppercase tracking-widest">
                 {product.category} Ghee
               </span>
             </div>
 
             {/* Name and Wishlist */}
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight" style={{ fontFamily: 'var(--font-display)' }}>
+              <h1 className="text-3xl sm:text-5xl font-extrabold text-brand-primary leading-tight font-display">
                 {product.name}
               </h1>
               {isCustomer && (
                 <button
                   onClick={handleWishlist}
-                  className="w-10 h-10 shrink-0 flex items-center justify-center rounded-full bg-amber-500/10 text-amber-500 hover:bg-amber-400 hover:text-navy transition-all"
+                  className="w-12 h-12 shrink-0 flex items-center justify-center rounded-full bg-white border border-brand-primary/10 shadow-sm text-brand-primary/40 hover:text-red-500 transition-all hover:scale-110"
                 >
-                  <Heart size={18} className={user?.wishlist?.some(id => String(id?._id || id) === String(product._id)) ? 'fill-current' : ''} />
+                  <Heart size={20} className={user?.wishlist?.some(id => String(id?._id || id) === String(product._id)) ? 'fill-red-500 text-red-500' : ''} />
                 </button>
               )}
             </div>
@@ -444,10 +444,10 @@ const ProductDetail = () => {
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex items-center gap-1.5">
                 <Stars rating={avgRating} size={15} />
-                <span className="text-sm font-bold text-gray-900">{avgRating.toFixed(1)}</span>
+                <span className="text-sm font-bold text-brand-primary">{avgRating.toFixed(1)}</span>
                 <button
                   onClick={() => setActiveTab('reviews')}
-                  className="text-sm text-amber-500 hover:underline"
+                  className="text-sm text-brand-secondary hover:underline"
                 >
                   ({numReviews} reviews)
                 </button>
@@ -484,27 +484,29 @@ const ProductDetail = () => {
               <span className="text-sm text-gray-400">/ {product.weight || 'unit'}</span>
             </div>
 
-            <hr className="border-gray-100" />
+            <hr className="border-brand-primary/10" />
 
             {/* Deliver to */}
             {user && (
-              <div className="flex items-start gap-3 p-3.5 bg-[#EAF5FB]/60 border border-[#1B2F6E]/15 rounded-xl">
-                <MapPin size={16} className="text-[#1B2F6E] mt-0.5 shrink-0" />
+              <div className="flex items-start gap-4 p-5 bg-[var(--ivory)] border border-brand-primary/10 rounded-[1.5rem]">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-brand-primary/5 text-brand-primary mt-0.5">
+                  <MapPin size={18} />
+                </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-[#1B2F6E] mb-0.5">Deliver to</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-brand-primary/60 mb-1">Deliver to</p>
                   {defaultAddr ? (
-                    <p className="text-sm text-gray-750 truncate font-medium">
+                    <p className="text-sm text-brand-text truncate font-medium">
                       <span className="font-bold">{defaultAddr.name}</span>
                       {' — '}{defaultAddr.city}, {defaultAddr.state} – {defaultAddr.zipCode}
                     </p>
                   ) : (
-                    <Link to="/profile" className="text-sm text-amber-500 hover:underline font-bold">
+                    <Link to="/profile" className="text-sm text-brand-secondary hover:underline font-bold">
                       + Add a delivery address
                     </Link>
                   )}
                 </div>
                 {defaultAddr && (
-                  <Link to="/profile" className="text-xs text-amber-500 hover:text-amber-600 font-bold shrink-0">
+                  <Link to="/profile" className="text-xs text-brand-secondary hover:text-brand-primary font-bold shrink-0">
                     Change
                   </Link>
                 )}
@@ -512,13 +514,13 @@ const ProductDetail = () => {
             )}
 
             {/* ── Delivery Estimation (PIN check) ── */}
-            <div className="border border-slate-100 rounded-2xl p-4 bg-white space-y-3">
-              <p className="text-xs font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1.5" style={{ fontFamily: 'var(--font-display)' }}>
-                <Truck size={13} className="text-amber-500" /> Check Delivery
+            <div className="border border-brand-primary/10 rounded-[1.5rem] p-6 bg-white space-y-4 shadow-sm">
+              <p className="text-[10px] font-bold text-brand-primary uppercase tracking-widest flex items-center gap-2">
+                <Truck size={14} className="text-brand-secondary" /> Check Delivery
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <div className="relative flex-1">
-                  <MapPin size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-text/40 pointer-events-none" />
                   <input
                     type="text"
                     inputMode="numeric"
@@ -526,33 +528,33 @@ const ProductDetail = () => {
                     value={estPin}
                     onChange={e => handleEstPinChange(e.target.value)}
                     placeholder="Enter 6-digit PIN"
-                    className="w-full pl-8 pr-3 py-2.5 border border-slate-200 rounded-xl text-sm outline-none focus:border-amber-400 transition-all bg-white"
+                    className="w-full pl-11 pr-4 h-12 border border-brand-primary/20 rounded-[1rem] text-sm font-medium outline-none focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary transition-all bg-white placeholder:text-brand-text/30"
                   />
                 </div>
                 {estLoading && (
-                  <div className="flex items-center px-3">
-                    <div className="w-4 h-4 border-2 border-amber-200 border-t-amber-500 rounded-full animate-spin" />
+                  <div className="flex items-center px-4">
+                    <div className="w-5 h-5 border-2 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin" />
                   </div>
                 )}
               </div>
               {estError && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle size={12} /> {estError}
+                <p className="text-xs text-red-500 flex items-center gap-1.5 font-medium">
+                  <AlertCircle size={14} /> {estError}
                 </p>
               )}
               {estState && !estError && (
-                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                  <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1.5 mb-0.5">
-                    <CheckCircle size={13} /> Delivery available to {estState}
+                <div className="bg-emerald-50 border border-emerald-100 rounded-[1rem] p-4">
+                  <p className="text-[10px] uppercase tracking-widest text-emerald-700 font-bold flex items-center gap-1.5 mb-1">
+                    <CheckCircle size={14} /> Delivery available to {estState}
                   </p>
-                  <p className="text-sm font-bold text-slate-900">
+                  <p className="text-sm font-bold text-brand-primary">
                     Est. Delivery: {getDeliveryEstimateText(estState)}
                   </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Free shipping on orders above ₹500</p>
+                  <p className="text-xs text-emerald-600/70 mt-1 font-medium">Free shipping on orders above ₹500</p>
                 </div>
               )}
               {!estPin && (
-                <p className="text-[11px] text-slate-400">We deliver across India • Usually 2-6 business days</p>
+                <p className="text-xs text-brand-text/50 font-medium">We deliver across India • Usually 2-6 business days</p>
               )}
             </div>
 
@@ -561,7 +563,7 @@ const ProductDetail = () => {
               // Dynamic max: capped at 10, but never exceeds actual stock
               const maxQty = Math.min(product.stock, 10)
               return (
-                <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="bg-white border border-brand-primary/10 rounded-[2rem] p-6 space-y-5 shadow-sm">
 
                   {/* Quantity selector */}
                   <div className="flex items-center justify-between">
@@ -569,17 +571,17 @@ const ProductDetail = () => {
                       <p className="text-sm font-semibold text-gray-900">Quantity</p>
                       <p className="text-xs text-gray-400">Max {maxQty} per order</p>
                     </div>
-                    <div className="flex items-center gap-1 border border-gray-200 rounded-xl p-1">
+                    <div className="flex items-center gap-1 border border-brand-primary/10 rounded-full p-1 bg-white">
                       <button
                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-900 hover:text-white transition-colors text-gray-700"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-brand-primary/5 hover:bg-brand-primary hover:text-white transition-colors text-brand-primary"
                       >
                         <Minus size={15} />
                       </button>
-                      <span className="w-10 text-center text-base font-bold text-gray-900">{quantity}</span>
+                      <span className="w-12 text-center text-lg font-bold text-brand-primary font-display">{quantity}</span>
                       <button
                         onClick={() => setQuantity(q => Math.min(maxQty, q + 1))}
-                        className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-50 hover:bg-gray-900 hover:text-white transition-colors text-gray-700"
+                        className="w-10 h-10 flex items-center justify-center rounded-full bg-brand-primary/5 hover:bg-brand-primary hover:text-white transition-colors text-brand-primary"
                       >
                         <Plus size={15} />
                       </button>
@@ -596,12 +598,7 @@ const ProductDetail = () => {
                   <button
                     onClick={() => handleAddToCart()}
                     disabled={adding}
-                    className="w-full py-3.5 text-white font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2.5 text-sm active:scale-[0.99]"
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      background: 'var(--brand-gradient)',
-                      boxShadow: 'var(--shadow-brand)'
-                    }}
+                    className="w-full h-14 btn btn-primary rounded-full transition-all disabled:opacity-50 flex items-center justify-center gap-2.5 text-sm"
                   >
                     {adding
                       ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -610,41 +607,34 @@ const ProductDetail = () => {
                     {adding ? 'Adding to Cart...' : `Add to Cart — ₹${(product.price * quantity).toLocaleString('en-IN')}`}
                   </button>
 
-                  {/* Buy Now */}
                   <button
                     onClick={() => handleAddToCart({ redirectTo: '/checkout' })}
                     disabled={adding}
-                    className="w-full py-3.5 text-white font-bold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                    style={{
-                      fontFamily: 'var(--font-display)',
-                      background: 'var(--gold)',
-                      color: 'var(--navy)',
-                      boxShadow: '0 4px 15px rgba(245,166,35,0.40)'
-                    }}
+                    className="w-full h-14 btn btn-accent rounded-full transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm shadow-gold"
                   >
                     Buy Now
                   </button>
 
                   {/* ── Subscriptions ── */}
                   {plans.length > 0 && (
-                    <div className="pt-4 border-t border-gray-100 mt-4">
-                      <p className="text-xs font-bold text-gray-900 mb-3 flex items-center gap-2">
-                        <RefreshCw size={14} className="text-amber-500" /> Subscribe & Save
+                    <div className="pt-5 border-t border-brand-primary/10 mt-5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-brand-primary mb-4 flex items-center gap-2">
+                        <RefreshCw size={14} className="text-brand-secondary" /> Subscribe & Save
                       </p>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {plans.map(plan => (
                           <button
                             key={plan._id}
                             onClick={() => navigate('/checkout-subscription', { state: { planId: plan._id } })}
-                            className="w-full text-left p-3 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-between group"
+                            className="w-full text-left p-4 rounded-[1.5rem] border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors flex items-center justify-between group"
                           >
                             <div>
                               <p className="text-sm font-bold text-amber-900">{plan.name}</p>
-                              <p className="text-xs text-amber-700 capitalize">Delivered every {plan.interval} {plan.period}</p>
+                              <p className="text-xs font-medium text-amber-700 capitalize mt-0.5">Delivered every {plan.interval} {plan.period}</p>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-bold text-amber-900">₹{plan.price.toLocaleString('en-IN')}</p>
-                              <span className="text-[10px] bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full font-bold opacity-0 group-hover:opacity-100 transition-opacity">Select</span>
+                              <span className="text-[10px] bg-amber-200 text-amber-900 px-3 py-1 rounded-full font-bold opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest mt-1 inline-block">Select</span>
                             </div>
                           </button>
                         ))}
@@ -673,8 +663,8 @@ const ProductDetail = () => {
         </div>
 
         {/* ── Tabs: Description + Reviews ── */}
-        <div className="mt-12">
-          <div className="relative flex border-b border-slate-100 mb-6">
+        <div className="mt-16">
+          <div className="relative flex border-b border-brand-primary/10 mb-8">
             {[
               { key: 'description', label: 'Description' },
               { key: 'reviews',     label: `Reviews (${numReviews})` },
@@ -682,17 +672,17 @@ const ProductDetail = () => {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`relative px-6 py-3.5 text-sm font-bold transition-colors duration-200 ${
+                className={`relative px-8 py-4 text-sm font-bold transition-colors duration-200 uppercase tracking-widest ${
                   activeTab === tab.key
-                    ? 'text-amber-500 font-extrabold'
-                    : 'text-slate-400 hover:text-slate-600'
+                    ? 'text-brand-primary'
+                    : 'text-brand-text/40 hover:text-brand-primary/70'
                 }`}
               >
                 {tab.label}
                 {activeTab === tab.key && (
                   <motion.div
                     layoutId="tab-indicator"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-400 rounded-full"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-primary rounded-full"
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -710,20 +700,20 @@ const ProductDetail = () => {
                 exit={{ opacity: 0 }}
                 className="grid sm:grid-cols-2 gap-6"
               >
-                <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                  <h3 className="font-semibold text-gray-900 mb-3 text-sm">About this product</h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
+                <div className="bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm p-8">
+                  <h3 className="font-bold font-display text-brand-primary text-xl mb-4">About this product</h3>
+                  <p className="text-sm text-brand-text/70 leading-relaxed font-light">{product.description}</p>
                 </div>
-                <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
-                  <h3 className="font-semibold text-gray-900 mb-3 text-sm">Product Details</h3>
+                <div className="bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm p-8 space-y-4">
+                  <h3 className="font-bold font-display text-brand-primary text-xl mb-4">Product Details</h3>
                   {[
                     { label: 'Weight / Size', value: product.weight },
                     { label: 'Category',      value: product.category },
                     { label: 'Availability',  value: product.stock > 0 ? 'In Stock' : 'Out of Stock' },
                   ].map((d, i) => (
-                    <div key={i} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
-                      <span className="text-sm text-gray-500">{d.label}</span>
-                      <span className="text-sm font-medium text-gray-900">{d.value}</span>
+                    <div key={i} className="flex justify-between items-center py-3 border-b border-brand-primary/5 last:border-0">
+                      <span className="text-sm text-brand-text/60">{d.label}</span>
+                      <span className="text-sm font-bold text-brand-primary">{d.value}</span>
                     </div>
                   ))}
                 </div>
@@ -741,11 +731,11 @@ const ProductDetail = () => {
               >
                 {/* Rating summary */}
                 {numReviews > 0 && (
-                  <div className="bg-white rounded-2xl border border-gray-100 p-6 flex flex-col sm:flex-row gap-6 items-center">
+                  <div className="bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm p-8 flex flex-col sm:flex-row gap-8 items-center">
                     <div className="text-center shrink-0">
-                      <p className="text-5xl font-bold text-gray-900">{avgRating.toFixed(1)}</p>
-                      <Stars rating={avgRating} size={18} />
-                      <p className="text-xs text-gray-400 mt-1">{numReviews} reviews</p>
+                      <p className="text-6xl font-display font-bold text-brand-primary mb-2">{avgRating.toFixed(1)}</p>
+                      <Stars rating={avgRating} size={20} />
+                      <p className="text-sm text-brand-text/40 mt-2">{numReviews} reviews</p>
                     </div>
                     <div className="flex-1 w-full space-y-2">
                       {dist.map(({ star, count }) => (
@@ -767,22 +757,22 @@ const ProductDetail = () => {
 
                 {/* Write a review */}
                 {user && !hasReviewed && isCustomer && (
-                  <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                    <h3 className="font-extrabold text-gray-900 mb-4 text-sm flex items-center gap-2" style={{ fontFamily: 'var(--font-display)' }}>
-                      <Star size={15} className="text-amber-500 fill-amber-500" /> Write a Review
+                  <div className="bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm p-8">
+                    <h3 className="font-bold font-display text-brand-primary mb-6 text-xl flex items-center gap-3">
+                      <Star size={20} className="text-brand-secondary fill-brand-secondary" /> Write a Review
                     </h3>
-                    <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-700 font-medium">
+                    <div className="mb-8 p-5 bg-brand-primary/5 border border-brand-primary/10 rounded-[1.5rem] text-sm text-brand-primary font-medium leading-relaxed">
                       Only customers who have <strong>received this product</strong> can submit a review.
                       You can also rate from your{' '}
-                      <Link to="/orders" className="font-bold underline text-amber-600 hover:text-amber-700">Orders page</Link>.
+                      <Link to="/orders" className="font-bold underline text-brand-secondary hover:text-brand-primary transition-colors">Orders page</Link>.
                     </div>
-                    <form onSubmit={handleSubmitReview} className="space-y-4">
+                    <form onSubmit={handleSubmitReview} className="space-y-6">
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Your Rating</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-brand-text/60 mb-3">Your Rating</label>
                         <StarPicker value={reviewRating} onChange={setReviewRating} />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 mb-1">Your Review</label>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-brand-text/60 mb-2">Your Review</label>
                         <textarea
                           required
                           maxLength={2000}
@@ -790,22 +780,20 @@ const ProductDetail = () => {
                           value={reviewComment}
                           onChange={e => setReviewComment(e.target.value)}
                           placeholder="Share your experience with this product..."
-                          className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 transition-all resize-none bg-white"
+                          className="w-full px-5 py-4 rounded-[1.5rem] border border-brand-primary/20 text-sm font-medium outline-none focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary transition-all resize-none bg-white placeholder:text-brand-text/30"
                         />
-                        <div className="mt-1 text-right text-[10px] font-medium" 
-                             style={{ color: reviewComment.length >= 2000 ? 'var(--danger)' : 'var(--text-muted)' }}>
+                        <div className={`mt-2 text-right text-[10px] font-bold uppercase tracking-widest ${reviewComment.length >= 2000 ? 'text-red-500' : 'text-brand-text/40'}`}>
                           {reviewComment.length}/2000
                         </div>
                       </div>
                       <button
                         type="submit"
                         disabled={submittingReview}
-                        className="flex items-center gap-2 px-6 py-2.5 text-white text-sm font-bold rounded-xl transition-all disabled:opacity-50"
-                        style={{ background: 'var(--brand-gradient)', boxShadow: 'var(--shadow-brand)' }}
+                        className="flex items-center justify-center gap-2 w-full sm:w-auto px-10 h-14 btn btn-primary rounded-full transition-all disabled:opacity-50 text-sm font-bold"
                       >
                         {submittingReview
-                          ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          : <Send size={14} />
+                          ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          : <Send size={16} />
                         }
                         {submittingReview ? 'Submitting...' : 'Submit Review'}
                       </button>
@@ -827,36 +815,36 @@ const ProductDetail = () => {
 
                 {/* Review list */}
                 {reviews.length === 0 ? (
-                  <div className="text-center py-12 bg-white rounded-2xl border border-gray-100">
-                    <Star size={36} className="text-gray-100 mx-auto mb-3" />
-                    <p className="text-sm text-gray-500">No reviews yet. Be the first to review!</p>
+                  <div className="text-center py-16 bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm">
+                    <Star size={48} className="text-brand-primary/10 mx-auto mb-4" />
+                    <p className="text-base text-brand-text/40">No reviews yet. Be the first to review!</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {[...reviews].reverse().map((r, i) => (
-                      <div key={i} className="bg-white rounded-xl border border-gray-100 p-5">
-                        <div className="flex items-start justify-between gap-4 mb-2">
+                      <div key={i} className="bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm p-6">
+                        <div className="flex items-start justify-between gap-4 mb-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                            <div className="w-10 h-10 bg-brand-primary/5 rounded-full flex items-center justify-center text-sm font-bold text-brand-primary">
                               {r.user?.name?.[0]?.toUpperCase()}
                             </div>
                             <div>
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-semibold text-gray-900">{r.user?.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-base font-bold text-brand-primary">{r.user?.name}</p>
                                 {r.verified && (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-600">
+                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
                                     <BadgeCheck size={12} /> Verified
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-brand-text/40 mt-0.5">
                                 {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </p>
                             </div>
                           </div>
-                          <Stars rating={r.rating} size={13} />
+                          <Stars rating={r.rating} size={15} />
                         </div>
-                        <p className="text-sm text-gray-600 leading-relaxed">{r.body || r.comment}</p>
+                        <p className="text-sm text-brand-text/70 leading-relaxed font-light">{r.body || r.comment}</p>
                       </div>
                     ))}
                   </div>
@@ -883,23 +871,23 @@ const ProductDetail = () => {
                 >
                   <Link
                     to={`/products/${p._id}`}
-                    className="group block bg-white rounded-2xl border border-slate-100 overflow-hidden hover:shadow-[0_8px_24px_rgba(27,47,110,0.12)] hover:border-slate-350 hover:-translate-y-1 transition-all duration-300 will-change-transform"
+                    className="group block bg-white rounded-[2rem] border border-brand-primary/5 shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-2 transition-all duration-300 will-change-transform"
                   >
-                    <div className="aspect-square bg-slate-50 overflow-hidden">
+                    <div className="aspect-square bg-[var(--ivory)] overflow-hidden">
                       <img
                         src={p.image}
                         alt={p.name}
                         loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-400"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     </div>
-                    <div className="p-3.5">
-                      <p className="text-xs font-bold text-slate-900 truncate mb-1 group-hover:text-[var(--gold)] transition-colors">{p.name}</p>
+                    <div className="p-5">
+                      <p className="text-base font-bold font-display text-brand-primary truncate mb-1 group-hover:text-brand-secondary transition-colors">{p.name}</p>
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-extrabold text-[var(--gold)]" style={{ fontFamily: 'var(--font-display)' }}>₹{p.price.toLocaleString('en-IN')}</p>
+                        <p className="text-lg font-bold text-brand-primary">₹{p.price.toLocaleString('en-IN')}</p>
                         <div className="flex gap-0.5">
                           {[1,2,3,4,5].map(i => (
-                            <Star key={i} size={9} className={i <= Math.round(p.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-slate-200 fill-slate-200'} />
+                            <Star key={i} size={11} className={i <= Math.round(p.rating || 0) ? 'text-amber-400 fill-amber-400' : 'text-gray-200 fill-gray-200'} />
                           ))}
                         </div>
                       </div>

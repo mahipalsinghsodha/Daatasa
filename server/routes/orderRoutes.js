@@ -5,6 +5,8 @@ const Cart = require('../models/Cart');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 const Settings = require('../models/Settings');
+const UserActivity = require('../models/UserActivity');
+const geoip = require('geoip-lite');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
 const { sendShippingUpdateEmail } = require('../services/emailService');
@@ -298,6 +300,37 @@ router.post('/', auth, async (req, res) => {
     // Invalidate analytics cache so next fetch gets fresh data
     invalidateAnalytics().catch(() => {});
 
+    // ── 8.6 Log User Activity ─────────────────────────────────────────
+    try {
+      let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+      if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
+      if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
+      
+      let location = 'Local/Unknown';
+      if (ipAddress !== '127.0.0.1') {
+        const geo = geoip.lookup(ipAddress);
+        if (geo) {
+          location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
+        }
+      }
+
+      await UserActivity.create({
+        user: req.user._id,
+        action: 'ORDER_PLACED',
+        details: {
+          orderId: order._id.toString(),
+          invoiceNumber: order.invoiceNumber,
+          totalPrice: order.totalPrice,
+          paymentMethod: order.paymentMethod,
+          itemsCount: order.orderItems.length
+        },
+        ipAddress,
+        location
+      });
+    } catch (activityErr) {
+      console.error('Failed to log order activity:', activityErr);
+    }
+
     res.status(201).json(order);
 
   } catch (error) {
@@ -503,6 +536,59 @@ router.post('/verify-coupon', auth, async (req, res) => {
   }
 });
 
+// ========================================================================
+// GUEST TRACK ORDER
+// ========================================================================
+router.get('/track', async (req, res) => {
+  try {
+    const { orderId, phone } = req.query;
+
+    if (!orderId || !phone) {
+      return res.status(400).json({ message: 'Order ID and Phone number are required' });
+    }
+
+    const query = { 'shippingAddress.phone': phone };
+
+    const mongoose = require('mongoose');
+    let orderIdClean = orderId.trim();
+    if (orderIdClean.startsWith('#')) {
+      orderIdClean = orderIdClean.substring(1);
+    }
+
+    query.$or = [];
+    
+    // Exact ObjectId match
+    if (mongoose.Types.ObjectId.isValid(orderIdClean)) {
+      query.$or.push({ _id: orderIdClean });
+    }
+
+    // Invoice number regex match
+    query.$or.push({ invoiceNumber: { $regex: new RegExp(orderIdClean, 'i') } });
+
+    // Match _id suffix (since frontend displays last 8 chars like #4E83768D)
+    query.$or.push({
+      $expr: {
+        $regexMatch: {
+          input: { $toString: '$_id' },
+          regex: orderIdClean + '$',
+          options: 'i'
+        }
+      }
+    });
+
+    const order = await Order.findOne(query).select(
+      'invoiceNumber paymentStatus isDelivered trackingNumber shippingProvider cancelReason returnRequest statusHistory createdAt orderItems'
+    ).populate('orderItems.product', 'name image');
+
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found with provided details' });
+    }
+
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // ========================================================================
 // GET USER ORDERS
@@ -512,6 +598,21 @@ router.get('/myorders', auth, async (req, res) => {
     const orders = await Order.find({ user: req.user._id })
       .populate('orderItems.product')
       .sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ========================================================================
+// ADMIN: GET RETURNS
+// ========================================================================
+router.get('/admin/returns', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
+  try {
+    const orders = await Order.find({ 'returnRequest.status': { $exists: true } })
+      .populate('user', 'name email')
+      .populate('orderItems.product')
+      .sort({ 'returnRequest.requestedAt': -1 });
     res.json(orders);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1017,6 +1118,58 @@ router.post('/:id/return-request', auth, async (req, res) => {
     });
     await order.save();
     res.json({ message: 'Return request submitted successfully', order });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// ========================================================================
+// ADMIN: UPDATE RETURN STATUS
+// ========================================================================
+router.put('/:id/return-status', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
+  try {
+    const { status, adminNote } = req.body;
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid return status' });
+    }
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    if (!order.returnRequest || !order.returnRequest.status) {
+      return res.status(400).json({ message: 'No return request found for this order' });
+    }
+    
+    if (order.returnRequest.status !== 'PENDING') {
+      return res.status(400).json({ message: `Return request is already ${order.returnRequest.status}` });
+    }
+
+    order.returnRequest.status = status;
+    order.returnRequest.adminNote = adminNote || '';
+    order.returnRequest.resolvedAt = new Date();
+    
+    if (status === 'APPROVED') {
+      order.paymentStatus = 'REFUNDED';
+      await pushStatusAndNotify(order, 'RETURN_APPROVED', `Return Approved. Note: ${adminNote || 'None'}`, req.user._id, {
+        type: 'SYSTEM',
+        title: 'Return Approved',
+        message: `Your return request has been approved.`,
+        link: `/orders/${order._id}`
+      });
+    } else {
+      await pushStatusAndNotify(order, 'RETURN_REJECTED', `Return Rejected. Note: ${adminNote || 'None'}`, req.user._id, {
+        type: 'SYSTEM',
+        title: 'Return Rejected',
+        message: `Your return request was rejected.`,
+        link: `/orders/${order._id}`
+      });
+    }
+
+    await order.save();
+    await logAction(req, 'UPDATE_RETURN_STATUS', 'ORDER', order._id, { status, adminNote });
+
+    await order.populate('user', 'name email');
+    await order.populate('orderItems.product');
+    res.json(order);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -14,6 +14,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import WhatsAppButton from './components/WhatsAppButton'
 import { useThemeStore } from './store/theme'
 import NotificationDrawer from './components/NotificationDrawer'
+import api from './api/axios'
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
@@ -22,16 +23,22 @@ const Products        = lazy(() => import('./pages/Products'))
 const SearchResults   = lazy(() => import('./pages/SearchResults'))
 const ProductDetail   = lazy(() => import('./pages/ProductDetail'))
 const Cart            = lazy(() => import('./pages/Cart'))
+const TrackOrder      = lazy(() => import('./pages/TrackOrder')) // ✅ P1: Track Order page
+const Category        = lazy(() => import('./pages/Category'))   // ✅ P1: Category Landing page
+const Deals           = lazy(() => import('./pages/Deals'))      // ✅ P1: Deals page
+const ChangePassword  = lazy(() => import('./pages/ChangePassword')) // ✅ P1: Change Password page
 const Login           = lazy(() => import('./pages/Login'))
 const Register        = lazy(() => import('./pages/Register'))
 const ForgotPassword  = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword   = lazy(() => import('./pages/ResetPassword'))
 const Contact         = lazy(() => import('./pages/Contact'))
 const Profile         = lazy(() => import('./pages/Profile'))
+const Addresses       = lazy(() => import('./pages/Addresses')) // ✅ P1: Address Book page
 const Orders          = lazy(() => import('./pages/Orders'))
 const Checkout        = lazy(() => import('./pages/Checkout'))
 const Support         = lazy(() => import('./pages/Support'))
 const OrderDetail     = lazy(() => import('./pages/OrderDetail'))
+const ReturnRequest   = lazy(() => import('./pages/ReturnRequest')) // ✅ P1: Return Request page
 const Wishlist        = lazy(() => import('./pages/Wishlist'))  // ✅ P1: Wishlist page
 const NotFound        = lazy(() => import('./pages/NotFound'))
 
@@ -42,11 +49,16 @@ const Terms           = lazy(() => import('./pages/Terms'))
 const RefundPolicy    = lazy(() => import('./pages/RefundPolicy'))
 const ShippingPolicy  = lazy(() => import('./pages/ShippingPolicy'))
 const FAQ             = lazy(() => import('./pages/FAQ'))
+const Disclaimer      = lazy(() => import('./pages/Disclaimer'))
+const HowItWorks      = lazy(() => import('./pages/HowItWorks'))
 
 const CheckoutSubscription = lazy(() => import('./pages/CheckoutSubscription'))
 
 // Admin pages
 const AdminDashboard  = lazy(() => import('./pages/Admin/AdminDashboard'))
+const AdminReturns    = lazy(() => import('./pages/Admin/AdminReturns')) // ✅ P1: Admin Returns page
+const AdminInventory  = lazy(() => import('./pages/Admin/AdminInventory')) // ✅ P1: Admin Inventory page
+const AdminUserActivity = lazy(() => import('./pages/Admin/AdminUserActivity')) // ✅ P1: Admin User Activity
 const AddProduct      = lazy(() => import('./pages/Admin/AddProduct'))
 const ManageOrders    = lazy(() => import('./pages/Admin/ManageOrders'))
 const AdminReviews    = lazy(() => import('./pages/Admin/AdminReviews'))
@@ -85,6 +97,11 @@ function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
+    
+    if (!pathname.startsWith('/admin')) {
+      api.post('/api/activity/track', { action: 'PAGE_VISIT', details: { path: pathname } })
+         .catch(e => console.error('Failed to track activity', e))
+    }
   }, [pathname])
   return null
 }
@@ -123,9 +140,12 @@ function AnimatedRoutes() {
             {/* ── Public ── */}
             <Route path="/"                       element={<Home />} />
             <Route path="/products"               element={<Products />} />
+            <Route path="/category/:slug"         element={<Category />} /> {/* ✅ P1 */}
+            <Route path="/deals"                  element={<Deals />} />    {/* ✅ P1 */}
             <Route path="/search"                 element={<SearchResults />} />
             <Route path="/products/:id"           element={<ProductDetail />} />
             <Route path="/cart"                   element={<Cart />} />
+            <Route path="/track-order"            element={<TrackOrder />} /> {/* ✅ P1 */}
             <Route path="/checkout-subscription"  element={<ProtectedRoute><CheckoutSubscription /></ProtectedRoute>} />
             <Route path="/contact"                element={<Contact />} />
 
@@ -136,6 +156,8 @@ function AnimatedRoutes() {
             <Route path="/refund-policy"          element={<RefundPolicy />} />
             <Route path="/shipping-policy"        element={<ShippingPolicy />} />
             <Route path="/faq"                    element={<FAQ />} />
+            <Route path="/disclaimer"             element={<Disclaimer />} />
+            <Route path="/how-it-works"           element={<HowItWorks />} />
 
             {/* ── Guest-Only ── */}
             <Route path="/login"                  element={<GuestRoute><Login /></GuestRoute>} />
@@ -145,8 +167,11 @@ function AnimatedRoutes() {
 
             {/* ── Protected User ── */}
             <Route path="/profile"  element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/orders"   element={<ProtectedRoute><Orders /></ProtectedRoute>} />
             <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+            <Route path="/orders/:id/return" element={<ProtectedRoute><ReturnRequest /></ProtectedRoute>} /> {/* ✅ P1 */}
+            <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
             <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/support"  element={<ProtectedRoute><Support /></ProtectedRoute>} />
@@ -157,12 +182,15 @@ function AnimatedRoutes() {
             <Route path="/admin/products"         element={<ProtectedRoute adminOnly><AdminProducts /></ProtectedRoute>} />
             <Route path="/admin/categories"       element={<ProtectedRoute adminOnly><AdminCategories /></ProtectedRoute>} />
             <Route path="/products/edit/:id"      element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
+            <Route path="/admin/inventory"        element={<ProtectedRoute adminOnly><AdminInventory /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/admin/orders"           element={<ProtectedRoute adminOnly><ManageOrders /></ProtectedRoute>} />
+            <Route path="/admin/returns"          element={<ProtectedRoute adminOnly><AdminReturns /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/admin/support"          element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
             <Route path="/admin/newsletters"      element={<ProtectedRoute adminOnly><AdminNewsletters /></ProtectedRoute>} />
             <Route path="/admin/subscriptions"    element={<ProtectedRoute adminOnly><AdminSubscriptions /></ProtectedRoute>} />
             <Route path="/admin/coupons"          element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
             <Route path="/admin/users"            element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
+            <Route path="/admin/user-activity"    element={<ProtectedRoute adminOnly><AdminUserActivity /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/admin/analytics"        element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/settings"          element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/media"             element={<ProtectedRoute adminOnly><AdminMedia /></ProtectedRoute>} />
@@ -197,7 +225,7 @@ function App() {
         <AuthProvider>
           <CartProvider>
             <Router>
-              <div className="flex flex-col min-h-screen" style={{ background: 'var(--bg-base)' }}>
+              <div className="flex flex-col min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)' }}>
                 <ToastContainer
                   position="bottom-center"
                   autoClose={4000}

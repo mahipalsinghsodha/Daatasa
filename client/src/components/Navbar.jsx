@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useState, useEffect, useRef } from 'react'
 import { useCart } from '../context/CartContext'
 import { AnimatePresence, motion } from 'framer-motion'
-import ThemeToggle from './layout/ThemeToggle'
+
 import { useNotificationStore } from '../store/notifications'
 import api from '../api/axios'
 import {
@@ -107,7 +107,7 @@ const Navbar = () => {
       className={`sticky top-0 z-50 w-full transition-all duration-400`}
       style={{
         background: scrolled
-          ? 'rgba(27, 47, 110, 0.85)'
+          ? 'rgba(19, 43, 105, 0.85)'
           : 'var(--bg-navy)',
         backdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
         WebkitBackdropFilter: scrolled ? 'blur(20px) saturate(180%)' : 'none',
@@ -119,11 +119,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-[68px]">
 
           {/* ── Logo ── */}
-          <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-2.5 shrink-0 group">
+          <Link to={isAdmin ? '/admin' : '/'} className="flex items-center gap-2.5 shrink-0 group bg-[#fffdf8] rounded-xl px-1.5 py-1">
             <img 
               src="/logo_rectangle.png" 
               alt="Daatasa Logo" 
-              className="h-[52px] sm:h-[60px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
+              className="h-[40px] sm:h-[48px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
             />
             {isAdmin && (
               <span className="hidden sm:inline-block ml-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full"
@@ -197,7 +197,7 @@ const Navbar = () => {
             </button>
 
             {/* Theme toggle */}
-            <ThemeToggle />
+
 
             {/* Language Switcher */}
             <button
@@ -375,7 +375,7 @@ const Navbar = () => {
               <Globe size={12} />
               {i18n.language?.startsWith('hi') ? 'EN' : 'हिंदी'}
             </button>
-            <ThemeToggle size="sm" />
+
             {isCustomer && (
               <Link to="/cart" className="relative w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all">
                 <ShoppingCart size={17} />
@@ -500,7 +500,7 @@ const Navbar = () => {
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="md:hidden absolute top-full left-0 right-0 z-50"
               style={{
-                background: 'rgba(15, 22, 60, 0.97)',
+                background: 'rgba(19, 43, 105, 0.97)',
                 backdropFilter: 'blur(20px)',
                 borderTop: '1px solid rgba(255,255,255,0.10)',
                 boxShadow: '0 20px 50px rgba(27,47,110,0.55)',

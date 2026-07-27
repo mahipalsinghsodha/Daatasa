@@ -296,11 +296,14 @@ const AdminDashboard = () => {
         <div className="grid md:grid-cols-2 gap-6">
           <SectionCard title="Management" icon={FiSettings} delay={0.15}>
             {hasPermission('products')   && <QuickCard title="Manage Products"   desc="Add, edit, or remove products"         icon={FiPackage}    to="/admin/products"      delay={0.20} />}
+            {hasPermission('products')   && <QuickCard title="Inventory"         desc="Manage stock and low inventory"        icon={FiBox}        to="/admin/inventory"     delay={0.20} />}
             {hasPermission('products')   && <QuickCard title="Media Library"     desc="View and bulk upload images"           icon={FiImage}      to="/admin/media"         delay={0.21} />}
             {hasPermission('products')   && <QuickCard title="Product Reviews"   desc="Hide or delete customer reviews"       icon={FiStar}       to="/admin/reviews"       delay={0.22} />}
             {hasPermission('orders')     && <QuickCard title="Manage Orders"     desc="View and update order status"          icon={FiShoppingBag}to="/admin/orders"        delay={0.25} />}
+            {hasPermission('orders')     && <QuickCard title="Manage Returns"    desc="Approve or reject returns"             icon={FiRefreshCw}  to="/admin/returns"       delay={0.26} />}
             {hasPermission('products')   && <QuickCard title="Subscriptions"     desc="Manage auto-renewing orders"           icon={FiRefreshCw}  to="/admin/subscriptions" delay={0.28} />}
             {hasPermission('users')      && <QuickCard title="Manage Users"      desc="View users, block/unblock accounts"    icon={FiUsers}      to="/admin/users"         delay={0.30} />}
+            {hasPermission('users')      && <QuickCard title="User Activity"     desc="Track logins and page visits"          icon={FiActivity}   to="/admin/user-activity" delay={0.31} />}
             {isSuperAdmin                && <QuickCard title="Newsletters"       desc="Manage subscribers and emails"         icon={FiMail}       to="/admin/newsletters"   delay={0.32} />}
             {hasPermission('coupons')    && <QuickCard title="Manage Coupons"    desc="Create and manage discount codes"      icon={FiTag}        to="/admin/coupons"       delay={0.35} />}
             {hasPermission('categories') && <QuickCard title="Manage Categories" desc="Organize product categories"          icon={FiBox}        to="/admin/categories"    delay={0.40} />}

@@ -23,6 +23,19 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get single category by slug
+router.get('/:slug', async (req, res) => {
+  try {
+    const category = await Category.findOne({ slug: req.params.slug });
+    if (!category) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // Create category (Admin with 'categories' permission or Superadmin)
 router.post('/', auth, auth.admin, auth.hasPermission('categories'), validateCategory, async (req, res) => {
   try {

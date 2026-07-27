@@ -13,7 +13,6 @@ const OrderDetail = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cancelModal, setCancelModal] = useState(false);
-  const [returnModal, setReturnModal] = useState(false);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -63,20 +62,7 @@ const OrderDetail = () => {
     }
   };
 
-  const handleReturn = async () => {
-    setSubmitting(true);
-    try {
-      const res = await api.post(`/api/orders/${id}/return-request`, { reason });
-      toast.success(res.data.message || 'Return request submitted');
-      setReturnModal(false);
-      setReason('');
-      fetchOrder();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Return request failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -126,9 +112,9 @@ const OrderDetail = () => {
               </button>
             )}
             {isReturnable && (
-              <button onClick={() => setReturnModal(true)} className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.2)' }}>
+              <Link to={`/orders/${order._id}/return`} className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2" style={{ background: 'rgba(245,158,11,0.1)', color: 'var(--warning)', border: '1px solid rgba(245,158,11,0.2)' }}>
                 <FiRefreshCcw /> Request Return
-              </button>
+              </Link>
             )}
             <Link to="/support" className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2" style={{ background: 'var(--brand-gradient)', color: '#fff', border: '1px solid var(--border-color)' }}>
               <FiHelpCircle /> Need Help?
@@ -233,22 +219,7 @@ const OrderDetail = () => {
         </div>
       )}
 
-      {/* Return Modal */}
-      {returnModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h3 className="text-xl font-bold mb-2">Request Return</h3>
-            <p className="text-sm text-gray-500 mb-4">Please provide a reason for the return.</p>
-            <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="Reason for return" className="w-full p-3 border rounded-xl mb-4 bg-gray-50 dark:bg-gray-900" rows={3} required></textarea>
-            <div className="flex gap-3">
-              <button onClick={() => setReturnModal(false)} className="flex-1 py-3 font-semibold rounded-xl border hover:bg-gray-50 dark:hover:bg-gray-700">Go Back</button>
-              <button onClick={handleReturn} disabled={submitting || !reason} className="flex-1 py-3 font-bold rounded-xl bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">
-                {submitting ? 'Submitting...' : 'Submit Request'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );

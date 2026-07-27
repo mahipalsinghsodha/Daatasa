@@ -173,6 +173,26 @@ router.post('/login', authLimiter, dbCheck, [
     user.refreshTokens = activeTokens;
     await user.save({ validateBeforeSave: false });
 
+    // Log LOGIN activity
+    try {
+      const geoip = require('geoip-lite');
+      const UserActivity = require('../models/UserActivity');
+      let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+      if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
+      if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
+      let location = 'Local/Unknown';
+      if (ipAddress !== '127.0.0.1') {
+        const geo = geoip.lookup(ipAddress);
+        if (geo) location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
+      }
+      await UserActivity.create({
+        user: user._id,
+        action: 'LOGIN',
+        ipAddress,
+        location
+      });
+    } catch (err) { console.error('Error logging login activity:', err); }
+
     res.json({ token: accessToken, refreshToken, user: safeUser(user) });
   } catch (error) {
     res.status(500).json({ message: error.message || 'Login failed' });
@@ -253,6 +273,26 @@ router.post('/logout', async (req, res) => {
             user.refreshTokens = (user.refreshTokens || []).filter(t => t.tokenHash !== hash);
           }
           await user.save({ validateBeforeSave: false });
+
+          // Log LOGOUT activity
+          try {
+            const geoip = require('geoip-lite');
+            const UserActivity = require('../models/UserActivity');
+            let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+            if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
+            if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
+            let location = 'Local/Unknown';
+            if (ipAddress !== '127.0.0.1') {
+              const geo = geoip.lookup(ipAddress);
+              if (geo) location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
+            }
+            await UserActivity.create({
+              user: user._id,
+              action: 'LOGOUT',
+              ipAddress,
+              location
+            });
+          } catch (err) {}
         }
       } catch { /* ignore invalid token on logout */ }
     }
@@ -302,6 +342,38 @@ router.put('/profile', auth, async (req, res) => {
     res.json(safeUser(user));
   } catch (error) {
     res.status(500).json({ message: error.message || 'Update failed' });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  CHANGE PASSWORD                                                            */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.post('/change-password', auth, async (req, res) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+    if (!oldPassword || !newPassword) {
+      return res.status(400).json({ message: 'Please provide both old and new passwords' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user.password) return res.status(400).json({ message: 'Google Sign-In accounts cannot change password here' });
+
+    const isMatch = await user.comparePassword(oldPassword);
+    if (!isMatch) return res.status(401).json({ message: 'Incorrect current password' });
+
+    user.password = newPassword;
+    // Invalidate sessions (optional for change password, but good practice)
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.refreshTokens = [];
+    
+    await user.save();
+    res.json({ message: 'Password updated successfully. Please log in again.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message || 'Failed to update password' });
   }
 });
 

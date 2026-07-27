@@ -23,18 +23,15 @@ const STATES = [
 const emptyNew = { name:'', phone:'', street:'', city:'', district:'', state:'', zipCode:'', country:'India' }
 
 const StepHeader = ({ num, title, sub, active }) => (
-  <div className="px-6 py-5 border-b flex items-center gap-3" style={{ borderColor: 'var(--border-color)' }}>
-    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-all"
-         style={{ 
-           background: active ? 'var(--brand-gradient)' : 'var(--bg-alt)',
-           color: active ? '#ffffff' : 'var(--text-primary)',
-           boxShadow: active ? 'var(--shadow-brand)' : 'none'
-         }}>
+  <div className="px-8 py-6 border-b border-brand-primary/5 flex items-center gap-4">
+    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
+      active ? 'bg-brand-primary text-white shadow-md' : 'bg-brand-primary/5 text-brand-text/40'
+    }`}>
       {num}
     </div>
     <div>
-      <h3 className="text-sm font-extrabold" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>{title}</h3>
-      <p className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>{sub}</p>
+      <h3 className="text-lg font-bold font-display text-brand-primary">{title}</h3>
+      <p className="text-sm font-medium text-brand-text/60">{sub}</p>
     </div>
   </div>
 )
@@ -195,53 +192,48 @@ const Checkout = () => {
 
   if (!cart || cart.items.length === 0) return null
 
-  const inputCls = "input-base"
-  const labelCls = "label"
+  const inputCls = "w-full h-12 px-4 rounded-xl border border-brand-primary/20 bg-white text-sm focus:border-brand-secondary focus:ring-1 focus:ring-brand-secondary outline-none transition-all placeholder:text-brand-text/30"
+  const labelCls = "block text-xs font-bold text-brand-text/80 mb-2 uppercase tracking-wider"
 
   return (
-    <div className="min-h-screen pb-24 page-enter" style={{ background:'var(--bg-base)' }}>
+    <div className="min-h-screen pb-24 page-enter bg-[var(--ivory)] font-sans text-brand-text">
 
       {/* Header */}
-      <div className="relative overflow-hidden py-12 text-center" 
-           style={{ background: 'var(--gradient-hero)' }}>
-        {/* Decorative elements */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-        <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full opacity-10"
-          style={{ background: 'var(--gold)', filter: 'blur(30px)' }} />
+      <div className="relative overflow-hidden py-16 sm:py-20 text-center bg-brand-primary text-white">
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-10 mix-blend-overlay" />
 
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider mb-3"
-                style={{ background: 'rgba(245,166,35,0.18)', color: 'var(--gold)', border: '1px solid rgba(245,166,35,0.30)' }}>
-            <FiLock size={10} /> Secure Checkout
+        <div className="max-w-[1280px] mx-auto px-6 relative z-10">
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest mb-6 bg-white/10 border border-white/20">
+            <FiLock size={12} /> Secure Checkout
           </span>
-          <h1 className="text-3xl sm:text-4xl font-extrabold leading-tight text-white mb-6"
-              style={{ fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
+          <h1 className="text-4xl sm:text-5xl font-bold font-display text-white mb-8">
             Complete Your Order
           </h1>
 
           {/* Progress stepper */}
-          <div className="flex items-center justify-center gap-0 max-w-xs mx-auto">
+          <div className="flex items-center justify-center gap-0 max-w-sm mx-auto">
             {[
               { num: 1, label: 'Address' },
               { num: 2, label: 'Payment' },
               { num: 3, label: 'Review' },
             ].map((step, i, arr) => (
-              <div key={step.num} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all"
-                       style={{
-                         background: i <= 1 ? 'var(--gold)' : 'rgba(255,255,255,0.08)',
-                         color: i <= 1 ? 'var(--navy)' : 'rgba(255,255,255,0.4)',
-                         boxShadow: i <= 1 ? '0 0 15px rgba(245,166,35,0.4)' : 'none',
-                         border: i <= 1 ? 'none' : '1px solid rgba(255,255,255,0.15)'
-                       }}>{step.num}</div>
-                  <span className="text-[10px] font-bold mt-1.5 uppercase tracking-wider" 
-                        style={{ color: i <= 1 ? 'var(--gold)' : 'rgba(255,255,255,0.4)' }}>{step.label}</span>
+              <div key={step.num} className="flex items-center w-full relative">
+                <div className="flex flex-col items-center w-full z-10">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    i <= 1 ? 'bg-brand-secondary text-brand-primary' : 'bg-white/10 text-white/40'
+                  }`}>
+                    {step.num}
+                  </div>
+                  <span className={`text-[10px] font-bold mt-2 uppercase tracking-wider ${
+                    i <= 1 ? 'text-brand-secondary' : 'text-white/40'
+                  }`}>
+                    {step.label}
+                  </span>
                 </div>
                 {i < arr.length - 1 && (
-                  <div className="w-16 sm:w-20 h-[2px] mx-1 rounded-full -mt-4" 
-                       style={{ background: i < 1 ? 'var(--gold)' : 'rgba(255,255,255,0.15)' }} />
+                  <div className={`absolute top-4 left-1/2 w-full h-[2px] -translate-y-1/2 ${
+                    i < 1 ? 'bg-brand-secondary' : 'bg-white/10'
+                  }`} />
                 )}
               </div>
             ))}
@@ -256,46 +248,46 @@ const Checkout = () => {
           <div className="lg:col-span-2 space-y-5">
 
             {/* Step 1: Address */}
-            <div className="card overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--border-color)' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-black"
-                       style={{ background: 'var(--navy)' }}>1</div>
+            <div className="rounded-[2rem] bg-white border border-brand-primary/10 shadow-sm overflow-hidden">
+              <div className="px-8 py-6 border-b border-brand-primary/5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white bg-brand-primary text-sm font-bold shadow-md">
+                    1
+                  </div>
                   <div>
-                    <h3 className="text-sm font-extrabold" style={{ color: 'var(--text-primary)', fontFamily:'var(--font-display)' }}>Delivery Address</h3>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Where should we deliver?</p>
+                    <h3 className="text-lg font-bold font-display text-brand-primary">Delivery Address</h3>
+                    <p className="text-sm font-medium text-brand-text/60">Where should we deliver?</p>
                   </div>
                 </div>
                 {savedAddresses.length > 0 && (
-                  <button type="button" onClick={() => setShowNew(!showNewForm)} className="text-xs font-bold transition-colors" style={{ color: 'var(--gold)' }}>
+                  <button type="button" onClick={() => setShowNew(!showNewForm)} className="text-xs font-bold text-brand-secondary hover:text-brand-primary transition-colors">
                     {showNewForm ? '← Use saved address' : '+ Add new address'}
                   </button>
                 )}
               </div>
 
-              <div className="p-6">
+              <div className="p-8">
                 <AnimatePresence mode="wait">
                   {!showNewForm && savedAddresses.length > 0 ? (
-                    <motion.div key="saved" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="grid sm:grid-cols-2 gap-3">
+                    <motion.div key="saved" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} className="grid sm:grid-cols-2 gap-4">
                       {savedAddresses.map(addr => (
                         <div key={addr._id} onClick={() => setSelAddr(String(addr._id))}
-                          className="p-4 rounded-xl border-2 cursor-pointer transition-all"
-                          style={{
-                            borderColor: selectedAddrId === String(addr._id) ? 'var(--brand-primary)' : 'var(--border-color)',
-                            background: selectedAddrId === String(addr._id) ? 'rgba(245,166,35,0.05)' : 'var(--bg-surface)',
-                            boxShadow: selectedAddrId === String(addr._id) ? '0 0 15px rgba(245,166,35,0.08)' : 'none'
-                          }}
+                          className={`p-6 rounded-3xl border-2 cursor-pointer transition-all ${
+                            selectedAddrId === String(addr._id) 
+                              ? 'border-brand-primary bg-brand-primary/5 shadow-sm' 
+                              : 'border-brand-primary/10 bg-white hover:border-brand-primary/30 hover:bg-[var(--ivory)]'
+                          }`}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="p-1.5 rounded-lg" style={{ background: addr.label === 'Home' ? 'rgba(27,47,110,0.1)' : 'rgba(45,68,153,0.1)', color: addr.label === 'Home' ? 'var(--navy)' : '#2D4499' }}>
-                                {addr.label === 'Home' ? <FiHome size={12}/> : <FiBriefcase size={12}/>}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2.5">
+                              <div className="p-2 rounded-xl bg-white shadow-sm border border-brand-primary/5 text-brand-primary">
+                                {addr.label === 'Home' ? <FiHome size={14}/> : <FiBriefcase size={14}/>}
                               </div>
-                              <span className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--navy)' }}>{addr.label || 'Address'}</span>
+                              <span className="text-xs font-bold uppercase tracking-widest text-brand-primary">{addr.label || 'Address'}</span>
                             </div>
-                            {selectedAddrId === String(addr._id) && <FiCheck size={14} style={{ color: 'var(--brand-primary)' }}/>}
+                            {selectedAddrId === String(addr._id) && <FiCheck size={16} className="text-brand-primary"/>}
                           </div>
-                          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{addr.name}<br/>{addr.street}<br/>{addr.city}, {addr.state} — {addr.zipCode}</p>
+                          <p className="text-sm leading-relaxed text-brand-text/70 mt-2 font-medium">{addr.name}<br/>{addr.street}<br/>{addr.city}, {addr.state} — {addr.zipCode}</p>
                         </div>
                       ))}
                     </motion.div>
@@ -334,9 +326,9 @@ const Checkout = () => {
                           {STATES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       </div>
-                      <label className="flex items-center gap-2.5 cursor-pointer p-3.5 rounded-xl border" style={{ background: 'var(--bg-alt)', borderColor: 'var(--border-color)' }}>
-                        <input type="checkbox" checked={saveNewAddr} onChange={e => setSaveNew(e.target.checked)} className="w-4 h-4 rounded" style={{ accentColor: 'var(--brand-primary)' }}/>
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>Save this address for future orders</span>
+                      <label className="flex items-center gap-3 cursor-pointer p-4 rounded-xl border border-brand-primary/10 bg-[var(--ivory)] hover:bg-brand-primary/5 transition-colors">
+                        <input type="checkbox" checked={saveNewAddr} onChange={e => setSaveNew(e.target.checked)} className="w-5 h-5 rounded text-brand-primary focus:ring-brand-primary"/>
+                        <span className="text-sm font-bold text-brand-text/70">Save this address for future orders</span>
                       </label>
                     </motion.div>
                   )}
@@ -345,48 +337,51 @@ const Checkout = () => {
             </div>
 
             {/* Step 2: Payment */}
-            <div className="card overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
+            <div className="rounded-[2rem] bg-white border border-brand-primary/10 shadow-sm overflow-hidden">
               <StepHeader num="2" title="Payment Method" sub="Choose how to pay" active={true}/>
-              <div className="p-6 grid sm:grid-cols-2 gap-3">
+              <div className="p-8 grid sm:grid-cols-2 gap-4">
                 {[
-                  { id:'COD',    label:'Cash on Delivery', icon:<FiBox size={18}/>,    desc:'Pay when you receive' },
-                  { id:'Online', label:'Pay Online',       icon:<FiShield size={18}/>, desc:'Secure via Razorpay'  },
+                  { id:'COD',    label:'Cash on Delivery', icon:<FiBox size={20}/>,    desc:'Pay when you receive' },
+                  { id:'Online', label:'Pay Online',       icon:<FiShield size={20}/>, desc:'Secure via Razorpay'  },
                 ].map(opt => (
                   <div key={opt.id} onClick={() => setPayment(opt.id)}
-                    className="p-4 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3"
-                    style={{
-                      borderColor: paymentMethod === opt.id ? 'var(--brand-primary)' : 'var(--border-color)',
-                      background: paymentMethod === opt.id ? 'rgba(245,166,35,0.05)' : 'var(--bg-surface)',
-                      boxShadow: paymentMethod === opt.id ? '0 0 15px rgba(245,166,35,0.08)' : 'none'
-                    }}
+                    className={`p-5 rounded-3xl border-2 cursor-pointer transition-all flex items-center gap-4 ${
+                      paymentMethod === opt.id 
+                        ? 'border-brand-primary bg-brand-primary/5 shadow-sm' 
+                        : 'border-brand-primary/10 bg-white hover:border-brand-primary/30 hover:bg-[var(--ivory)]'
+                    }`}
                   >
-                    <div className="p-2.5 rounded-xl transition-all" style={{ background: paymentMethod === opt.id ? 'var(--gold)' : 'var(--bg-alt)', color: paymentMethod === opt.id ? '#fff' : 'var(--text-muted)' }}>{opt.icon}</div>
-                    <div>
-                      <div className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{opt.label}</div>
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{opt.desc}</p>
+                    <div className={`w-12 h-12 flex items-center justify-center rounded-xl shadow-sm transition-all ${
+                      paymentMethod === opt.id ? 'bg-brand-primary text-white' : 'bg-white border border-brand-primary/10 text-brand-text/40'
+                    }`}>
+                      {opt.icon}
                     </div>
-                    {paymentMethod === opt.id && <FiCheck size={15} style={{ marginLeft: 'auto', color: 'var(--brand-primary)' }}/>}
+                    <div>
+                      <div className="text-sm font-bold text-brand-primary">{opt.label}</div>
+                      <p className="text-xs font-medium text-brand-text/60 mt-0.5">{opt.desc}</p>
+                    </div>
+                    {paymentMethod === opt.id && <FiCheck size={18} className="ml-auto text-brand-primary"/>}
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Step 3: Order Items */}
-            <div className="card overflow-hidden" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <div className="px-6 py-5 border-b" style={{ borderColor: 'var(--border-color)' }}>
-                <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)', fontFamily:'var(--font-display)' }}>Order Items ({cart.items.length})</h3>
+            <div className="rounded-[2rem] bg-white border border-brand-primary/10 shadow-sm overflow-hidden">
+              <div className="px-8 py-6 border-b border-brand-primary/5">
+                <h3 className="text-lg font-bold font-display text-brand-primary">Order Items ({cart.items.length})</h3>
               </div>
-              <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
+              <div className="divide-y divide-brand-primary/5">
                 {cart.items.map(item => (
-                  <div key={item._id} className="px-6 py-4 flex items-center gap-4" style={{ borderColor: 'var(--border-color)' }}>
-                    <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0" style={{ background: 'var(--bg-alt)', border: '1px solid var(--border-color)' }}>
+                  <div key={item._id} className="px-8 py-5 flex items-center gap-5">
+                    <div className="w-16 h-16 rounded-[1rem] overflow-hidden shrink-0 bg-[var(--ivory)] border border-brand-primary/5">
                       <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover"/>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{item.product?.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Qty: {item.quantity} × ₹{item.product?.price?.toLocaleString('en-IN')}</p>
+                      <p className="text-base font-bold font-display text-brand-primary truncate">{item.product?.name}</p>
+                      <p className="text-sm font-medium mt-1 text-brand-text/60">Qty: {item.quantity} × ₹{item.product?.price?.toLocaleString('en-IN')}</p>
                     </div>
-                    <span className="text-sm font-bold shrink-0" style={{ color: 'var(--text-primary)' }}>₹{(item.product?.price * item.quantity).toLocaleString('en-IN')}</span>
+                    <span className="text-base font-bold font-display text-brand-primary shrink-0">₹{(item.product?.price * item.quantity).toLocaleString('en-IN')}</span>
                   </div>
                 ))}
               </div>
@@ -397,51 +392,46 @@ const Checkout = () => {
           <div className="lg:col-span-1 space-y-4 lg:sticky lg:top-28">
 
             {/* Price Breakdown */}
-            <div className="card p-5" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <h2 className="text-base font-extrabold mb-4 pb-3 border-b" style={{ color: 'var(--text-primary)', fontFamily:'var(--font-display)', borderColor: 'var(--border-color)' }}>Price Breakdown</h2>
-              <div className="space-y-3 mb-4 text-sm" style={{ fontFamily:'var(--font-body)' }}>
-                <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>Subtotal</span><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>₹{(preview?.itemsPrice ?? 0).toLocaleString('en-IN')}</span></div>
+            <div className="rounded-[2rem] bg-white border border-brand-primary/10 shadow-sm p-8">
+              <h2 className="text-xl font-bold font-display text-brand-primary mb-5 pb-4 border-b border-brand-primary/5">Price Breakdown</h2>
+              <div className="space-y-4 mb-6 text-sm">
+                <div className="flex justify-between"><span className="font-medium text-brand-text/60">Subtotal</span><span className="font-bold text-brand-primary">₹{(preview?.itemsPrice ?? 0).toLocaleString('en-IN')}</span></div>
                 {(preview?.discount ?? 0) > 0 && (
                   <div className="flex justify-between">
-                    <span className="font-medium" style={{ color: 'var(--success)' }}>Discount {appliedCoupon?.code ? `(${appliedCoupon.code})` : ''}</span>
-                    <span className="font-bold" style={{ color: 'var(--success)' }}>−₹{Math.round(preview.discount).toLocaleString('en-IN')}</span>
+                    <span className="font-bold text-green-600">Discount {appliedCoupon?.code ? `(${appliedCoupon.code})` : ''}</span>
+                    <span className="font-bold text-green-600">−₹{Math.round(preview.discount).toLocaleString('en-IN')}</span>
                   </div>
                 )}
                 {preview?.gstRate > 0 && (
-                  <div className="flex justify-between"><span style={{ color: 'var(--text-secondary)' }}>GST ({preview.gstRate}%)</span><span className="font-semibold" style={{ color: 'var(--text-primary)' }}>₹{Math.round(preview.taxPrice).toLocaleString('en-IN')}</span></div>
+                  <div className="flex justify-between"><span className="font-medium text-brand-text/60">GST ({preview.gstRate}%)</span><span className="font-bold text-brand-primary">₹{Math.round(preview.taxPrice).toLocaleString('en-IN')}</span></div>
                 )}
                 <div className="flex justify-between">
-                  <span style={{ color: 'var(--text-secondary)' }}>Shipping</span>
-                  <span className="font-semibold" style={{ color: (preview?.shippingPrice ?? 50) === 0 ? 'var(--success)' : 'var(--text-primary)' }}>
+                  <span className="font-medium text-brand-text/60">Shipping</span>
+                  <span className={`font-bold ${(preview?.shippingPrice ?? 50) === 0 ? 'text-green-600' : 'text-brand-primary'}`}>
                     {(preview?.shippingPrice ?? 50) === 0 ? '🚚 FREE' : `₹${preview?.shippingPrice ?? 50}`}
                   </span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center py-4 border-t mb-5" style={{ borderColor: 'var(--border-color)' }}>
-                <span className="font-extrabold" style={{ color: 'var(--text-primary)', fontFamily:'var(--font-display)' }}>Total</span>
+              <div className="flex justify-between items-center py-5 border-t border-brand-primary/10 mb-6">
+                <span className="font-extrabold text-lg text-brand-primary">Total</span>
                 {previewLoad
-                  ? <span className="inline-block w-24 h-7 skeleton rounded-lg"/>
-                  : <span className="text-2xl font-extrabold" style={{ color: 'var(--text-primary)', fontFamily:'var(--font-display)' }}>₹{Math.round(preview?.totalPrice ?? 0).toLocaleString('en-IN')}</span>
+                  ? <span className="inline-block w-24 h-8 bg-brand-primary/5 rounded-full animate-pulse"/>
+                  : <span className="text-3xl font-extrabold font-display text-brand-primary">₹{Math.round(preview?.totalPrice ?? 0).toLocaleString('en-IN')}</span>
                 }
               </div>
 
               <button type="submit" disabled={loading}
-                className="w-full py-4 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm active:scale-[0.98]"
-                style={{
-                  background: 'var(--brand-gradient)',
-                  boxShadow: 'var(--shadow-brand)',
-                  opacity: loading ? 0.6 : 1
-                }}
+                className="w-full h-14 btn btn-primary rounded-full flex items-center justify-center gap-2 text-base transition-all disabled:opacity-60"
               >
-                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <FiArrowRight size={15}/>}
+                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <FiArrowRight size={18}/>}
                 {loading ? 'Placing Order…' : paymentMethod === 'COD' ? 'Place Order' : 'Pay Now'}
               </button>
 
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-6 grid grid-cols-2 gap-3">
                 {[['🔒','Secure Payment'],['🚚','Fast Delivery']].map(([ic,lb]) => (
-                  <div key={lb} className="flex items-center gap-2 text-xs rounded-xl p-3" style={{ background: 'var(--bg-alt)', color: 'var(--text-secondary)' }}>
-                    <span>{ic}</span><span className="font-medium">{lb}</span>
+                  <div key={lb} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider rounded-xl px-3 py-2.5 bg-brand-primary/5 text-brand-primary/70">
+                    <span className="text-sm">{ic}</span><span>{lb}</span>
                   </div>
                 ))}
               </div>
@@ -453,33 +443,32 @@ const Checkout = () => {
       {/* Stock Modal */}
       <AnimatePresence>
         {stockModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
             <motion.div initial={{ scale:0.95, opacity:0 }} animate={{ scale:1, opacity:1 }}
-              className="rounded-2xl w-full max-w-md p-6 shadow-2xl" style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <div className="flex items-center gap-3 mb-5">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(229,62,62,0.1)' }}><FiAlertCircle size={20} style={{ color: 'var(--danger)' }}/></div>
+              className="rounded-[2rem] w-full max-w-md p-8 shadow-2xl bg-white border border-brand-primary/10">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-50 text-red-500 shadow-sm"><FiAlertCircle size={24}/></div>
                 <div>
-                  <h2 className="text-base font-bold" style={{ color: 'var(--text-primary)', fontFamily:'var(--font-display)' }}>Stock Issue</h2>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Some items have insufficient stock</p>
+                  <h2 className="text-xl font-bold font-display text-brand-primary">Stock Issue</h2>
+                  <p className="text-sm font-medium text-brand-text/60">Some items have insufficient stock</p>
                 </div>
               </div>
-              <div className="space-y-2 mb-5 max-h-60 overflow-y-auto">
+              <div className="space-y-3 mb-6 max-h-60 overflow-y-auto pr-2">
                 {stockModal.map(item => (
-                  <div key={item.itemId} className="p-3 border rounded-xl flex items-center justify-between" style={{ background: 'rgba(229,62,62,0.05)', borderColor: 'rgba(229,62,62,0.1)' }}>
+                  <div key={item.itemId} className="p-4 rounded-xl flex items-center justify-between border border-red-500/20 bg-red-50/50">
                     <div>
-                      <p className="text-xs font-bold truncate max-w-[200px]" style={{ color: 'var(--text-primary)' }}>{item.name || 'Product'}</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: 'var(--danger)' }}>Requested {item.quantity} · Available {item.stock}</p>
+                      <p className="text-sm font-bold text-brand-primary truncate max-w-[200px]">{item.name || 'Product'}</p>
+                      <p className="text-xs font-bold mt-1 text-red-500">Requested {item.quantity} · Available {item.stock}</p>
                     </div>
-                    <Link to="/cart" onClick={() => setStockModal(null)} className="p-2 rounded-lg transition-all shadow-sm btn-ghost" style={{ background: 'var(--bg-surface)', color: 'var(--danger)' }}><FiEdit2 size={13}/></Link>
+                    <Link to="/cart" onClick={() => setStockModal(null)} className="p-2.5 rounded-full transition-all shadow-sm bg-white text-red-500 hover:bg-red-50"><FiEdit2 size={16}/></Link>
                   </div>
                 ))}
               </div>
-              <div className="flex flex-col gap-2">
-                <button onClick={() => navigate('/cart')} className="w-full btn-primary"
-                        style={{ background: 'var(--brand-gradient)', boxShadow: 'var(--shadow-brand)' }}>
-                  Update Cart <FiArrowRight size={14}/>
+              <div className="flex flex-col gap-3">
+                <button onClick={() => navigate('/cart')} className="w-full h-12 btn btn-primary rounded-full flex items-center justify-center gap-2">
+                  Update Cart <FiArrowRight size={16}/>
                 </button>
-                <button onClick={() => setStockModal(null)} className="w-full py-2.5 text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>Cancel</button>
+                <button onClick={() => setStockModal(null)} className="w-full h-12 rounded-full font-bold text-brand-text/50 hover:bg-brand-primary/5 transition-colors">Cancel</button>
               </div>
             </motion.div>
           </div>

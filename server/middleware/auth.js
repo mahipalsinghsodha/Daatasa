@@ -29,6 +29,21 @@ const auth = async (req, res, next) => {
   }
 };
 
+// ✅ Optional Auth middleware (does not reject if no token)
+auth.optional = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id).select('-password');
+      if (user && !user.isBlocked && decoded.version === user.tokenVersion) {
+        req.user = user;
+      }
+    }
+  } catch (error) {} // Ignore errors, just proceed as guest
+  next();
+};
+
 // ✅ Updated Admin middleware (allows superadmin too)
 auth.admin = (req, res, next) => {
   if (req.user && (req.user.role === 'admin' || req.user.role === 'superadmin')) {
