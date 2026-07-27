@@ -59,7 +59,18 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
 // Set security HTTP headers
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https:", "http:"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
 
 // Trust proxy for rate limiter to get accurate IP behind load balancers/proxies
 app.set('trust proxy', 1);
