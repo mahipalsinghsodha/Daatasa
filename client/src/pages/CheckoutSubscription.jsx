@@ -84,9 +84,14 @@ const CheckoutSubscription = () => {
       // 2. Load Razorpay
       const res = await loadRazorpay();
       if (!res) throw new Error('Razorpay SDK failed to load');
-
+      const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+      if (!razorpayKey) {
+        toast.error('Razorpay Key is missing in frontend environment variables.');
+        return;
+      }
+      
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        key: razorpayKey,
         subscription_id: subscriptionId,
         name: 'Daatasa',
         description: plan.name,

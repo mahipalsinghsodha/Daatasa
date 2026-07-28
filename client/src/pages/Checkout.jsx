@@ -173,8 +173,13 @@ const Checkout = () => {
   const startOnlinePayment = async (payload) => {
     const { data: order } = await api.post('/api/orders', payload)
     const { data: rzrOrder } = await api.post('/api/payment/create-order', { orderId: order._id })
+    const razorpayKey = import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!razorpayKey) {
+      toast.error('Razorpay Key is missing in frontend environment variables.');
+      return;
+    }
     const rzp = new window.Razorpay({
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      key: razorpayKey,
       order_id: rzrOrder.id, name: 'Daatasa',
       description: 'Premium Ghee Purchase', amount: rzrOrder.amount,
       theme: { color: '#F5A623' }, prefill: { name: user.name, email: user.email },
