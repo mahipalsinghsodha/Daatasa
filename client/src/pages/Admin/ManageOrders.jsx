@@ -11,6 +11,7 @@ import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 import { useSocket } from '../../hooks/useSocket'
+import { useConfirm } from '../../context/ConfirmContext'
 
 const fmtINR = (val) => `₹${Number(val || 0).toLocaleString('en-IN')}`
 const qrUrl = (data, size = 120) => `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&margin=6`
@@ -48,6 +49,7 @@ const invoiceHTML = (o) => `<div class="inv"><div class="head"><div><div class="
 
 const ManageOrders = () => {
   const { hasPermission } = useAuth()
+  const confirm = useConfirm()
   const socket = useSocket()
   
   const [orders, setOrders] = useState([])
@@ -126,13 +128,13 @@ const ManageOrders = () => {
   }
 
   const markPaid = async (id) => {
-    if (!window.confirm('Mark this order as PAID?')) return
+    if (!(await confirm('Mark this order as PAID?'))) return
     try { await api.put(`/api/orders/${id}/pay`); fetchOrders(false, page); toast.success('Order marked as paid') }
     catch { toast.error('Failed to update') }
   }
 
   const markDelivered = async (id) => {
-    if (!window.confirm('Mark this order as DELIVERED? This cannot be undone.')) return
+    if (!(await confirm('Mark this order as DELIVERED? This cannot be undone.'))) return
     try { await api.put(`/api/orders/${id}/deliver`); fetchOrders(false, page); toast.success('Order marked as delivered') }
     catch { toast.error('Failed to update') }
   }
@@ -159,7 +161,7 @@ const ManageOrders = () => {
   }
 
   const handleApproveReturn = async (id) => {
-    if (!window.confirm('Approve this return? A refund will be initiated if paid online.')) return
+    if (!(await confirm('Approve this return? A refund will be initiated if paid online.'))) return
     setSyncing(true)
     try {
       await api.put(`/api/admin/return-requests/${id}`, { status: 'APPROVED' })
@@ -172,7 +174,7 @@ const ManageOrders = () => {
   const handleBulkAction = async (action) => {
     if (selectedOrders.size === 0) return
     const actionText = action === 'pay' ? 'PAID' : 'DELIVERED'
-    if (!window.confirm(`Mark ${selectedOrders.size} orders as ${actionText}?`)) return
+    if (!(await confirm(`Mark ${selectedOrders.size} orders as ${actionText}?`))) return
     
     setSyncing(true)
     try {
@@ -567,3 +569,4 @@ const ManageOrders = () => {
 }
 
 export default ManageOrders
+// force ts update

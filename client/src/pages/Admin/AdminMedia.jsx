@@ -6,10 +6,12 @@ import api from '../../api/axios'
 import { toast } from 'react-toastify'
 import { useDropzone } from 'react-dropzone'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../context/ConfirmContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
 const AdminMedia = () => {
   const { user, hasPermission, loading: authLoading } = useAuth()
+  const confirm = useConfirm()
   const [images, setImages] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -66,7 +68,7 @@ const AdminMedia = () => {
   })
 
   const handleDelete = async (public_id) => {
-    if (!window.confirm('Are you sure you want to permanently delete this image from Cloudinary?')) return
+    if (!(await confirm('Are you sure you want to permanently delete this image from Cloudinary?'))) return
     try {
       await api.delete('/api/upload/images', { data: { public_id } })
       toast.success('Image deleted')
@@ -251,3 +253,4 @@ const AdminMedia = () => {
 }
 
 export default AdminMedia
+// force ts update

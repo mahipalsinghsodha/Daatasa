@@ -16,6 +16,7 @@ import WhatsAppButton from './components/WhatsAppButton'
 import { useThemeStore } from './store/theme'
 import NotificationDrawer from './components/NotificationDrawer'
 import api from './api/axios'
+import { ConfirmProvider } from './context/ConfirmContext'
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
@@ -58,26 +59,26 @@ const HowItWorks      = lazy(() => import('./pages/HowItWorks'))
 const CheckoutSubscription = lazy(() => import('./pages/CheckoutSubscription'))
 
 // Admin pages
-const AdminDashboard  = lazy(() => import('./pages/Admin/AdminDashboard'))
-const AdminReturns    = lazy(() => import('./pages/Admin/AdminReturns')) // ✅ P1: Admin Returns page
-const AdminInventory  = lazy(() => import('./pages/Admin/AdminInventory')) // ✅ P1: Admin Inventory page
-const AdminUserActivity = lazy(() => import('./pages/Admin/AdminUserActivity')) // ✅ P1: Admin User Activity
-const AddProduct      = lazy(() => import('./pages/Admin/AddProduct'))
-const ManageOrders    = lazy(() => import('./pages/Admin/ManageOrders'))
-const AdminReviews    = lazy(() => import('./pages/Admin/AdminReviews'))
-const AdminSupport    = lazy(() => import('./pages/Admin/AdminSupport'))
-const AdminCoupons    = lazy(() => import('./pages/Admin/AdminCoupons'))
-const AdminUsers      = lazy(() => import('./pages/Admin/AdminUsers'))
-const AdminCategories = lazy(() => import('./pages/Admin/AdminCategories'))
-const AdminProducts   = lazy(() => import('./pages/Admin/AdminProducts'))
-const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement'))
-const AuditLogs       = lazy(() => import('./pages/Admin/AuditLogs'))
-const AdminAnalytics  = lazy(() => import('./pages/Admin/AdminAnalytics'))
-const AdminProductImages = lazy(() => import('./pages/Admin/AdminProductImages'))
-const AdminMedia      = lazy(() => import('./pages/Admin/AdminMedia'))
-const AdminSettings   = lazy(() => import('./pages/Admin/AdminSettings'))
-const AdminNewsletters= lazy(() => import('./pages/Admin/AdminNewsletters'))
-const AdminSubscriptions = lazy(() => import('./pages/Admin/AdminSubscriptions'))
+const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard.jsx'))
+const AdminReturns = lazy(() => import('./pages/Admin/AdminReturns.jsx')) // ✅ P1: Admin Returns page
+const AdminInventory = lazy(() => import('./pages/Admin/AdminInventory.jsx')) // ✅ P1: Admin Inventory page
+const AdminUserActivity = lazy(() => import('./pages/Admin/AdminUserActivity.jsx')) // ✅ P1: Admin User Activity
+const AddProduct = lazy(() => import('./pages/Admin/AddProduct.jsx'))
+const ManageOrders = lazy(() => import('./pages/Admin/ManageOrders.jsx'))
+const AdminReviews = lazy(() => import('./pages/Admin/AdminReviews.jsx'))
+const AdminSupport = lazy(() => import('./pages/Admin/AdminSupport.jsx'))
+const AdminCoupons = lazy(() => import('./pages/Admin/AdminCoupons.jsx'))
+const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers.jsx'))
+const AdminCategories = lazy(() => import('./pages/Admin/AdminCategories.jsx'))
+const AdminProducts = lazy(() => import('./pages/Admin/AdminProducts.jsx'))
+const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement.jsx'))
+const AuditLogs = lazy(() => import('./pages/Admin/AuditLogs.jsx'))
+const AdminAnalytics = lazy(() => import('./pages/Admin/AdminAnalytics.jsx'))
+const AdminProductImages = lazy(() => import('./pages/Admin/AdminProductImages.jsx'))
+const AdminMedia = lazy(() => import('./pages/Admin/AdminMedia.jsx'))
+const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings.jsx'))
+const AdminNewsletters = lazy(() => import('./pages/Admin/AdminNewsletters.jsx'))
+const AdminSubscriptions = lazy(() => import('./pages/Admin/AdminSubscriptions.jsx'))
 
 // ─── Guest-Only Route ─────────────────────────────────────────────────────────
 function GuestRoute({ children }) {
@@ -278,10 +279,11 @@ function App() {
   return (
     <ErrorBoundary>
       <HelmetProvider>
-        <AuthProvider>
-          <CartProvider>
-            <Router>
-              <div className="flex flex-col min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)' }}>
+        <ConfirmProvider>
+          <AuthProvider>
+            <CartProvider>
+              <Router>
+                <div className="flex flex-col min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)' }}>
                   <ToastContainer
                     position="bottom-center"
                     autoClose={4000}
@@ -300,23 +302,25 @@ function App() {
                       color: 'var(--text-primary)',
                     }}
                   />
-                <SiteStatusWrapper>
-                  <PromoPopup />
-                  <ScrollToTop />
-                  <Navbar />
-                  <Breadcrumb />
-                  <AnimatedRoutes />
-                  <Footer />
-                  <WhatsAppButton />
-                  <NotificationDrawer />
-                </SiteStatusWrapper>
-              </div>
-            </Router>
-          </CartProvider>
-        </AuthProvider>
+                  <SiteStatusWrapper>
+                    <PromoPopup />
+                    <ScrollToTop />
+                    <Navbar />
+                    <Breadcrumb />
+                    <AnimatedRoutes />
+                    <Footer />
+                    <WhatsAppButton />
+                    <NotificationDrawer />
+                  </SiteStatusWrapper>
+                </div>
+              </Router>
+            </CartProvider>
+          </AuthProvider>
+        </ConfirmProvider>
       </HelmetProvider>
     </ErrorBoundary>
   )
 }
 
 export default App
+// force ts update

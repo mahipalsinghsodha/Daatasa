@@ -471,6 +471,30 @@ const sendSupportReplyEmail = async ({ to, userName, agentName, messageContent, 
   });
 };
 
+// ── 14. ADMIN 2FA OTP ───────────────────────────────────────────────────────────
+const sendAdminOtpEmail = async ({ to, adminName, otp }) => {
+  const body = `
+    <h2 style="${h2Style}">Admin Security Verification</h2>
+    <p style="${pStyle}">Hi <strong>${adminName || 'Admin'}</strong>,</p>
+    <p style="${pStyle}">You are attempting to modify critical platform settings. To proceed, please use the following One-Time Password (OTP):</p>
+    
+    <div style="text-align:center;margin:32px 0;">
+      <span style="display:inline-block;padding:16px 36px;background:#F8FAFC;color:${brandPrimary};font-size:32px;font-weight:900;letter-spacing:6px;border:2px dashed ${brandGold};border-radius:12px;">${otp}</span>
+    </div>
+    
+    <p style="${pStyle}">This OTP is valid for <strong>10 minutes</strong>. If you did not request this, please review your admin account security immediately.</p>
+  `;
+
+  const heroImg = 'https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80';
+
+  await sendWithRetry({
+    from: FROM(),
+    to,
+    subject: `Your Admin Verification OTP: ${otp}`,
+    html: wrap(body, heroImg),
+  });
+};
+
 module.exports = {
   sendCancelEmail,
   sendBlockEmail,
@@ -485,4 +509,5 @@ module.exports = {
   sendLowStockAlertEmail,
   sendAbandonedCartEmail,
   sendSupportReplyEmail,
+  sendAdminOtpEmail,
 };

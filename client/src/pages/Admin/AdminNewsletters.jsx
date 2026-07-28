@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { FiMail, FiUsers, FiSend, FiTrash2, FiSearch, FiRefreshCw } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
+import { useConfirm } from '../../context/ConfirmContext'
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 20 },
@@ -13,6 +14,7 @@ const fadeUp = (delay = 0) => ({
 })
 
 const AdminNewsletters = () => {
+  const confirm = useConfirm()
   const [subscribers, setSubscribers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -39,7 +41,7 @@ const AdminNewsletters = () => {
   }, [])
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to remove this subscriber?')) return
+    if (!(await confirm('Are you sure you want to remove this subscriber?'))) return
     try {
       await api.delete(`/api/subscribers/${id}`)
       toast.success('Subscriber removed')
@@ -55,7 +57,7 @@ const AdminNewsletters = () => {
       return toast.error('Subject and message are required')
     }
     
-    if (!window.confirm('Are you sure you want to send this email to ALL active subscribers?')) return
+    if (!(await confirm('Are you sure you want to send this email to ALL active subscribers?'))) return
 
     try {
       setSending(true)
@@ -257,3 +259,4 @@ const AdminNewsletters = () => {
 }
 
 export default AdminNewsletters
+// force ts update

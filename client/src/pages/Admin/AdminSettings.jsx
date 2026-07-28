@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext'
 import { FiPercent, FiTruck, FiSave, FiToggleLeft, FiToggleRight, FiAlertCircle, FiMapPin } from 'react-icons/fi'
 import { toast } from 'react-toastify'
 import api from '../../api/axios'
+import OTPModal from '../../components/OTPModal'
+import { useConfirm } from '../../context/ConfirmContext'
 
 /* ── Field component using CSS tokens ── */
 const Field = ({ label, icon: Icon, name, value, onChange, suffix, helpText, error }) => (
@@ -46,6 +48,7 @@ const Field = ({ label, icon: Icon, name, value, onChange, suffix, helpText, err
 
 const AdminSettings = () => {
   const { user } = useAuth()
+  const confirm = useConfirm()
   const [settings, setSettings] = useState({
     gstRate: 5,
     gstEnabled: true,
@@ -55,11 +58,13 @@ const AdminSettings = () => {
     isMaintenanceMode: false,
     isComingSoon: false,
     comingSoonLaunchDate: '',
+    security: { twoFactorEnabled: false, otpEmail: '' }
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
   const [pincodeInput, setPincodeInput] = useState('')
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false)
 
   useEffect(() => { fetchSettings() }, [])
 
@@ -86,6 +91,14 @@ const AdminSettings = () => {
 
   const handleSave = async () => {
     if (!validate()) return
+    if (settings.security?.twoFactorEnabled) {
+      setIsOtpModalOpen(true);
+    } else {
+      applySave();
+    }
+  }
+
+  const applySave = async (otp = null) => {
     setSaving(true)
     
     // Process pincodes
@@ -97,7 +110,8 @@ const AdminSettings = () => {
       const payload = { 
         ...settings, 
         serviceablePincodes: parsedPincodes,
-        comingSoonLaunchDate: settings.isComingSoon && settings.comingSoonLaunchDate ? new Date(settings.comingSoonLaunchDate).toISOString() : null
+        comingSoonLaunchDate: settings.isComingSoon && settings.comingSoonLaunchDate ? new Date(settings.comingSoonLaunchDate).toISOString() : null,
+        ...(otp && { otp })
       }
       const res = await api.patch('/api/settings', payload)
       setSettings({
@@ -105,6 +119,7 @@ const AdminSettings = () => {
         comingSoonLaunchDate: res.data.settings.comingSoonLaunchDate ? new Date(res.data.settings.comingSoonLaunchDate).toISOString().slice(0, 16) : ''
       })
       setPincodeInput(res.data.settings.serviceablePincodes?.join(', ') || '')
+      setIsOtpModalOpen(false)
       toast.success('Settings saved successfully!')
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save settings')
@@ -113,6 +128,13 @@ const AdminSettings = () => {
 
   const handleFieldChange = (name, val) => {
     setSettings(p => ({ ...p, [name]: val }))
+  }
+
+  const handleSecurityChange = (key, val) => {
+    setSettings(p => ({
+      ...p,
+      security: { ...(p.security || {}), [key]: val }
+    }))
   }
 
   if (loading) return (
@@ -155,6 +177,46 @@ const AdminSettings = () => {
       <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
         <div className="flex-1 space-y-5">
           
+          {/* ── Security Settings (2FA) ── */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-alt)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h2 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', margin: 0 }}>Security Verification</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Require OTP for critical settings changes</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleSecurityChange('twoFactorEnabled', !(settings.security?.twoFactorEnabled))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, border: '1px solid',
+                  ...(settings.security?.twoFactorEnabled ? { background: 'rgba(56,161,105,0.1)', color: 'var(--success)', borderColor: 'rgba(56,161,105,0.3)' } : { background: 'var(--bg-surface)', color: 'var(--text-muted)', borderColor: 'var(--border-color)' })
+                }}
+              >
+                {settings.security?.twoFactorEnabled ? <FiToggleRight size={18} /> : <FiToggleLeft size={18} />} {settings.security?.twoFactorEnabled ? '2FA Enabled' : 'Off'}
+              </button>
+            </div>
+            
+            {settings.security?.twoFactorEnabled && (
+              <div style={{ padding: 24 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>
+                  OTP Email Address
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', overflow: 'hidden' }}>
+                  <input
+                    type="email"
+                    value={settings.security?.otpEmail || ''}
+                    onChange={e => handleSecurityChange('otpEmail', e.target.value)}
+                    placeholder="E.g. admin@yourdomain.com"
+                    style={{ flex: 1, padding: '11px 12px', fontSize: 14, color: 'var(--text-primary)', outline: 'none', background: 'var(--bg-surface)', border: 'none', fontWeight: 600 }}
+                  />
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
+                  If left empty, OTPs will be sent to the email of the admin making the change.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* ── Site Status ── */}
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-alt)' }}>
@@ -332,7 +394,7 @@ const AdminSettings = () => {
 
           {/* ── Save Button ── */}
           <button
-            onClick={() => { if (window.confirm('Save changes to platform-wide tax and shipping?')) handleSave() }}
+            onClick={async () => { if (await confirm('Save changes to platform-wide tax and shipping?')) handleSave() }}
             disabled={saving}
             className="btn btn-primary"
             style={{ width: '100%', justifyContent: 'center', opacity: saving ? 0.7 : 1 }}
@@ -342,8 +404,16 @@ const AdminSettings = () => {
           </button>
         </div>
       </div>
+
+      <OTPModal
+        isOpen={isOtpModalOpen}
+        onClose={() => setIsOtpModalOpen(false)}
+        onSuccess={(otp) => applySave(otp)}
+        targetEmail={settings.security?.otpEmail || user?.email}
+      />
     </div>
   )
 }
 
 export default AdminSettings
+// force ts update

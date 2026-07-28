@@ -4,6 +4,7 @@ import { Plus, Search, Tag, Image, Trash2, X, Save, ShieldCheck, Upload, Link, C
 import api from '../../api/axios'
 import { toast } from 'react-toastify'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../context/ConfirmContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
 const emptyForm = { name: '', slug: '', description: '', image: '' }
@@ -161,6 +162,7 @@ const ImagePicker = ({ value, onChange }) => {
 /* ─── Main component ─── */
 const AdminCategories = () => {
   const { hasPermission } = useAuth()
+  const confirm = useConfirm()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -212,7 +214,7 @@ const AdminCategories = () => {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this category?")) return
+    if (!(await confirm("Are you sure you want to delete this category?"))) return
     try {
       const token = localStorage.getItem('token')
       await api.delete(`/api/categories/${id}`, { headers: { Authorization: `Bearer ${token}` } })
@@ -414,3 +416,4 @@ const AdminCategories = () => {
 }
 
 export default AdminCategories
+// force ts update

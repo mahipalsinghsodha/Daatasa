@@ -5,10 +5,12 @@ import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../context/ConfirmContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
 const AdminReviews = () => {
   const { hasPermission } = useAuth()
+  const confirm = useConfirm()
   const navigate = useNavigate()
   
   const [reviews, setReviews] = useState([])
@@ -45,7 +47,7 @@ const AdminReviews = () => {
   }
 
   const deleteReview = async (id) => {
-    if (!window.confirm('Permanently delete this review? This cannot be undone.')) return
+    if (!(await confirm('Permanently delete this review? This cannot be undone.'))) return
     try {
       await api.delete(`/api/reviews/${id}`)
       toast.success('Review permanently deleted')
@@ -198,3 +200,4 @@ const AdminReviews = () => {
 }
 
 export default AdminReviews
+// force ts update

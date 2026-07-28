@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useConfirm } from '../context/ConfirmContext'
 import api from '../api/axios'
 import { FiUser, FiMapPin, FiChevronRight, FiPackage, FiLogOut, FiAlertCircle, FiPhone, FiMail, FiRefreshCw, FiClock, FiLock } from 'react-icons/fi'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -49,6 +50,7 @@ const FloatingInput = ({ id, label, type = 'text', value, onChange, icon: Icon, 
 
 const Profile = () => {
   const { user, updateUser, logout } = useAuth()
+  const confirm = useConfirm()
   const navigate = useNavigate()
 
   const [name, setName]           = useState('')
@@ -71,6 +73,14 @@ const Profile = () => {
     } catch (err) {
       console.error(err)
     }
+  }
+
+  const handleCancelSubscription = async (id) => {
+    try {
+      await api.post('/api/subscriptions/cancel', { subscriptionId: id });
+      toast.success('Subscription cancelled');
+      fetchSubscriptions();
+    } catch(e) { toast.error('Failed to cancel'); }
   }
 
   const handleProfileSubmit = async (e) => {
@@ -224,17 +234,19 @@ const Profile = () => {
                       {sub.status === 'active' && (
                         <button 
                           onClick={async () => {
-                            if(window.confirm('Are you sure you want to cancel this subscription?')) {
-                              try {
-                                await api.post('/api/subscriptions/cancel', { subscriptionId: sub._id });
-                                toast.success('Subscription cancelled');
-                                fetchSubscriptions();
-                              } catch(e) { toast.error('Failed to cancel'); }
+                            if(await confirm('Are you sure you want to cancel this subscription?')) {
+                              handleCancelSubscription(sub._id);
                             }
                           }}
-                          className="px-6 py-2.5 bg-red-50 text-red-500 text-xs font-bold uppercase tracking-wider rounded-full hover:bg-red-100 transition-colors"
+                          style={{
+                              padding: '8px 16px', background: 'var(--bg-base)', color: 'var(--danger)', 
+                              border: '1.5px solid rgba(229, 62, 62, 0.2)', borderRadius: '8px', 
+                              fontSize: '13px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(229, 62, 62, 0.1)'; e.currentTarget.style.borderColor = 'var(--danger)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-base)'; e.currentTarget.style.borderColor = 'rgba(229, 62, 62, 0.2)' }}
                         >
-                          Cancel
+                          Cancel Subscription
                         </button>
                       )}
                     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useConfirm } from '../context/ConfirmContext'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/axios'
 import {
@@ -105,6 +106,7 @@ const FloatingSelect = ({ id, label, value, onChange, required, children, icon: 
 
 const Addresses = () => {
   const { user, logout } = useAuth()
+  const confirm = useConfirm()
   const navigate = useNavigate()
 
   const [addresses, setAddresses] = useState([])
@@ -187,7 +189,7 @@ const Addresses = () => {
   }
 
   const handleDeleteAddress = async (id) => {
-    if (!window.confirm('Delete this address?')) return
+    if (!(await confirm('Delete this address?'))) return
     try {
       const res = await api.delete(`/api/auth/addresses/${id}`)
       setAddresses(res.data.addresses)

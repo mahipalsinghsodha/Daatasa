@@ -9,6 +9,7 @@ import { toast } from 'react-toastify'
 import CustomDropdown from '../../components/CustomDropdown'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../context/ConfirmContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 
 /* ── Custom Image Upload Input ── */
@@ -63,6 +64,7 @@ const WEIGHT_OPTIONS = ['250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg']
 const AdminProducts = () => {
   const navigate = useNavigate()
   const { hasPermission, loading: authLoading } = useAuth()
+  const confirm = useConfirm()
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -110,7 +112,7 @@ const AdminProducts = () => {
   const handleSave = async () => {
     if (!form.name || !form.price || !form.category) return toast.error('Name, price, and category are required');
     if (form.mrp && Number(form.mrp) < Number(form.price)) return toast.error('MRP must be greater than or equal to price');
-    if (!window.confirm(`Save changes to "${form.name}"?`)) return
+    if (!(await confirm(`Save changes to "${form.name}"?`))) return
     setSaving(true)
     try {
       await api.put(`/api/products/${selectedProduct._id}`, form)
@@ -124,7 +126,7 @@ const AdminProducts = () => {
   }
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Delete this product permanently?')) return
+    if (!(await confirm('Delete this product permanently?'))) return
     try {
       await api.delete(`/api/products/${id}`)
       toast.success('Product deleted')
@@ -446,9 +448,9 @@ const AdminProducts = () => {
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-surface)'} onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-alt)'}>
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         const next = !form.isActive;
-                        if (window.confirm(`Mark product as ${next ? 'ACTIVE' : 'INACTIVE'}? ${next ? 'Customers will see it.' : 'It will be hidden from the store.'}`)) {
+                        if (await confirm(`Mark product as ${next ? 'ACTIVE' : 'INACTIVE'}? ${next ? 'Customers will see it.' : 'It will be hidden from the store.'}`)) {
                           setForm({ ...form, isActive: next })
                         }
                       }}
@@ -485,3 +487,4 @@ const AdminProducts = () => {
 }
 
 export default AdminProducts
+// force ts update

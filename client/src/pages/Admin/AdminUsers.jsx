@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react' // fix-casing
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   FiUsers, FiSearch, FiLock, FiUnlock, FiX,
@@ -9,6 +9,7 @@ import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
+import { useConfirm } from '../../context/ConfirmContext'
 
 /* ── shared mini-helpers ── */
 const Card = ({ children, style }) => (
@@ -19,6 +20,7 @@ const Card = ({ children, style }) => (
 
 const AdminUsers = () => {
   const { hasPermission } = useAuth()
+  const confirm = useConfirm()
   const [users, setUsers] = useState([])
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +52,11 @@ const AdminUsers = () => {
   }
 
   const handleToggleBlock = async (target) => {
+    const actionName = target.isBlocked ? 'unblock' : 'block';
+    if (!(await confirm(`Are you sure you want to ${actionName} this user?`))) {
+      return;
+    }
+    
     try {
       setProcessingId(target._id)
       const res = await api.put(
@@ -59,9 +66,9 @@ const AdminUsers = () => {
       const updated = { ...target, isBlocked: res.data.isBlocked }
       setUsers(u => u.map(x => x._id === target._id ? updated : x))
       if (selectedUser?._id === target._id) setSelectedUser(updated)
-      toast.success(res.data.message)
-    } catch (e) {
-      toast.error(e.response?.data?.message || 'Update failed')
+      toast.success(`User successfully ${actionName}ed`)
+    } catch {
+      toast.error(`Failed to ${actionName} user`)
     } finally {
       setProcessingId(null)
     }
@@ -454,3 +461,4 @@ const AdminUsers = () => {
 }
 
 export default AdminUsers
+// force ts update

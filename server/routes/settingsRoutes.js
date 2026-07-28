@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Settings = require('../models/Settings');
 const auth = require('../middleware/auth');
+const crypto = require('crypto');
+const { sendAdminOtpEmail } = require('../services/emailService');
 
 // ── GET /api/settings  (PUBLIC — frontend reads this to display GST)
 router.get('/', async (req, res) => {
@@ -17,6 +19,8 @@ router.get('/', async (req, res) => {
       isMaintenanceMode: settings.isMaintenanceMode,
       isComingSoon: settings.isComingSoon,
       comingSoonLaunchDate: settings.comingSoonLaunchDate,
+      // Pass security details only if they exist, but DO NOT pass hashes!
+      security: settings.security || { twoFactorEnabled: false, otpEmail: '' }
     });
   } catch (error) {
     console.error('Settings GET error:', error);
@@ -24,12 +28,57 @@ router.get('/', async (req, res) => {
   }
 });
 
+// ── POST /api/settings/send-otp (Generate & Send OTP for Admin) ──
+router.post('/send-otp', auth, auth.admin, async (req, res) => {
+  try {
+    const settings = await Settings.findOne({ _id: 'global' });
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const hash = crypto.createHash('sha256').update(otp).digest('hex');
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+
+    await Settings.updateOne(
+      { _id: 'global' },
+      { $set: { adminOtpHash: hash, adminOtpExpires: expires } }
+    );
+
+    const targetEmail = settings?.security?.otpEmail || req.user.email;
+    await sendAdminOtpEmail({
+      to: targetEmail,
+      adminName: req.user.name,
+      otp,
+    });
+
+    res.json({ message: 'OTP sent to registered admin email' });
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ message: 'Failed to send OTP' });
+  }
+});
+
 // ── PATCH /api/settings  (ADMIN ONLY — update GST/shipping/pincode config)
 router.patch('/', auth, auth.admin, async (req, res) => {
   try {
+    const currentSettings = await Settings.findOne({ _id: 'global' }).select('+adminOtpHash +adminOtpExpires');
+
+    if (currentSettings?.security?.twoFactorEnabled) {
+      const otp = req.body.otp;
+      if (!otp) {
+        return res.status(403).json({ message: 'OTP is required to update settings when 2FA is enabled.' });
+      }
+      if (!currentSettings.adminOtpHash || !currentSettings.adminOtpExpires || currentSettings.adminOtpExpires < new Date()) {
+        return res.status(400).json({ message: 'OTP has expired or is invalid. Please request a new one.' });
+      }
+      const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex');
+      if (hashedOtp !== currentSettings.adminOtpHash) {
+        return res.status(400).json({ message: 'Invalid OTP' });
+      }
+      // Consume the OTP so it can't be reused
+      await Settings.updateOne({ _id: 'global' }, { $unset: { adminOtpHash: "", adminOtpExpires: "" } });
+    }
+
     const { 
       gstRate, gstEnabled, freeShippingThreshold, shippingCharge, serviceablePincodes,
-      isMaintenanceMode, isComingSoon, comingSoonLaunchDate
+      isMaintenanceMode, isComingSoon, comingSoonLaunchDate, security
     } = req.body;
 
     // Validate
@@ -60,6 +109,12 @@ router.patch('/', auth, auth.admin, async (req, res) => {
     if (comingSoonLaunchDate !== undefined) {
       update.comingSoonLaunchDate = comingSoonLaunchDate ? new Date(comingSoonLaunchDate) : null;
     }
+    if (security !== undefined) {
+      update.security = {
+        twoFactorEnabled: Boolean(security.twoFactorEnabled),
+        otpEmail: security.otpEmail || ''
+      };
+    }
 
     const settings = await Settings.findByIdAndUpdate(
       'global',
@@ -78,6 +133,7 @@ router.patch('/', auth, auth.admin, async (req, res) => {
         isMaintenanceMode: settings.isMaintenanceMode,
         isComingSoon: settings.isComingSoon,
         comingSoonLaunchDate: settings.comingSoonLaunchDate,
+        security: settings.security,
       },
     });
   } catch (error) {

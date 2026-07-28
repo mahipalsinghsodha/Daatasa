@@ -59,6 +59,15 @@ const settingsSchema = new mongoose.Schema(
       ref: 'User',
       default: null,
     },
+
+    // ── Security & 2FA ───────────────────────────────────────────────────
+    security: {
+      twoFactorEnabled: { type: Boolean, default: false },
+      otpEmail: { type: String, default: '' },
+    },
+    // Temporary fields for active OTP flow
+    adminOtpHash: { type: String, select: false },
+    adminOtpExpires: { type: Date, select: false },
   },
   {
     timestamps: true,

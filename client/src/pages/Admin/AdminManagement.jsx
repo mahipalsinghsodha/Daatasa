@@ -8,6 +8,7 @@ import {
 import api from '../../api/axios';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
+import { useConfirm } from '../../context/ConfirmContext';
 import RestrictedAccess from '../../components/RestrictedAccess';
 
 // ── Primitives ─────────────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ const StatChip = ({ icon: Icon, label, value, color, bg }) => (
 // ═══════════════════════════════════════════════════════════════════════════════
 const AdminManagement = () => {
   const { user, hasPermission } = useAuth();
+  const confirm = useConfirm();
   const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,8 +98,8 @@ const AdminManagement = () => {
     }
   };
 
-  const handleDeleteAdmin = async (id, name) => {
-    if (!window.confirm(`Permanently revoke all administrative access for ${name}?`)) return;
+  const handleRevokeAccess = async (id, name) => {
+    if (!(await confirm(`Permanently revoke all administrative access for ${name}?`))) return;
     try {
       await api.delete(`/api/admin/${id}`);
       toast.success('Access revoked');
@@ -196,7 +198,7 @@ const AdminManagement = () => {
                  </div>
 
                  {admin.role !== 'superadmin' && (
-                    <button onClick={() => handleDeleteAdmin(admin._id, admin.name)}
+                    <button onClick={() => handleRevokeAccess(admin._id, admin.name)}
                       style={{ padding: '10px', borderRadius: 10, background: 'rgba(229,62,62,0.1)', color: 'var(--danger)', border: 'none', cursor: 'pointer', transition: '0.2s' }}>
                       <FiTrash2 size={20}/>
                     </button>
@@ -304,3 +306,4 @@ const AdminManagement = () => {
 };
 
 export default AdminManagement;
+// force ts update
