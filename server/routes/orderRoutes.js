@@ -1020,10 +1020,7 @@ router.post('/:id/cancel', auth, async (req, res) => {
       try {
         const razorpay = require('../config/razorpay');
         const refund = await razorpay.payments.refund(
-          order.paymentInfo.razorpay_payment_id,
-          {
-            notes: { orderId: order._id.toString(), reason: reason || 'Cancelled' },
-          }
+          order.paymentInfo.razorpay_payment_id
         );
         refundInfo = {
           refund_id: refund.id,
