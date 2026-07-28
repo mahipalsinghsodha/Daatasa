@@ -100,7 +100,8 @@ exports.approveReturnRequest = async (req, res) => {
         try {
           const razorpay = require('../config/razorpay');
           const refund = await razorpay.payments.refund(
-            order.paymentInfo.razorpay_payment_id
+            order.paymentInfo.razorpay_payment_id,
+            { amount: Math.round(order.totalPrice * 100) }
           );
           refundInfo = {
             refund_id: refund.id,
