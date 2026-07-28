@@ -14,6 +14,9 @@ router.get('/', async (req, res) => {
       freeShippingThreshold: settings.freeShippingThreshold,
       shippingCharge: settings.shippingCharge,
       serviceablePincodes: settings.serviceablePincodes || [],
+      isMaintenanceMode: settings.isMaintenanceMode,
+      isComingSoon: settings.isComingSoon,
+      comingSoonLaunchDate: settings.comingSoonLaunchDate,
     });
   } catch (error) {
     console.error('Settings GET error:', error);
@@ -24,7 +27,10 @@ router.get('/', async (req, res) => {
 // ── PATCH /api/settings  (ADMIN ONLY — update GST/shipping/pincode config)
 router.patch('/', auth, auth.admin, async (req, res) => {
   try {
-    const { gstRate, gstEnabled, freeShippingThreshold, shippingCharge, serviceablePincodes } = req.body;
+    const { 
+      gstRate, gstEnabled, freeShippingThreshold, shippingCharge, serviceablePincodes,
+      isMaintenanceMode, isComingSoon, comingSoonLaunchDate
+    } = req.body;
 
     // Validate
     if (gstRate !== undefined) {
@@ -49,6 +55,11 @@ router.patch('/', auth, auth.admin, async (req, res) => {
       if (!Array.isArray(serviceablePincodes)) return res.status(400).json({ message: 'serviceablePincodes must be an array' });
       update.serviceablePincodes = serviceablePincodes;
     }
+    if (isMaintenanceMode !== undefined)   update.isMaintenanceMode = Boolean(isMaintenanceMode);
+    if (isComingSoon !== undefined)        update.isComingSoon = Boolean(isComingSoon);
+    if (comingSoonLaunchDate !== undefined) {
+      update.comingSoonLaunchDate = comingSoonLaunchDate ? new Date(comingSoonLaunchDate) : null;
+    }
 
     const settings = await Settings.findByIdAndUpdate(
       'global',
@@ -64,6 +75,9 @@ router.patch('/', auth, auth.admin, async (req, res) => {
         freeShippingThreshold: settings.freeShippingThreshold,
         shippingCharge: settings.shippingCharge,
         serviceablePincodes: settings.serviceablePincodes,
+        isMaintenanceMode: settings.isMaintenanceMode,
+        isComingSoon: settings.isComingSoon,
+        comingSoonLaunchDate: settings.comingSoonLaunchDate,
       },
     });
   } catch (error) {

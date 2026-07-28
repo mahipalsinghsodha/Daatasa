@@ -52,6 +52,9 @@ const AdminSettings = () => {
     freeShippingThreshold: 500,
     shippingCharge: 50,
     serviceablePincodes: [],
+    isMaintenanceMode: false,
+    isComingSoon: false,
+    comingSoonLaunchDate: '',
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -63,7 +66,10 @@ const AdminSettings = () => {
   const fetchSettings = async () => {
     try {
       const res = await api.get('/api/settings')
-      setSettings(res.data)
+      setSettings({
+        ...res.data,
+        comingSoonLaunchDate: res.data.comingSoonLaunchDate ? new Date(res.data.comingSoonLaunchDate).toISOString().slice(0, 16) : ''
+      })
       setPincodeInput(res.data.serviceablePincodes?.join(', ') || '')
     } catch { toast.error('Failed to load settings') }
     finally { setLoading(false) }
@@ -88,8 +94,16 @@ const AdminSettings = () => {
       .filter(p => p.length > 0)
       
     try {
-      const res = await api.patch('/api/settings', { ...settings, serviceablePincodes: parsedPincodes })
-      setSettings(res.data.settings)
+      const payload = { 
+        ...settings, 
+        serviceablePincodes: parsedPincodes,
+        comingSoonLaunchDate: settings.isComingSoon && settings.comingSoonLaunchDate ? new Date(settings.comingSoonLaunchDate).toISOString() : null
+      }
+      const res = await api.patch('/api/settings', payload)
+      setSettings({
+        ...res.data.settings,
+        comingSoonLaunchDate: res.data.settings.comingSoonLaunchDate ? new Date(res.data.settings.comingSoonLaunchDate).toISOString().slice(0, 16) : ''
+      })
       setPincodeInput(res.data.settings.serviceablePincodes?.join(', ') || '')
       toast.success('Settings saved successfully!')
     } catch (err) {
@@ -138,8 +152,61 @@ const AdminSettings = () => {
         </div>
       </div>
 
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="max-w-xl space-y-5">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col lg:flex-row gap-8">
+        <div className="flex-1 space-y-5">
+          
+          {/* ── Site Status ── */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-alt)' }}>
+              <h2 style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', margin: 0 }}>Site Status</h2>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Manage maintenance and coming soon modes</p>
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 16, borderBottom: '1px solid var(--border-color)' }}>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Maintenance Mode</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Show a "We'll be right back" page to all visitors.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSettings(p => ({ ...p, isMaintenanceMode: !p.isMaintenanceMode, isComingSoon: false }))}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, border: '1px solid', ...(settings.isMaintenanceMode ? { background: 'rgba(229,62,62,0.1)', color: 'var(--danger)', borderColor: 'rgba(229,62,62,0.3)' } : { background: 'var(--bg-surface)', color: 'var(--text-muted)', borderColor: 'var(--border-color)' }) }}
+                >
+                  {settings.isMaintenanceMode ? <FiToggleRight size={18} /> : <FiToggleLeft size={18} />} {settings.isMaintenanceMode ? 'Active' : 'Off'}
+                </button>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>Coming Soon Mode</p>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Show a launch countdown and email capture.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSettings(p => ({ ...p, isComingSoon: !p.isComingSoon, isMaintenanceMode: false }))}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 700, border: '1px solid', ...(settings.isComingSoon ? { background: 'rgba(49,130,206,0.1)', color: 'var(--info)', borderColor: 'rgba(49,130,206,0.3)' } : { background: 'var(--bg-surface)', color: 'var(--text-muted)', borderColor: 'var(--border-color)' }) }}
+                  >
+                    {settings.isComingSoon ? <FiToggleRight size={18} /> : <FiToggleLeft size={18} />} {settings.isComingSoon ? 'Active' : 'Off'}
+                  </button>
+                </div>
+                {settings.isComingSoon && (
+                  <div style={{ marginTop: 16, padding: 16, background: 'var(--bg-alt)', borderRadius: 8, border: '1px solid var(--border-color)' }}>
+                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase' }}>Launch Date & Time</label>
+                    <input 
+                      type="datetime-local" 
+                      value={settings.comingSoonLaunchDate}
+                      onChange={e => handleFieldChange('comingSoonLaunchDate', e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1.5px solid var(--border-color)', outline: 'none', fontSize: 14 }}
+                    />
+                    <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>When this date is reached, the site will automatically open to the public.</p>
+                  </div>
+                )}
+              </div>
+
+            </div>
+          </div>
 
           {/* ── GST Settings ── */}
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-card)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
@@ -233,7 +300,10 @@ const AdminSettings = () => {
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>Leave empty to allow delivery to all pincodes globally.</p>
             </div>
           </div>
-
+        </div>
+        
+        {/* Right Sidebar */}
+        <div className="w-full lg:w-80 space-y-5">
           {/* ── Live Preview ── */}
           <div style={{ background: 'rgba(245,166,35,0.06)', border: '1.5px solid rgba(245,166,35,0.20)', borderRadius: 'var(--radius-card)', padding: 20 }}>
             <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--brand-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 14 }}>

@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { HelmetProvider } from 'react-helmet-async'
 import Navbar from './components/Navbar'
@@ -42,6 +42,8 @@ const OrderDetail     = lazy(() => import('./pages/OrderDetail'))
 const ReturnRequest   = lazy(() => import('./pages/ReturnRequest')) // ✅ P1: Return Request page
 const Wishlist        = lazy(() => import('./pages/Wishlist'))  // ✅ P1: Wishlist page
 const NotFound        = lazy(() => import('./pages/NotFound'))
+const ComingSoon = lazy(() => import('./pages/ComingSoon'))
+const Maintenance = lazy(() => import('./pages/Maintenance'))
 
 // Static Pages
 const AboutUs         = lazy(() => import('./pages/AboutUs'))
@@ -105,6 +107,59 @@ function ScrollToTop() {
     }
   }, [pathname])
   return null
+}
+
+// ─── Site Status Interceptor ──────────────────────────────────────────────────
+function SiteStatusWrapper({ children }) {
+  const { user, loading: authLoading } = useAuth()
+  const [settings, setSettings] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const location = useLocation()
+
+  useEffect(() => {
+    api.get('/api/settings')
+      .then(res => setSettings(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading || authLoading) return <PageLoader />
+
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin'
+
+  if (!isAdmin && settings) {
+    if (settings.isMaintenanceMode || settings.isComingSoon) {
+      let isLaunchPast = false;
+      if (settings.isComingSoon) {
+        isLaunchPast = settings.comingSoonLaunchDate && new Date(settings.comingSoonLaunchDate).getTime() < Date.now();
+      }
+
+      // If active mode is on, lock down the site
+      if (settings.isMaintenanceMode || (settings.isComingSoon && !isLaunchPast)) {
+        
+        // If the user tries to access /login, /products, etc., automatically redirect them to the root URL (/)
+        if (location.pathname !== '/') {
+          return <Navigate to="/" replace />;
+        }
+
+        if (settings.isMaintenanceMode) {
+          return (
+            <Suspense fallback={<PageLoader />}>
+              <Maintenance />
+            </Suspense>
+          );
+        } else {
+          return (
+            <Suspense fallback={<PageLoader />}>
+              <ComingSoon launchDate={settings.comingSoonLaunchDate} />
+            </Suspense>
+          );
+        }
+      }
+    }
+  }
+
+  return children
 }
 
 // ─── Page loading spinner ─────────────────────────────────────────────────────
@@ -227,32 +282,34 @@ function App() {
           <CartProvider>
             <Router>
               <div className="flex flex-col min-h-screen overflow-x-hidden" style={{ background: 'var(--bg-base)' }}>
-                <ToastContainer
-                  position="bottom-center"
-                  autoClose={4000}
-                  hideProgressBar={false}
-                  newestOnTop
-                  closeOnClick
-                  pauseOnHover
-                  draggable
-                  theme="light"
-                  limit={3}
-                  toastStyle={{
-                    borderRadius: '12px',
-                    fontSize: '13.5px',
-                    fontWeight: 500,
-                    background: 'var(--bg-surface)',
-                    color: 'var(--text-primary)',
-                  }}
-                />
-                <PromoPopup />
-                <ScrollToTop />
-                <Navbar />
-                <Breadcrumb />
-                <AnimatedRoutes />
-                <Footer />
-                <WhatsAppButton />
-                <NotificationDrawer />
+                  <ToastContainer
+                    position="bottom-center"
+                    autoClose={4000}
+                    hideProgressBar={false}
+                    newestOnTop
+                    closeOnClick
+                    pauseOnHover
+                    draggable
+                    theme="light"
+                    limit={3}
+                    toastStyle={{
+                      borderRadius: '12px',
+                      fontSize: '13.5px',
+                      fontWeight: 500,
+                      background: 'var(--bg-surface)',
+                      color: 'var(--text-primary)',
+                    }}
+                  />
+                <SiteStatusWrapper>
+                  <PromoPopup />
+                  <ScrollToTop />
+                  <Navbar />
+                  <Breadcrumb />
+                  <AnimatedRoutes />
+                  <Footer />
+                  <WhatsAppButton />
+                  <NotificationDrawer />
+                </SiteStatusWrapper>
               </div>
             </Router>
           </CartProvider>

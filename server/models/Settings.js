@@ -39,6 +39,20 @@ const settingsSchema = new mongoose.Schema(
       default: [], // empty means all pincodes are serviceable
     },
 
+    // ── Site Status ──────────────────────────────────────────────────────
+    isMaintenanceMode: {
+      type: Boolean,
+      default: false,
+    },
+    isComingSoon: {
+      type: Boolean,
+      default: false,
+    },
+    comingSoonLaunchDate: {
+      type: Date,
+      default: null,
+    },
+
     // ── Meta ─────────────────────────────────────────────────────────────
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
