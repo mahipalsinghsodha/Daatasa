@@ -102,8 +102,6 @@ exports.approveReturnRequest = async (req, res) => {
           const refund = await razorpay.payments.refund(
             order.paymentInfo.razorpay_payment_id,
             {
-              amount: Math.round(order.totalPrice * 100),
-              speed: 'normal',
               notes: { orderId: order._id.toString(), reason: 'Return Approved' },
             }
           );
@@ -115,8 +113,9 @@ exports.approveReturnRequest = async (req, res) => {
           };
         } catch (refundErr) {
           console.error('RAZORPAY REFUND ERROR:', refundErr);
+          const errorMessage = refundErr.error ? refundErr.error.description : refundErr.message;
           return res.status(500).json({
-            message: 'Refund initiation failed. Please contact support.',
+            message: `Refund initiation failed: ${errorMessage || 'Please contact support.'}`,
           });
         }
       }
