@@ -12,7 +12,7 @@ const clImg = (url, w = 400) => {
   return url.replace('/upload/', `/upload/c_fill,w_${w},f_auto,q_auto/`)
 }
 
-const ProductCard = ({ product, categories = [] }) => {
+const ProductCard = ({ product, categories = [], rank }) => {
   const { user, toggleWishlist } = useAuth()
   const { addItem } = useCart()
   const navigate = useNavigate()
@@ -28,6 +28,7 @@ const ProductCard = ({ product, categories = [] }) => {
   const discount = product.mrp && product.mrp > product.price
     ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
     : 0
+  const isComingSoon = product.launchDate && new Date(product.launchDate) > new Date()
 
   const handleWishlist = async (e) => {
     e.preventDefault(); e.stopPropagation()
@@ -41,7 +42,7 @@ const ProductCard = ({ product, categories = [] }) => {
   const handleQuickAdd = async (e) => {
     e.preventDefault(); e.stopPropagation()
     if (!user) { navigate('/login', { state: { from: '/cart' } }); return }
-    if (!inStock) return
+    if (!inStock || isComingSoon) return
     setAddingToCart(true)
     const success = await addItem(product, 1)
     if (success) {
@@ -53,7 +54,7 @@ const ProductCard = ({ product, categories = [] }) => {
   return (
     <Link
       to={`/products/${product._id}`}
-      className="group block rounded-[2rem] overflow-hidden hover:-translate-y-2 transition-all duration-300 will-change-transform bg-white border border-brand-primary/5 shadow-sm hover:shadow-lg"
+      className="group flex flex-col h-full rounded-[2rem] overflow-hidden hover:-translate-y-2 transition-all duration-300 will-change-transform bg-white border border-brand-primary/5 shadow-sm hover:shadow-lg"
     >
       {/* ── Image ── */}
       <div className="relative aspect-square overflow-hidden" style={{ background: 'var(--bg-base)' }}>
@@ -68,9 +69,19 @@ const ProductCard = ({ product, categories = [] }) => {
         {/* Gradient overlay on hover */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-        {/* Top-left: discount / category badge */}
+        {/* Top-left: rank / discount / category badge */}
         <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
-          {discount > 0 ? (
+          {rank && (
+            <span className="px-3 py-1 text-[11px] font-black rounded-full uppercase tracking-widest shadow-md text-white"
+              style={{ background: 'linear-gradient(135deg, var(--brand-secondary), #f59e0b)' }}>
+              #{rank}
+            </span>
+          )}
+          {isComingSoon ? (
+            <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest bg-brand-primary text-white shadow-sm">
+              Coming Soon
+            </span>
+          ) : discount > 0 ? (
             <span className="px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-widest bg-brand-secondary text-brand-primary shadow-sm">
               -{discount}% OFF
             </span>
@@ -100,33 +111,45 @@ const ProductCard = ({ product, categories = [] }) => {
         </div>
 
         {/* Desktop hover: Quick Add overlay */}
-        <div className="absolute bottom-0 inset-x-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 p-3 hidden sm:block">
-          <button
-            onClick={handleQuickAdd}
-            disabled={!inStock || addingToCart}
-            className="w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-full transition-all duration-300 disabled:opacity-50 btn btn-primary shadow-lg"
-          >
-            {addingToCart
-              ? <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-              : <FiShoppingCart size={13} />
-            }
-            {inStock ? (addingToCart ? 'Adding…' : 'Add to Cart') : 'Out of Stock'}
-          </button>
-        </div>
+        {!isComingSoon && (
+          <div className="absolute bottom-0 inset-x-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 p-3 hidden sm:block">
+            <button
+              onClick={handleQuickAdd}
+              disabled={!inStock || addingToCart}
+              className="w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-full transition-all duration-300 disabled:opacity-50 btn btn-primary shadow-lg"
+            >
+              {addingToCart
+                ? <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                : <FiShoppingCart size={13} />
+              }
+              {inStock ? (addingToCart ? 'Adding…' : 'Add to Cart') : 'Out of Stock'}
+            </button>
+          </div>
+        )}
 
-        {/* Out of stock overlay */}
-        {!inStock && (
+        {/* Coming Soon / Out of stock overlay */}
+        {isComingSoon ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }}>
+             <span className="px-4 py-2 text-white text-xs font-bold rounded-full uppercase tracking-widest"
+              style={{ background: 'rgba(245,166,35,0.9)' }}>
+              Coming Soon
+            </span>
+            <span className="text-white text-xs font-bold tracking-widest">
+               {new Date(product.launchDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+            </span>
+          </div>
+        ) : !inStock ? (
           <div className="absolute inset-0 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(2px)' }}>
             <span className="px-4 py-2 text-white text-xs font-bold rounded-full uppercase tracking-widest"
               style={{ background: 'rgba(0,0,0,0.7)' }}>
               Out of Stock
             </span>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* ── Content ── */}
-      <div className="p-3 sm:p-5">
+      <div className="p-2.5 xs:p-3 sm:p-5 flex flex-col flex-1">
         {/* Rating */}
         <div className="flex items-center gap-1.5 mb-2">
           <div className="flex gap-0.5">
@@ -153,12 +176,12 @@ const ProductCard = ({ product, categories = [] }) => {
         </h3>
 
         {/* Description */}
-        <p className="text-xs line-clamp-2 leading-relaxed mb-4 min-h-[2rem] text-brand-text/60 font-light">
+        <p className="text-[11px] sm:text-xs line-clamp-2 leading-relaxed mb-3 min-h-[2rem] text-brand-text/60 font-light hidden sm:block">
           {product.description}
         </p>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-brand-primary/5">
+        <div className="pt-3 sm:pt-4 mt-auto border-t border-brand-primary/5">
           <div className="flex items-center justify-between">
             <div>
               {product.weight && (
@@ -194,11 +217,11 @@ const ProductCard = ({ product, categories = [] }) => {
             <button
               onClick={handleQuickAdd}
               disabled={addingToCart}
-              className="sm:hidden mt-4 w-full flex items-center justify-center gap-2 py-3 text-xs font-bold rounded-full transition-all duration-300 disabled:opacity-50 btn btn-primary"
+              className="sm:hidden mt-2.5 w-full flex items-center justify-center gap-1.5 py-2 xs:py-2.5 text-[11px] xs:text-xs font-bold rounded-full transition-all duration-300 disabled:opacity-50 btn btn-primary"
             >
               {addingToCart
-                ? <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                : <FiShoppingCart size={13} />
+                ? <div className="w-3 h-3 xs:w-3.5 xs:h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                : <FiShoppingCart size={12} className="xs:w-[13px] xs:h-[13px]" />
               }
               {addingToCart ? 'Adding…' : 'Add to Cart'}
             </button>

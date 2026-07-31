@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useConfirm } from '../../context/ConfirmContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
+import Papa from 'papaparse'
 
 /* ── Custom Image Upload Input ── */
 const ImageUploadInput = ({ name, value, onChange, placeholder, style, onFocus, onBlur }) => {
@@ -73,6 +74,10 @@ const AdminProducts = () => {
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [csvPreviewOpen, setCsvPreviewOpen] = useState(false)
+  const [csvHeaders, setCsvHeaders] = useState([])
+  const [csvData, setCsvData] = useState([])
+  const [csvFile, setCsvFile] = useState(null)
 
   useEffect(() => {
     if (!authLoading && hasPermission('products')) fetchData()
@@ -80,7 +85,7 @@ const AdminProducts = () => {
 
   const fetchData = async () => {
     try {
-      const [pRes, cRes] = await Promise.all([api.get('/api/products?all=true'), api.get('/api/categories')])
+      const [pRes, cRes] = await Promise.all([api.get('/api/products?all=true&limit=1000'), api.get('/api/categories')])
       setProducts(pRes.data.products)
       setCategories(cRes.data)
     } catch {
@@ -137,12 +142,36 @@ const AdminProducts = () => {
     }
   }
 
-  const handleImportCSV = async (e) => {
+  const handleImportCSV = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        if (results.data && results.data.length > 0) {
+          setCsvHeaders(Object.keys(results.data[0]))
+          setCsvData(results.data.slice(0, 5)) // show first 5 rows
+          setCsvFile(file)
+          setCsvPreviewOpen(true)
+        } else {
+          toast.error('CSV file is empty or invalid.')
+        }
+        e.target.value = ''
+      },
+      error: (error) => {
+        toast.error('Failed to parse CSV: ' + error.message)
+        e.target.value = ''
+      }
+    })
+  }
+
+  const confirmCSVImport = async () => {
+    if (!csvFile) return
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', csvFile)
     setImporting(true)
+    setCsvPreviewOpen(false)
     try {
       const res = await api.post('/api/products/import/csv', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -157,7 +186,7 @@ const AdminProducts = () => {
       toast.error('Failed to import CSV')
     } finally {
       setImporting(false)
-      e.target.value = '' // reset
+      setCsvFile(null)
     }
   }
 
@@ -183,7 +212,7 @@ const AdminProducts = () => {
   )
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+    <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
 
       {/* ── Premium Admin Header ── */}
       <div style={{ flexShrink: 0, position: 'relative', overflow: 'hidden', background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -202,8 +231,8 @@ const AdminProducts = () => {
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={() => {
-              const headers = ['name', 'description', 'price', 'mrp', 'category', 'stock', 'weight', 'isActive', 'featured', 'image', 'imageLeft', 'imageRight', 'imageTop', 'imagePackage'];
-              const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + ['Sample Ghee', 'Pure description', '500', '600', 'a2', '100', '500g', 'true', 'false', 'https://...', 'https://...', 'https://...', 'https://...', 'https://...'].join(",");
+              const headers = ['name', 'description', 'price', 'mrp', 'category', 'stock', 'weight', 'isActive', 'featured', 'launchDate', 'image', 'imageLeft', 'imageRight', 'imageTop', 'imagePackage'];
+              const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + ['Sample Ghee', 'Pure description', '500', '600', 'a2', '100', '500g', 'true', 'false', '2026-10-15T12:00', 'https://...', 'https://...', 'https://...', 'https://...', 'https://...'].join(",");
               const encodedUri = encodeURI(csvContent);
               const link = document.createElement("a");
               link.setAttribute("href", encodedUri);
@@ -240,7 +269,7 @@ const AdminProducts = () => {
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         {/* LEFT: Product List */}
-        <div className={selectedProduct ? 'hidden lg:flex' : 'flex'} style={{ width: '100%', maxWidth: 380, background: 'var(--bg-surface)', borderRight: '1px solid var(--border-color)', flexDirection: 'column', flexShrink: 0, display: selectedProduct ? 'none' : 'flex' }}>
+        <div className={selectedProduct ? 'hidden lg:flex' : 'flex'} style={{ width: '100%', maxWidth: 380, background: 'var(--bg-surface)', borderRight: '1px solid var(--border-color)', flexDirection: 'column', flexShrink: 0 }}>
           {/* Search */}
           <div style={{ padding: 16, borderBottom: '1px solid var(--border-color)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg-alt)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-input)', padding: '10px 12px' }}>
@@ -288,6 +317,7 @@ const AdminProducts = () => {
                           <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 600 }}>₹{p.price?.toLocaleString('en-IN')}</span>
                           {p.weight && <span style={{ fontSize: 10, background: 'rgba(245,166,35,0.1)', color: 'var(--brand-secondary)', border: '1px solid rgba(245,166,35,0.2)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>{p.weight}</span>}
                           {p.isActive === false && <span style={{ fontSize: 10, background: 'var(--bg-alt)', color: 'var(--text-muted)', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Inactive</span>}
+                          {p.launchDate && new Date(p.launchDate) > new Date() && <span style={{ fontSize: 10, background: 'rgba(245,166,35,0.1)', color: 'var(--brand-secondary)', border: '1px solid rgba(245,166,35,0.2)', padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>Coming Soon</span>}
                         </div>
                       </div>
                     </div>
@@ -299,7 +329,7 @@ const AdminProducts = () => {
         </div>
 
         {/* RIGHT: Edit Panel */}
-        <div className={!selectedProduct ? 'hidden lg:flex' : 'flex'} style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', flexDirection: 'column', display: !selectedProduct ? 'none' : 'flex' }}>
+        <div className={!selectedProduct ? 'hidden lg:flex' : 'flex'} style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', flexDirection: 'column' }}>
           <AnimatePresence mode="wait">
             {!selectedProduct ? (
               <motion.div
@@ -316,7 +346,7 @@ const AdminProducts = () => {
               <motion.div
                 key={selectedProduct._id}
                 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                style={{ width: '100%', maxWidth: 640, margin: '0 auto' }}
+                style={{ width: '100%', maxWidth: 960 }}
               >
                 {/* Mobile Back */}
                 <button onClick={() => setSelectedProduct(null)} className="lg:hidden" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', marginBottom: 16, transition: 'color 0.2s' }}
@@ -362,23 +392,25 @@ const AdminProducts = () => {
 
                 {/* Edit Form */}
                 <div style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)', padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product Name</label>
-                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
-                      onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Product Name</label>
+                      <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
+                        onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category</label>
+                      <CustomDropdown
+                        options={categoryOptions}
+                        value={form.category}
+                        onChange={val => setForm({ ...form, category: val })}
+                        placeholder="Select category"
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Category</label>
-                    <CustomDropdown
-                      options={categoryOptions}
-                      value={form.category}
-                      onChange={val => setForm({ ...form, category: val })}
-                      placeholder="Select category"
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     <div>
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Price (₹)</label>
                       <input type="number" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
@@ -410,6 +442,15 @@ const AdminProducts = () => {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Launch Date (Coming Soon)</label>
+                      <input type="datetime-local" value={form.launchDate ? new Date(form.launchDate).toISOString().slice(0, 16) : ''} onChange={e => setForm({ ...form, launchDate: e.target.value })} style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }}
+                        onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
+                    </div>
+                    <div></div>
+                  </div>
+
                   <div>
                     <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</label>
                     <textarea
@@ -421,8 +462,8 @@ const AdminProducts = () => {
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                    <div style={{ gridColumn: 'span 2' }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
                       <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Main Image URL</label>
                       <ImageUploadInput name="image" value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} placeholder="https://..." style={{ width: '100%', padding: '12px 16px', borderRadius: 'var(--radius-input)', border: '1.5px solid var(--border-color)', background: 'var(--bg-surface)', fontSize: 14, color: 'var(--text-primary)', outline: 'none', transition: 'border-color 0.2s', fontFamily: 'var(--font)' }} onFocus={e => e.currentTarget.style.borderColor = 'var(--brand-secondary)'} onBlur={e => e.currentTarget.style.borderColor = 'var(--border-color)'} />
                     </div>
@@ -482,6 +523,43 @@ const AdminProducts = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* CSV Preview Modal */}
+      <AnimatePresence>
+        {csvPreviewOpen && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setCsvPreviewOpen(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} style={{ position: 'relative', width: '95%', maxWidth: '85vw', background: 'var(--bg-surface)', borderRadius: 24, boxShadow: 'var(--shadow-lg)', overflow: 'hidden', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}>
+              <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-alt)' }}>
+                <h3 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>Preview CSV Import</h3>
+                <p style={{ margin: 0, marginTop: 4, fontSize: 14, color: 'var(--text-muted)' }}>Showing the first 5 rows of your uploaded file. Please verify the columns.</p>
+              </div>
+              <div style={{ padding: 24, overflowX: 'auto', flex: 1 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
+                  <thead>
+                    <tr>
+                      {csvHeaders.map(h => <th key={h} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvData.map((row, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        {csvHeaders.map(h => <td key={h} style={{ padding: '12px 16px', color: 'var(--text-primary)', whiteSpace: 'nowrap', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{row[h]}</td>)}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div style={{ padding: '20px 32px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-alt)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                <button onClick={() => setCsvPreviewOpen(false)} className="btn btn-secondary" style={{ padding: '10px 20px', borderRadius: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s' }}>Cancel</button>
+                <button onClick={confirmCSVImport} style={{ padding: '10px 20px', borderRadius: 12, border: 'none', background: 'var(--gold)', color: 'var(--navy)', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 14px rgba(245,166,35,0.3)' }} onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                  <FiUpload size={16} /> Confirm & Import
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

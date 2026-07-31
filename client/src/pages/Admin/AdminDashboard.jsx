@@ -66,7 +66,7 @@ const StatCard = ({ title, value, icon: Icon, gradient, iconBg, textColor = '#FF
         <div className="flex-1 min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest mb-2"
             style={{ color: gradient ? 'rgba(255,255,255,0.65)' : 'var(--text-muted)' }}>{title}</p>
-          <p className="text-3xl font-extrabold tabular-nums"
+          <p className="text-2xl sm:text-3xl font-extrabold tabular-nums"
             style={{ color: gradient ? textColor : 'var(--text-primary)', letterSpacing: '-0.03em', fontFamily: 'var(--font-display)' }}>
             {prefix}{animated.toLocaleString('en-IN')}
           </p>

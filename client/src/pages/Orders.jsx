@@ -192,7 +192,7 @@ const CancelModal = ({ order, onClose, onConfirm, loading }) => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="modal-box w-full max-w-md overflow-hidden bg-white border border-slate-100 shadow-[0_20px_50px_rgba(27,47,110,0.18)]"
+        className="modal-box sm:rounded-3xl rounded-t-3xl w-full sm:max-w-md overflow-hidden bg-white border border-slate-100 shadow-[0_20px_50px_rgba(27,47,110,0.18)]"
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">
@@ -271,7 +271,7 @@ const ReturnModal = ({ order, onClose, onConfirm, loading }) => {
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="modal-box w-full max-w-md overflow-hidden bg-white border border-slate-100 shadow-[0_20px_50px_rgba(27,47,110,0.18)]"
+        className="modal-box sm:rounded-3xl rounded-t-3xl w-full sm:max-w-md overflow-hidden bg-white border border-slate-100 shadow-[0_20px_50px_rgba(27,47,110,0.18)]"
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">

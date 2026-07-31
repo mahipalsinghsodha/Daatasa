@@ -31,7 +31,7 @@ const validateProduct = [
 // Whitelist of fields that clients may set on a product
 const ALLOWED_PRODUCT_FIELDS = [
   'name', 'description', 'price', 'mrp', 'image', 'imageLeft', 'imageRight', 'imageTop', 'imagePackage', 'images', 'category',
-  'stock', 'weight', 'featured', 'isActive', 'tags'
+  'stock', 'weight', 'featured', 'isActive', 'tags', 'launchDate'
 ];
 
 const pickAllowed = (body) => {
@@ -66,6 +66,15 @@ router.get('/', dbCheck, async (req, res) => {
     if (featured === 'true') query.featured = true;
     if (deals === 'true') {
       query.$expr = { $gt: ["$mrp", "$price"] };
+    }
+    if (req.query.comingSoon === 'true') {
+      query.launchDate = { $gt: new Date() };
+    } else {
+      // For normal product listings, we generally don't want to show coming soon products unless requested.
+      // However, to avoid breaking existing behavior where they might be shown, we'll only exclude them if comingSoon is false
+      if (req.query.comingSoon === 'false') {
+         query.launchDate = { $not: { $gt: new Date() } };
+      }
     }
 
     // ── Search: prefer $text index (fast), fall back to $regex only if needed
@@ -187,6 +196,7 @@ router.post('/import/csv', auth, auth.admin, auth.hasPermission('products'), upl
               imageRight: row.imageRight?.trim() || '',
               imageTop: row.imageTop?.trim() || '',
               imagePackage: row.imagePackage?.trim() || '',
+              launchDate: row.launchDate ? new Date(row.launchDate) : undefined,
             };
 
             // Check if product exists (by name)

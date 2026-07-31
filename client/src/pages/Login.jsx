@@ -199,9 +199,9 @@ const Login = () => {
           </Link>
 
           {/* Card */}
-          <div className="rounded-[1.75rem] p-10 sm:p-12 bg-white border border-brand-primary/10 shadow-[0_24px_80px_rgba(27,47,110,0.08)]">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-8">
-              <h2 className="text-[30px] sm:text-[34px] font-display font-bold text-brand-primary mb-2 tracking-tight leading-tight">
+          <div className="rounded-[1.5rem] sm:rounded-[1.75rem] p-6 xs:p-8 sm:p-12 bg-white border border-brand-primary/10 shadow-[0_24px_80px_rgba(27,47,110,0.08)]">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-[34px] font-display font-bold text-brand-primary mb-2 tracking-tight leading-tight">
                 {t('auth.welcomeBackTitle', 'Welcome Back!')}
               </h2>
               <p className="text-brand-text/60 font-medium text-[15px]">

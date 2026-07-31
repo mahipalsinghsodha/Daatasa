@@ -130,8 +130,8 @@ export default function AboutUs() {
 
           {/* Main Card */}
           <div className="lg:col-span-3">
-            <div className="rounded-[2rem] overflow-hidden bg-white border border-brand-primary/10 shadow-sm">
-              <div className="p-8 sm:p-12 space-y-12">
+            <div className="rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden bg-white border border-brand-primary/10 shadow-sm">
+              <div className="p-6 xs:p-8 sm:p-12 space-y-12">
 
                 {/* Section 1 — Story */}
                 <section id="section-1" className="scroll-mt-28">

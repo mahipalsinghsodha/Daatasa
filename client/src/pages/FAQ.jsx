@@ -121,8 +121,8 @@ export default function FAQ() {
 
           {/* ── MAIN CARD ── */}
           <div className="lg:col-span-3">
-            <div className="rounded-[2rem] overflow-hidden bg-white border border-brand-primary/10 shadow-sm">
-              <div className="p-8 sm:p-12 space-y-12">
+            <div className="rounded-[1.5rem] sm:rounded-[2rem] overflow-hidden bg-white border border-brand-primary/10 shadow-sm">
+              <div className="p-6 xs:p-8 sm:p-12 space-y-12">
                 {SECTIONS.map((section, si) => (
                   <section key={si} id={section.id} className="scroll-mt-28">
                     <SectionHeader emoji={section.emoji} title={section.label} />

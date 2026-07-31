@@ -123,7 +123,7 @@ export default function Contact() {
 
           {/* Form */}
           <div className="lg:col-span-3 min-w-0">
-            <div className="rounded-[2rem] p-5 sm:p-10 bg-white border border-brand-primary/10 shadow-sm overflow-hidden">
+            <div className="rounded-[1.5rem] sm:rounded-[2rem] p-5 sm:p-10 bg-white border border-brand-primary/10 shadow-sm overflow-hidden">
               {sent ? (
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center py-10">
                   <motion.div initial={{ scale: 0, rotate: -20 }} animate={{ scale: 1, rotate: 0 }}

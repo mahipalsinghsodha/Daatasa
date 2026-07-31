@@ -118,7 +118,7 @@ const AddProduct = () => {
   const [categories, setCategories] = useState([])
   const [formData, setFormData] = useState({
     name: '', description: '', category: '',
-    price: '', stock: '', weight: '500g', image: '', imageLeft: '', imageRight: '', imageTop: '', imagePackage: '', featured: false,
+    price: '', stock: '', weight: '500g', image: '', imageLeft: '', imageRight: '', imageTop: '', imagePackage: '', featured: false, launchDate: ''
   })
 
   const WEIGHT_OPTIONS = ['250g', '500g', '1kg', '3kg', '5kg', '10kg', '15kg']
@@ -355,6 +355,12 @@ const AddProduct = () => {
               <Field label="Stock (Units)" required half>
                 <input type="number" name="stock" value={formData.stock} onChange={handleChange}
                   required min="0" placeholder="0"
+                  style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
+              </Field>
+
+              {/* Launch Date */}
+              <Field label="Launch Date (Coming Soon)" hint="If set in the future, product will appear as 'Coming Soon'." half>
+                <input type="datetime-local" name="launchDate" value={formData.launchDate ? new Date(formData.launchDate).toISOString().slice(0, 16) : ''} onChange={handleChange}
                   style={inputStyle} onFocus={handleFocus} onBlur={handleBlur} />
               </Field>
 

@@ -49,7 +49,7 @@ const TrackOrder = () => {
       <div className="max-w-[1280px] mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto space-y-8">
           
-          <div className="rounded-[2rem] p-8 lg:p-10 shadow-sm bg-white border border-brand-primary/10">
+          <div className="rounded-[1.5rem] sm:rounded-[2rem] p-6 xs:p-8 sm:p-10 shadow-sm bg-white border border-brand-primary/10">
             <form onSubmit={handleTrack} className="space-y-6">
               <div className="space-y-5">
                 <div className="relative">

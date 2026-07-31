@@ -32,6 +32,17 @@ const Navbar = () => {
   const userMenuRef = useRef(null)
   const searchRef = useRef(null)
   const debounceTimeout = useRef(null)
+  const [categories, setCategories] = useState([])
+
+  useEffect(() => {
+    const fetchCats = async () => {
+      try {
+        const res = await api.get('/api/categories')
+        setCategories(res.data)
+      } catch (err) {}
+    }
+    fetchCats()
+  }, [])
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
@@ -137,8 +148,27 @@ const Navbar = () => {
           <nav className="hidden md:flex items-center gap-0.5">
             {isCustomer && (
               <>
+                <Link to="/" className={navLinkCls('/')}>
+                  {t('navbar.home', 'Home')}
+                  {isActive('/') && <motion.span layoutId="navActive" className="absolute bottom-0 left-3.5 right-3.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                </Link>
+
+                <div className="relative group">
+                  <button className="relative px-3.5 py-1.5 text-[13.5px] font-semibold rounded-lg transition-all duration-200 text-white/75 hover:text-white flex items-center gap-1">
+                    Categories <ChevronDown size={14} className="opacity-70 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="bg-[#132b69] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[200px] backdrop-blur-xl">
+                      {categories.map(c => (
+                        <Link key={c._id} to={`/products?category=${c.slug}`} className="block px-4 py-2.5 text-[13px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                          {c.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 {[
-                  { to: '/', label: t('navbar.home', 'Home') },
                   { to: '/products', label: t('navbar.shop', 'Products') },
                   { to: '/about', label: t('navbar.about', 'About Us') },
                   ...(user ? [{ to: '/support', label: t('navbar.help', 'Help') }] : []),
@@ -544,6 +574,18 @@ const Navbar = () => {
                         </Link>
                       </motion.div>
                     ))}
+                    {categories.length > 0 && (
+                      <div className="pt-3 pb-1 px-4 mt-1 border-t border-white/10">
+                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Shop by Category</p>
+                        <div className="flex flex-wrap gap-2">
+                          {categories.map(c => (
+                            <Link key={c._id} to={`/products?category=${c.slug}`} onClick={() => setMobileOpen(false)} className="px-3 py-1.5 rounded-lg bg-white/5 text-[12px] font-semibold text-white/80 hover:bg-white/15 hover:text-white transition-all border border-white/10">
+                              {c.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
                 {isAdmin && (

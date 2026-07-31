@@ -1,14 +1,15 @@
+import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { useTranslation } from 'react-i18next'
-import ProductCard from '../components/ProductCard'
-import { FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, FiAward, FiCheck, FiPlay, FiChevronLeft, FiChevronRight, FiMaximize2, FiClock, FiHeart, FiShoppingCart, FiEye } from 'react-icons/fi'
+import { FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, FiAward, FiCheck, FiPlay, FiEye, FiHeart } from 'react-icons/fi'
 
-// Animation variants
+import ProductCarousel from '../components/ProductCarousel'
+import HeroCarousel from '../components/HeroCarousel'
+
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 40 },
   whileInView: { opacity: 1, y: 0 },
@@ -25,10 +26,14 @@ const slideIn = (delay = 0, direction = "left") => ({
 
 export default function Home() {
   const { t } = useTranslation()
-  const [featuredProducts, setFeaturedProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [activeTestimonial, setActiveTestimonial] = useState(0)
+
+  // Product States for Carousels
+  const [bestSellers, setBestSellers] = useState([])
+  const [recommendedProducts, setRecommendedProducts] = useState([])
+  const [comingSoonProducts, setComingSoonProducts] = useState([])
+
   const [galleryFilter, setGalleryFilter] = useState('All')
 
   // Newsletter
@@ -54,18 +59,30 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true)
       try {
-        const [prodRes, catRes] = await Promise.all([
-          api.get('/api/products'),
+        const [
+          catRes,
+          bestRes,
+          recRes,
+          comingRes
+        ] = await Promise.all([
           api.get('/api/categories'),
+          api.get('/api/products?sort=rating&limit=10'),
+          api.get('/api/products?limit=8&page=2'), // Simulate recommended
+          api.get('/api/products?comingSoon=true&limit=8') // Fetch actual coming soon
         ])
-        let prods = Array.isArray(prodRes.data)
-          ? prodRes.data
-          : (prodRes.data.products ?? prodRes.data.data ?? [])
-          
-        setFeaturedProducts(prods.slice(0, 5)) // Get 5 products
+
         setCategories(catRes.data)
-      } catch (e) { console.error('Error fetching home data:', e) }
-      finally { setLoading(false) }
+
+        const extractProds = (res) => Array.isArray(res.data) ? res.data : (res.data.products ?? res.data.data ?? [])
+
+        setBestSellers(extractProds(bestRes))
+        setRecommendedProducts(extractProds(recRes))
+        setComingSoonProducts(extractProds(comingRes))
+      } catch (e) {
+        console.error('Error fetching home data:', e)
+      } finally {
+        setLoading(false)
+      }
     }
     fetchData()
   }, [])
@@ -116,91 +133,14 @@ export default function Home() {
         <title>Daatasa — Premium Vedic Bilona Ghee</title>
       </Helmet>
 
-      {/* ══════════ HERO SECTION (Split 50/50) ══════════ */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden">
-        {/* Background Gradients & Elements */}
-        <div className="absolute inset-0 bg-brand-bg -z-20" />
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-brand-primary -z-10 skew-x-[-12deg] translate-x-32 hidden lg:block" />
-        
-        <div className="max-w-[1440px] mx-auto w-full px-6 lg:px-12 grid lg:grid-cols-2 gap-12 items-center py-20">
-          {/* Left Content */}
-          <div className="max-w-xl relative z-10">
-            <motion.div {...fadeUp(0)} className="mb-4">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-[0.15em] text-brand-secondary bg-brand-secondary/10 border border-brand-secondary/20">
-                <FiAward size={14} /> {t('home.heroBadgeNew', 'Heritage of Rajasthan')}
-              </span>
-            </motion.div>
-            
-            <motion.h1 {...fadeUp(0.1)} className="text-4xl sm:text-5xl lg:text-7xl font-display font-bold leading-[1.1] mb-6 text-brand-primary">
-              {t('home.heroTitleNew', 'Pure Vedic Bilona')} <br />
-              <span className="text-brand-secondary italic">{t('home.heroSubNew', 'Desi Cow Ghee')}</span>
-            </motion.h1>
-            
-            <motion.p {...fadeUp(0.2)} className="text-base sm:text-lg text-brand-text/70 mb-8 sm:mb-10 leading-relaxed font-light">
-              {t('home.heroDescNew', 'Experience the pinnacle of purity with our traditionally hand-churned liquid gold. Crafted slowly in earthen pots to preserve authentic aroma, texture, and unmatched nutritional benefits.')}
-            </motion.p>
-            
-            <motion.div {...fadeUp(0.3)} className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 sm:gap-4 mb-10 sm:mb-14">
-              <Link to="/products" className="btn btn-primary group h-12 sm:h-14 px-6 sm:px-8 text-[14px] sm:text-[15px] rounded-full shadow-gold justify-center">
-                {t('home.shopBtn', 'Shop Collection')} <FiArrowRight className="group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link to="/about" className="btn btn-secondary h-12 sm:h-14 px-6 sm:px-8 text-[14px] sm:text-[15px] rounded-full justify-center">
-                {t('home.storyBtn', 'Explore Our Story')}
-              </Link>
-              <Link to="/track-order" className="btn btn-secondary h-14 px-8 text-[15px] rounded-full flex items-center gap-2 border border-brand-secondary/50">
-                <FiTruck size={18} /> {t('home.trackOrderBtn', 'Track Order')}
-              </Link>
-            </motion.div>
-
-            {/* Feature Mini Cards */}
-            <motion.div {...fadeUp(0.4)} className="grid grid-cols-2 gap-4">
-              {TRUST_ITEMS.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-brand-primary/10 shadow-sm transition-transform hover:-translate-y-1">
-                  <div className="w-10 h-10 rounded-full bg-brand-secondary/10 text-brand-secondary flex items-center justify-center shrink-0">
-                    {item.icon}
-                  </div>
-                  <div>
-                    <h4 className="text-[13px] font-bold text-brand-primary uppercase tracking-wide">{item.title}</h4>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Right Product Render */}
-          <motion.div {...slideIn(0.2, "right")} className="relative z-10 lg:pl-10">
-            <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-2xl group max-w-[400px] mx-auto lg:max-w-md">
-              <img 
-                src="/cows.png" 
-                alt="Daatasa Cows" 
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-brand-primary/80 to-transparent opacity-60" />
-              
-              {/* Floating Element */}
-              <motion.div 
-                animate={{ y: [0, -15, 0] }} 
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                className="absolute -left-6 top-1/4 p-4 glass rounded-2xl shadow-xl flex items-center gap-3 border border-white/20 hidden md:flex"
-              >
-                <div className="w-12 h-12 rounded-full bg-brand-secondary flex items-center justify-center text-white">
-                  <FiCheck size={20} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-brand-primary">{t('home.a2MilkLabel', '100% A2 Milk')}</p>
-                  <p className="text-xs text-brand-text/60">{t('home.labCertLabel', 'Lab Certified Purity')}</p>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* ══════════ HERO SECTION (Image Slider) ══════════ */}
+      <HeroCarousel />
 
       {/* ══════════ TRUST BAR ══════════ */}
-      <div className="max-w-[1280px] mx-auto px-6 -mt-8 relative z-20">
-        <motion.div {...fadeUp(0)} className="bg-white rounded-3xl shadow-xl border border-brand-primary/5 p-8 flex justify-between items-center flex-wrap gap-8">
+      <div className="max-w-[1280px] mx-auto px-6 -mt-8 relative z-20 mb-20">
+        <motion.div {...fadeUp(0)} className="bg-white rounded-3xl shadow-xl border border-brand-primary/5 p-6 md:p-8 flex md:justify-between items-center gap-8 overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {TRUST_ITEMS.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-4 group">
+            <div key={idx} className="flex items-center gap-4 group shrink-0 snap-center">
               <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center text-brand-secondary transition-transform duration-300 group-hover:scale-110 group-hover:bg-brand-secondary group-hover:text-white">
                 {item.icon}
               </div>
@@ -213,8 +153,47 @@ export default function Home() {
         </motion.div>
       </div>
 
+      {/* ══════════ BEST SELLERS ══════════ */}
+      <section className="py-12 bg-white">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <ProductCarousel
+            title={t('home.bestSellers', 'Best Sellers')}
+            subtitle={t('home.crowdFavorites', 'Crowd Favorites')}
+            products={bestSellers}
+            loading={loading}
+            viewAllLink="/products?sort=rating"
+            showRank={true}
+          />
+        </div>
+      </section>
+
+      {/* ══════════ RECOMMENDED PRODUCTS ══════════ */}
+      <section className="py-20 bg-brand-bg">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <ProductCarousel
+            title={t('home.recommendedProducts', 'Recommended For You')}
+            subtitle={t('home.curated', 'Curated Picks')}
+            products={recommendedProducts}
+            loading={loading}
+            viewAllLink="/products"
+          />
+        </div>
+      </section>
+
+      {/* ══════════ COMING SOON ══════════ */}
+      <section className="py-20 bg-white border-y border-brand-primary/5">
+        <div className="max-w-[1440px] mx-auto px-6">
+          <ProductCarousel
+            title={t('home.comingSoon', 'Coming Soon')}
+            subtitle={t('home.sneakPeek', 'Sneak Peek')}
+            products={comingSoonProducts}
+            loading={loading}
+          />
+        </div>
+      </section>
+
       {/* ══════════ ABOUT SECTION (Farm to Family) ══════════ */}
-      <section className="py-24 overflow-hidden relative">
+      <section className="py-24 overflow-hidden relative bg-[var(--ivory)] border-y border-brand-primary/5">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[100px] -z-10 translate-x-1/3 -translate-y-1/3" />
         
         <div className="max-w-[1280px] mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
@@ -252,101 +231,15 @@ export default function Home() {
             </motion.div>
             
             <motion.div {...fadeUp(0.5)}>
-              <Link to="/about" className="btn btn-secondary h-12 px-8 rounded-full">{t('home.storyBtn', 'Explore Our Story')}</Link>
+              <Link to="/about" className="btn btn-secondary h-12 px-8 rounded-full flex items-center justify-center w-max">{t('home.storyBtn', 'Explore Our Story')}</Link>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* ══════════ FEATURED CATEGORIES ══════════ */}
-      <section className="py-20 bg-white border-b border-brand-primary/5">
-        <div className="max-w-[1280px] mx-auto px-6">
-          <div className="flex justify-between items-end mb-12">
-            <div>
-              <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">{t('home.ourCollectionLabel', 'Our Collection')}</motion.h4>
-              <motion.h2 {...fadeUp(0.1)} className="text-3xl md:text-4xl font-display font-bold text-brand-primary">{t('home.topCategoriesLabel', 'Top Categories')}</motion.h2>
-            </div>
-            <motion.div {...fadeUp(0.2)}>
-              <Link to="/products" className="hidden sm:inline-flex items-center gap-2 text-sm font-bold text-brand-secondary hover:text-brand-primary transition-colors">
-                {t('home.exploreMoreLabel', 'Explore More')} <FiArrowRight size={16} />
-              </Link>
-            </motion.div>
-          </div>
-          
-          <div className="flex gap-4 sm:gap-8 overflow-x-auto pb-8 snap-x no-scrollbar items-start">
-            {categories.length > 0 ? categories.map((cat, idx) => (
-              <motion.div key={idx} {...fadeUp(idx * 0.1)} className="snap-start shrink-0 w-[100px] sm:w-[140px] text-center">
-                <Link to={`/products?category=${cat.slug}`} className="block group">
-                  <div className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px] mx-auto rounded-full overflow-hidden relative mb-4 shadow-sm group-hover:shadow-gold transition-all border border-brand-primary/10 group-hover:border-brand-secondary bg-[var(--ivory)]">
-                    <img 
-                      src={cat.image || 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=400&q=80'} 
-                      alt={cat.name} 
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                    />
-                  </div>
-                  <h3 className="text-xs sm:text-sm font-bold leading-tight text-brand-primary group-hover:text-brand-secondary transition-colors line-clamp-2">{cat.name}</h3>
-                </Link>
-              </motion.div>
-            )) : (
-              // Dummy Categories
-              ['Pure Ghee', 'Raw Honey', 'Organic Spices', 'Dry Fruits', 'Healthy Seeds', 'Herbal Teas'].map((name, idx) => (
-                <motion.div key={idx} {...fadeUp(idx * 0.1)} className="snap-start shrink-0 w-[100px] sm:w-[140px] text-center">
-                  <Link to={`/products`} className="block group">
-                    <div className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px] mx-auto rounded-full overflow-hidden relative mb-4 shadow-sm group-hover:shadow-gold transition-all border border-brand-primary/10 group-hover:border-brand-secondary bg-[var(--ivory)]">
-                      <img 
-                        src={`https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=400&q=80`} 
-                        alt={name} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
-                      />
-                    </div>
-                    <h3 className="text-xs sm:text-sm font-bold leading-tight text-brand-primary group-hover:text-brand-secondary transition-colors line-clamp-2">{name}</h3>
-                  </Link>
-                </motion.div>
-              ))
-            )}
-            
-            <motion.div {...fadeUp(0.6)} className="snap-start shrink-0 w-[100px] sm:w-[140px] text-center sm:hidden">
-              <Link to="/products" className="block group">
-                <div className="w-[90px] h-[90px] sm:w-[120px] sm:h-[120px] mx-auto rounded-full flex items-center justify-center relative mb-4 shadow-sm group-hover:shadow-gold transition-all border border-brand-primary/10 group-hover:border-brand-secondary bg-brand-primary/5 text-brand-primary group-hover:text-brand-secondary">
-                  <FiArrowRight size={24} />
-                </div>
-                <h3 className="text-xs sm:text-sm font-bold leading-tight text-brand-primary group-hover:text-brand-secondary transition-colors">{t('home.seeAllLabel', 'See All')}</h3>
-              </Link>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════ FEATURED PRODUCTS CAROUSEL ══════════ */}
-      <section className="py-24 bg-brand-bg">
-        <div className="max-w-[1440px] mx-auto px-6">
-          <div className="text-center mb-16">
-            <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">{t('home.exclusiveOfferingsLabel', 'Exclusive Offerings')}</motion.h4>
-            <motion.h2 {...fadeUp(0.1)} className="text-4xl md:text-5xl font-display font-bold text-brand-primary">{t('home.signatureProductsLabel', 'Our Signature Products')}</motion.h2>
-          </div>
-          
-          <div className="flex gap-8 overflow-x-auto pb-12 snap-x px-4 no-scrollbar">
-            {loading ? (
-               [...Array(4)].map((_, i) => <div key={i} className="shrink-0 w-80 h-[450px] bg-white rounded-3xl skeleton" />)
-            ) : featuredProducts.length > 0 ? (
-              featuredProducts.map((product, idx) => (
-                <motion.div key={product._id} {...fadeUp(idx * 0.1)} className="snap-center shrink-0 w-[280px] sm:w-[320px]">
-                  <ProductCard product={product} />
-                </motion.div>
-              ))
-            ) : (
-              <div className="w-full text-center py-20 text-brand-text/50">{t('home.noProductsLabel', 'No products available at the moment.')}</div>
-            )}
-          </div>
-          
-          <div className="text-center mt-4">
-            <Link to="/products" className="btn btn-secondary h-12 px-8 rounded-full">{t('home.viewCollectionLabel', 'View Entire Collection')}</Link>
-          </div>
-        </div>
-      </section>
 
       {/* ══════════ BILONA PROCESS SECTION (Ivory Luxury) ══════════ */}
-      <section className="py-24 bg-white text-brand-text overflow-hidden relative border-y border-brand-primary/5">
+      <section className="py-24 bg-white text-brand-text overflow-hidden relative border-b border-brand-primary/5">
         <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-brand-secondary/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
         
         <div className="max-w-[1280px] mx-auto px-6 relative z-10">
@@ -363,7 +256,7 @@ export default function Home() {
                 {t('home.processDescNew', "We don't make ghee from malai (cream). We follow the rigorous 4-step Vedic process mentioned in ancient texts. Every drop is crafted with patience, tradition, and devotion.")}
               </motion.p>
               <motion.div {...fadeUp(0.3)}>
-                <Link to="/about" className="btn btn-secondary h-14 px-8 rounded-full">
+                <Link to="/about" className="btn btn-secondary h-14 px-8 rounded-full flex items-center justify-center w-max">
                   {t('home.discoverMethodBtn', 'Discover The Method')}
                 </Link>
               </motion.div>
@@ -383,9 +276,9 @@ export default function Home() {
           </div>
           
           {/* Process Timeline below */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+          <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16 pb-6 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {PROCESS_STEPS.map((step, idx) => (
-              <motion.div key={idx} {...fadeUp(0.3 + idx * 0.1)} className="p-6 rounded-[2rem] bg-[var(--ivory)] border border-brand-primary/10 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-brand-secondary/30 transition-all">
+              <motion.div key={idx} {...fadeUp(0.3 + idx * 0.1)} className="shrink-0 w-[85%] sm:w-[320px] md:w-auto snap-center p-6 rounded-[2rem] bg-[var(--ivory)] border border-brand-primary/10 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-brand-secondary/30 transition-all">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-brand-secondary/10 rounded-bl-[4rem] -z-10 group-hover:scale-150 transition-transform duration-500" />
                 <div className="text-4xl font-display font-bold text-brand-secondary mb-4">{`0${idx + 1}`}</div>
                 <h4 className="text-lg font-bold text-brand-primary mb-2">{step.title}</h4>
@@ -407,9 +300,9 @@ export default function Home() {
             </motion.p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-6 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {WHY_CHOOSE.map((item, idx) => (
-              <motion.div key={idx} {...fadeUp(idx * 0.05)} className="p-8 rounded-3xl bg-brand-bg border border-brand-primary/5 hover:border-brand-secondary/30 transition-all hover:shadow-xl group">
+              <motion.div key={idx} {...fadeUp(idx * 0.05)} className="shrink-0 w-[85%] sm:w-[320px] md:w-auto snap-center p-8 rounded-3xl bg-brand-bg border border-brand-primary/5 hover:border-brand-secondary/30 transition-all hover:shadow-xl group">
                 <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-brand-secondary mb-6 shadow-sm group-hover:scale-110 transition-transform">
                   {item.icon}
                 </div>
@@ -423,7 +316,6 @@ export default function Home() {
 
       {/* ══════════ TESTIMONIALS ══════════ */}
       <section className="py-24 bg-brand-bg relative overflow-hidden">
-        {/* Decorative elements */}
         <div className="absolute top-10 left-10 text-9xl text-brand-primary/5 font-display italic">"</div>
         <div className="absolute bottom-10 right-10 text-9xl text-brand-primary/5 font-display italic rotate-180">"</div>
 
@@ -433,9 +325,9 @@ export default function Home() {
             <motion.h2 {...fadeUp(0.1)} className="text-4xl font-display font-bold text-brand-primary">Loved by Families</motion.h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-6 md:gap-8 pb-6 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {TESTIMONIALS.map((review, idx) => (
-              <motion.div key={idx} {...fadeUp(idx * 0.1)} className="bg-white p-10 rounded-[2rem] shadow-card relative border border-brand-primary/5">
+              <motion.div key={idx} {...fadeUp(idx * 0.1)} className="shrink-0 w-[85%] sm:w-[320px] md:w-auto snap-center bg-white p-10 rounded-[2rem] shadow-card relative border border-brand-primary/5 flex flex-col">
                 <div className="flex gap-1 mb-6 text-brand-secondary">
                   {[...Array(review.rating)].map((_, i) => <FiStar key={i} size={18} fill="currentColor" />)}
                 </div>
@@ -454,7 +346,7 @@ export default function Home() {
       </section>
 
       {/* ══════════ GALLERY (Masonry Layout) ══════════ */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-white border-y border-brand-primary/5">
         <div className="max-w-[1440px] mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12">
             <div>
@@ -490,10 +382,9 @@ export default function Home() {
       </section>
 
       {/* ══════════ CERTIFICATIONS ══════════ */}
-      <section className="py-16 bg-brand-bg border-y border-brand-primary/5">
+      <section className="py-16 bg-brand-bg border-b border-brand-primary/5">
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="flex flex-wrap justify-center gap-12 md:gap-24 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            {/* Dummy Certification Logos */}
             {['FSSAI', 'A2 Milk', '100% Natural', 'Lab Tested', 'Organic'].map((cert, i) => (
               <div key={i} className="flex flex-col items-center gap-3">
                 <div className="w-16 h-16 border-2 border-brand-primary rounded-full flex items-center justify-center text-brand-primary font-bold">
@@ -535,9 +426,8 @@ export default function Home() {
       </section>
 
       {/* ══════════ NEWSLETTER & LIMITED OFFER ══════════ */}
-      <section className="py-16 bg-white relative">
+      <section className="py-16 bg-white relative pb-24">
         <div className="max-w-[1280px] mx-auto px-6 grid lg:grid-cols-2 gap-10">
-          {/* Newsletter Card */}
           <motion.div {...fadeUp(0)} className="bg-brand-bg p-12 rounded-[2.5rem] relative overflow-hidden border border-brand-primary/5">
             <div className="absolute top-0 right-0 w-64 h-64 bg-brand-secondary/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
             
@@ -558,7 +448,6 @@ export default function Home() {
             </form>
           </motion.div>
 
-          {/* Limited Offer Banner */}
           <motion.div {...slideIn(0.2, "right")} className="bg-brand-primary rounded-[2.5rem] p-12 text-white relative overflow-hidden flex flex-col justify-center">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay" />
             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 opacity-20">
@@ -574,7 +463,7 @@ export default function Home() {
                 <div className="px-6 py-3 border border-white/20 rounded-xl bg-white/10 font-mono text-brand-secondary text-xl font-bold tracking-widest shadow-inner">
                   FIRST10
                 </div>
-                <Link to="/products" className="btn btn-accent h-[54px] px-8 rounded-full flex items-center shadow-gold">
+                <Link to="/products" className="btn btn-accent h-[54px] px-8 rounded-full flex items-center shadow-gold bg-brand-secondary text-brand-primary hover:bg-white transition-colors">
                   {t('home.orderNowBtn', 'Order Now')} <FiArrowRight className="ml-2" />
                 </Link>
               </div>

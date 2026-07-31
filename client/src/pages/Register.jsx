@@ -226,8 +226,9 @@ const Register = () => {
             <img src="/logo_rectangle.png" alt="Daatasa Logo" className="h-14 w-auto" />
           </Link>
 
-          <div className="rounded-[2rem] p-8 sm:p-10 bg-white border border-brand-primary/10 shadow-[0_24px_80px_rgba(27,47,110,0.08)]">
-            <div className="mb-8">
+          {/* Card */}
+          <div className="rounded-[1.5rem] sm:rounded-[2rem] p-6 xs:p-8 sm:p-10 bg-white border border-brand-primary/10 shadow-[0_24px_80px_rgba(27,47,110,0.08)]">
+            <div className="mb-6 sm:mb-8">
               <h1 className="text-3xl font-bold font-display text-brand-primary mb-2">{t('auth.createAccount', 'Create Account')}</h1>
               <p className="text-sm font-medium text-brand-text/60">
                 {t('auth.haveAccount', 'Already have one?')} {' '}

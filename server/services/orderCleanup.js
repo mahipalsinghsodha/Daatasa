@@ -30,12 +30,15 @@ const startOrderCleanup = () => {
       const bulkOps = [];
       for (const order of expiredOrders) {
         for (const item of order.orderItems) {
-          bulkOps.push({
-            updateOne: {
-              filter: { _id: item.product },
-              update: { $inc: { stock: item.quantity } }
-            }
-          });
+          const qtyToRestore = item.quantity || item.qty || 0;
+          if (qtyToRestore > 0) {
+            bulkOps.push({
+              updateOne: {
+                filter: { _id: item.product },
+                update: { $inc: { stock: qtyToRestore } }
+              }
+            });
+          }
         }
       }
       if (bulkOps.length > 0) await Product.bulkWrite(bulkOps);

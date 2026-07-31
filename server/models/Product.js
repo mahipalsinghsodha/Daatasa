@@ -113,7 +113,11 @@ const productSchema = new mongoose.Schema({
     comment:   { type: String, required: true },
     verified:  { type: Boolean, default: false },   // verified purchase
     createdAt: { type: Date, default: Date.now },
-  }]
+  }],
+  launchDate: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 });

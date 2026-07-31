@@ -344,11 +344,20 @@ const ManageOrders = () => {
               return (
                 <div key={o._id} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-card)', border: `1.5px solid ${isExp || isSelected ? 'var(--brand-secondary)' : 'var(--border-color)'}`, boxShadow: 'var(--shadow-sm)', overflow: 'hidden', transition: 'all 0.2s' }}>
                   {/* Row */}
-                  <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-4" style={{ padding: '16px 20px' }}>
                     
-                    <button onClick={() => toggleSelection(o._id)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
-                      {isSelected ? <FiCheckSquare size={18} color="var(--brand-secondary)" /> : <FiSquare size={18} />}
-                    </button>
+                    <div className="flex items-center justify-between sm:w-auto w-full">
+                      <button onClick={() => toggleSelection(o._id)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                        {isSelected ? <FiCheckSquare size={18} color="var(--brand-secondary)" /> : <FiSquare size={18} />}
+                      </button>
+                      
+                      {/* Mobile chevron on right */}
+                      <button onClick={() => setExpandedId(isExp ? null : o._id)}
+                        className="sm:hidden"
+                        style={{ width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0, border: 'none', cursor: 'pointer', ...(isExp ? { background: 'var(--brand-secondary)', color: '#fff' } : { background: 'var(--bg-alt)', color: 'var(--text-muted)' }) }}>
+                        <motion.div animate={{ rotate: isExp ? 180 : 0 }}><FiChevronDown size={15} /></motion.div>
+                      </button>
+                    </div>
 
                     <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => setExpandedId(isExp ? null : o._id)}>
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
@@ -362,15 +371,17 @@ const ManageOrders = () => {
                         <span className="flex items-center gap-1"><FiTag size={11} style={{ color: 'var(--brand-secondary)' }} />{o.orderItems?.length || 0} items</span>
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div className="flex items-center justify-between sm:justify-end gap-4" style={{ flexShrink: 0 }}>
                       <p style={{ fontSize: 18, fontWeight: 900, color: isVoid(o) ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: isVoid(o) ? 'line-through' : 'none', fontFamily: 'var(--font-display)' }}>
                         {fmtINR(o.totalPrice)}
                       </p>
+                      {/* Desktop chevron */}
+                      <button onClick={() => setExpandedId(isExp ? null : o._id)}
+                        className="hidden sm:flex"
+                        style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0, border: 'none', cursor: 'pointer', ...(isExp ? { background: 'var(--brand-secondary)', color: '#fff' } : { background: 'var(--bg-alt)', color: 'var(--text-muted)' }) }}>
+                        <motion.div animate={{ rotate: isExp ? 180 : 0 }}><FiChevronDown size={15} /></motion.div>
+                      </button>
                     </div>
-                    <button onClick={() => setExpandedId(isExp ? null : o._id)}
-                      style={{ width: 36, height: 36, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', flexShrink: 0, border: 'none', cursor: 'pointer', ...(isExp ? { background: 'var(--brand-secondary)', color: '#fff' } : { background: 'var(--bg-alt)', color: 'var(--text-muted)' }) }}>
-                      <motion.div animate={{ rotate: isExp ? 180 : 0 }}><FiChevronDown size={15} /></motion.div>
-                    </button>
                   </div>
 
                   {/* Expanded */}

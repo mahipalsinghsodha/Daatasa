@@ -177,21 +177,21 @@ const Cart = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -20, scale: 0.96 }}
                       transition={{ delay: idx * 0.04 }}
-                      className={`rounded-[2rem] p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 transition-all duration-300 bg-white border ${isOut ? 'border-red-500/30' : 'border-brand-primary/5'} shadow-sm hover:shadow-md ${isOut ? 'opacity-75' : ''}`}
+                      className={`rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 flex items-start sm:items-center gap-3 sm:gap-5 transition-all duration-300 bg-white border ${isOut ? 'border-red-500/30' : 'border-brand-primary/5'} shadow-sm hover:shadow-md ${isOut ? 'opacity-75' : ''}`}
                     >
                       {/* Image */}
                       <Link
                         to={`/products/${item.product?._id}`}
-                        className="w-full sm:w-28 sm:h-28 aspect-square rounded-[1.5rem] overflow-hidden shrink-0 hover:opacity-90 transition-opacity bg-[var(--ivory)] border border-brand-primary/5"
+                        className="w-20 h-20 sm:w-28 sm:h-28 shrink-0 rounded-2xl sm:rounded-[1.5rem] overflow-hidden hover:opacity-90 transition-opacity bg-[var(--ivory)] border border-brand-primary/5"
                       >
                         <img src={item.product?.image} alt={item.product?.name} className="w-full h-full object-cover" loading="lazy" />
                       </Link>
 
                       {/* Info */}
-                      <div className="flex-1 min-w-0 w-full">
-                        <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0 flex flex-col justify-between self-stretch">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h3 className="text-lg font-bold font-display text-brand-primary truncate">
+                            <h3 className="text-base sm:text-lg font-bold font-display text-brand-primary truncate leading-tight">
                               {item.product?.name}
                             </h3>
                             <p className="text-sm mt-1 capitalize flex items-center gap-2 font-medium text-brand-text/60">
@@ -204,16 +204,16 @@ const Cart = () => {
 
                           <button
                             onClick={() => removeItem(item._id)}
-                            className="w-10 h-10 flex items-center justify-center shrink-0 text-brand-text/30 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shrink-0 text-brand-text/30 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors -mt-1 sm:mt-0"
                             title="Remove item"
                           >
-                            <FiTrash2 size={16} />
+                            <FiTrash2 size={15} className="sm:w-4 sm:h-4" />
                           </button>
                         </div>
 
-                        <div className="flex items-center justify-between mt-4">
+                        <div className="flex items-center justify-between mt-auto pt-3">
                           {/* Qty Controls */}
-                          <div className={`flex items-center p-1 rounded-full border ${isOut ? 'border-red-500/30 bg-red-50' : 'border-brand-primary/10 bg-white'}`}>
+                          <div className={`flex items-center p-0.5 sm:p-1 rounded-full border ${isOut ? 'border-red-500/30 bg-red-50' : 'border-brand-primary/10 bg-white'}`}>
                             <button
                               disabled={updatingId === item._id || item.quantity <= 1}
                               onClick={() => updateQty(item._id, item.quantity - 1, stock)}
@@ -227,18 +227,18 @@ const Cart = () => {
                             <button
                               disabled={updatingId === item._id || atMax || isOut}
                               onClick={() => updateQty(item._id, item.quantity + 1, stock)}
-                              className="w-8 h-8 flex items-center justify-center transition-colors disabled:opacity-40 rounded-full text-brand-primary hover:bg-brand-primary/5"
+                              className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center transition-colors disabled:opacity-40 rounded-full text-brand-primary hover:bg-brand-primary/5"
                             >
-                              <FiPlus size={14} />
+                              <FiPlus size={13} className="sm:w-3.5 sm:h-3.5" />
                             </button>
                           </div>
 
                           {/* Price */}
-                          <div className="text-right">
-                            <div className={`text-xl font-bold font-display ${isOut ? 'text-brand-text/40 line-through' : 'text-brand-primary'}`}>
+                          <div className="text-right flex flex-col items-end">
+                            <div className={`text-base sm:text-xl font-bold font-display leading-none ${isOut ? 'text-brand-text/40 line-through' : 'text-brand-primary'}`}>
                               ₹{(item.product?.price * item.quantity).toLocaleString('en-IN')}
                             </div>
-                            <div className="text-xs font-medium mt-1 text-brand-text/50">₹{item.product?.price?.toLocaleString('en-IN')} each</div>
+                            <div className="text-[10px] sm:text-xs font-medium mt-0.5 text-brand-text/50">₹{item.product?.price?.toLocaleString('en-IN')} each</div>
                           </div>
                         </div>
                       </div>
