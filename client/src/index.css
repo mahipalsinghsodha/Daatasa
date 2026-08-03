@@ -440,6 +440,21 @@ html.dark .skeleton, html.dark .shimmer {
   animation: shimmerText 3s linear infinite;
 }
 
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee-mobile {
+  animation: marquee 20s linear infinite;
+}
+@media (min-width: 768px) {
+  .animate-marquee-mobile {
+    animation: none;
+    transform: none !important;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════
    SECTION HELPERS
    ═══════════════════════════════════════════════════════════ */

@@ -18,7 +18,7 @@ const Navbar = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { cartCount } = useCart()
-  const { unreadCount, toggleDrawer } = useNotificationStore()
+  const { unreadCount, toggleDrawer, setNotifications } = useNotificationStore()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -43,6 +43,20 @@ const Navbar = () => {
     }
     fetchCats()
   }, [])
+
+  useEffect(() => {
+    if (user) {
+      api.get('/api/notifications')
+        .then(res => {
+          if (res.data && res.data.notifications) {
+            setNotifications(res.data.notifications);
+          }
+        })
+        .catch(err => console.error('Failed to load notifications', err));
+    } else {
+      setNotifications([]);
+    }
+  }, [user, setNotifications])
 
   useEffect(() => {
     if (searchQuery.trim().length >= 2) {
@@ -155,13 +169,16 @@ const Navbar = () => {
 
                 <div className="relative group">
                   <button className="relative px-3.5 py-1.5 text-[13.5px] font-semibold rounded-lg transition-all duration-200 text-white/75 hover:text-white flex items-center gap-1">
-                    Categories <ChevronDown size={14} className="opacity-70 group-hover:rotate-180 transition-transform" />
+                    {t('navbar.categories', 'Categories')} <ChevronDown size={14} className="opacity-70 group-hover:rotate-180 transition-transform" />
                   </button>
                   <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="bg-[#132b69] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[200px] backdrop-blur-xl">
+                      <Link to="/products" className="block px-4 py-2.5 text-[13px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors border-b border-white/10 mb-1">
+                        {t('navbar.allCategories', 'All Categories')}
+                      </Link>
                       {categories.map(c => (
                         <Link key={c._id} to={`/products?category=${c.slug}`} className="block px-4 py-2.5 text-[13px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                          {c.name}
+                          {t(`category.${c.slug}`, c.name)}
                         </Link>
                       ))}
                     </div>
@@ -493,7 +510,7 @@ const Navbar = () => {
                       <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded-lg bg-black/20" />
                       <div className="flex-1">
                         <p className="text-[13px] font-bold text-white truncate">{item.name}</p>
-                        <p className="text-[11px] text-white/50">{item.category}</p>
+                        <p className="text-[11px] text-white/50">{t(`category.${item.category}`, item.category)}</p>
                       </div>
                       <span className="text-[13px] font-bold text-[var(--gold)]">₹{item.price}</span>
                     </Link>
@@ -576,11 +593,14 @@ const Navbar = () => {
                     ))}
                     {categories.length > 0 && (
                       <div className="pt-3 pb-1 px-4 mt-1 border-t border-white/10">
-                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Shop by Category</p>
+                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">{t('navbar.shopByCategory', 'Shop by Category')}</p>
                         <div className="flex flex-wrap gap-2">
+                          <Link to="/products" onClick={() => setMobileOpen(false)} className="px-3 py-1.5 rounded-lg bg-white/5 text-[12px] font-semibold text-brand-primary bg-brand-primary/10 hover:bg-brand-primary hover:text-white transition-all border border-brand-primary/20">
+                            {t('navbar.allCategories', 'All Categories')}
+                          </Link>
                           {categories.map(c => (
                             <Link key={c._id} to={`/products?category=${c.slug}`} onClick={() => setMobileOpen(false)} className="px-3 py-1.5 rounded-lg bg-white/5 text-[12px] font-semibold text-white/80 hover:bg-white/15 hover:text-white transition-all border border-white/10">
-                              {c.name}
+                              {t(`category.${c.slug}`, c.name)}
                             </Link>
                           ))}
                         </div>

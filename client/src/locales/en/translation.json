@@ -23,7 +23,10 @@
     "adminPanel": "Admin Panel",
     "getStarted": "Get Started",
     "signup": "Sign Up",
-    "seeAllResults": "See all results for"
+    "seeAllResults": "See all results for",
+    "categories": "Categories",
+    "shopByCategory": "Shop by Category",
+    "allCategories": "All Categories"
   },
   "footer": {
     "contactHeading": "Contact",
@@ -172,7 +175,22 @@
     "limitedOffer": "Limited Time Offer",
     "get10Off": "Get 10% OFF",
     "offerDesc": "On your first order of our premium Desi Cow Bilona Ghee.",
-    "orderNowBtn": "Order Now"
+    "orderNowBtn": "Order Now",
+    "ourHeritageLabel": "Our Heritage",
+    "farmToFamilyTitle": "From Our Farms",
+    "farmToFamilySub": "To Your Family",
+    "farmToFamilyDesc": "Nurtured with love in the pure environment of Khuri, Jaisalmer. Our free-grazing cows feed on natural organic grass, ensuring the milk produced is rich in vital nutrients. Every step of our process honors ancient traditions to bring you unparalleled purity.",
+    "cowsCount": "600+",
+    "happyCowsLabel": "Happy Cows",
+    "acresCount": "50+",
+    "acresFarmLabel": "Acres of Farm",
+    "trackOrderTitle": "Track Your Order",
+    "trackOrderDesc": "Waiting for your pure Bilona Ghee? Use our tracking portal to get real-time updates on your delivery status.",
+    "galleryAll": "All",
+    "galleryFarm": "Farm",
+    "galleryProducts": "Products",
+    "galleryBilona": "Bilona",
+    "galleryLifestyle": "Lifestyle"
   },
   "aboutUs": {
     "pageTitle": "About Us — Daatasa Pure Bilona Ghee",
@@ -560,5 +578,12 @@
     "orContinueWith": "Or continue with",
     "googleSignupBtn": "Sign up with Google",
     "termsPrivacyConsent": "By signing up you agree to our Terms & Privacy Policy"
+  },
+  "category": {
+    "a1": "A1",
+    "a2": "A2",
+    "bilona-ghee": "Bilona Ghee",
+    "desi-cow-ghee": "Desi Cow Ghee",
+    "a2-milk": "A2 Milk"
   }
 }

@@ -35,6 +35,11 @@ const Products = () => {
   const [loading,          setLoading]          = useState(true)
   const [error,            setError]            = useState(null)
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all')
+
+  useEffect(() => {
+    setSelectedCategory(searchParams.get('category') || 'all')
+  }, [searchParams])
+
   const [searchTerm,       setSearchTerm]       = useState('')
   const [debouncedSearch,  setDebouncedSearch]  = useState('')
   const [categories,       setCategories]       = useState([])

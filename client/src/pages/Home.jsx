@@ -89,28 +89,34 @@ export default function Home() {
 
   // Dummy data arrays for sections
   const TRUST_ITEMS = [
-    { icon: <FiAward size={24} />, title: "Farm Fresh", sub: "Direct from farms" },
-    { icon: <FiDroplet size={24} />, title: "Bilona Crafted", sub: "Traditional method" },
-    { icon: <FiShield size={24} />, title: "FSSAI Certified", sub: "Quality guaranteed" },
-    { icon: <FiTruck size={24} />, title: "Pan India", sub: "Fast & safe delivery" }
+    { icon: <FiAward size={24} />, title: t('home.trust1Title', "Farm Fresh"), sub: t('home.trust1Sub', "Direct from farms") },
+    { icon: <FiDroplet size={24} />, title: t('home.trust2Title', "Bilona Crafted"), sub: t('home.trust2Sub', "Traditional method") },
+    { icon: <FiShield size={24} />, title: t('home.trust3Title', "FSSAI Certified"), sub: t('home.trust3Sub', "Quality guaranteed") },
+    { icon: <FiTruck size={24} />, title: t('home.trust4Title', "Pan India"), sub: t('home.trust4Sub', "Fast & safe delivery") }
   ]
 
   const WHY_CHOOSE = [
-    { icon: <FiAward size={28} />, title: "100% Pure", text: "Unadulterated, uncompromised purity in every drop." },
-    { icon: <FiCheck size={28} />, title: "Lab Tested", text: "Rigorously tested to meet the highest safety standards." },
-    { icon: <FiHeart size={28} />, title: "Farm Fresh", text: "Sourced directly from trusted local farmers." },
-    { icon: <FiShield size={28} />, title: "Chemical Free", text: "Zero preservatives, zero artificial additives." },
-    { icon: <FiDroplet size={28} />, title: "Traditional Process", text: "Hand-churned using the authentic Vedic Bilona method." },
-    { icon: <FiTruck size={28} />, title: "Fast Delivery", text: "Delivered fresh to your doorstep across India." }
+    { icon: <FiAward size={28} />, title: t('home.wc1Title', "100% Pure"), text: t('home.wc1Text', "Unadulterated, uncompromised purity in every drop.") },
+    { icon: <FiCheck size={28} />, title: t('home.wc2Title', "Lab Tested"), text: t('home.wc2Text', "Rigorously tested to meet the highest safety standards.") },
+    { icon: <FiHeart size={28} />, title: t('home.wc3Title', "Farm Fresh"), text: t('home.wc3Text', "Sourced directly from trusted local farmers.") },
+    { icon: <FiShield size={28} />, title: t('home.wc4Title', "Chemical Free"), text: t('home.wc4Text', "Zero preservatives, zero artificial additives.") },
+    { icon: <FiDroplet size={28} />, title: t('home.wc5Title', "Traditional Process"), text: t('home.wc5Text', "Hand-churned using the authentic Vedic Bilona method.") },
+    { icon: <FiTruck size={28} />, title: t('home.wc6Title', "Fast Delivery"), text: t('home.wc6Text', "Delivered fresh to your doorstep across India.") }
   ]
 
   const TESTIMONIALS = [
-    { name: "Aarav Sharma", role: "Chef", rating: 5, text: "The rich aroma and granular texture are unmatched. It instantly elevates every dish I prepare. Highly recommended for culinary enthusiasts.", image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&h=150&fit=crop" },
-    { name: "Priya Desai", role: "Nutritionist", rating: 5, text: "Finding pure A2 ghee is difficult, but Daatasa delivers on its promise. It's truly authentic, easily digestible, and packed with nutrients.", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop" },
-    { name: "Vikram Singh", role: "Fitness Coach", rating: 5, text: "I start my day with Daatasa ghee in my coffee. It provides clean, sustained energy for my workouts and supports recovery.", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop" }
+    { name: t('home.t1Name', "Aarav Sharma"), role: t('home.t1Role', "Chef"), rating: 5, text: t('home.t1Comment', "The rich aroma and granular texture are unmatched. It instantly elevates every dish I prepare. Highly recommended for culinary enthusiasts."), image: "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=150&h=150&fit=crop" },
+    { name: t('home.t2Name', "Priya Desai"), role: t('home.t2Role', "Nutritionist"), rating: 5, text: t('home.t2Comment', "Finding pure A2 ghee is difficult, but Daatasa delivers on its promise. It's truly authentic, easily digestible, and packed with nutrients."), image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop" },
+    { name: t('home.t3Name', "Vikram Singh"), role: t('home.t3Role', "Fitness Coach"), rating: 5, text: t('home.t3Comment', "I start my day with Daatasa ghee in my coffee. It provides clean, sustained energy for my workouts and supports recovery."), image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop" }
   ]
 
-  const GALLERY_TABS = ['All', 'Farm', 'Products', 'Bilona', 'Lifestyle']
+  const GALLERY_TABS = [
+    t('home.galleryAll', 'All'), 
+    t('home.galleryFarm', 'Farm'), 
+    t('home.galleryProducts', 'Products'), 
+    t('home.galleryBilona', 'Bilona'), 
+    t('home.galleryLifestyle', 'Lifestyle')
+  ]
   const GALLERY_IMAGES = [
     { id: 1, cat: 'Farm', url: 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?w=600&h=800&fit=crop' },
     { id: 2, cat: 'Products', url: 'https://images.unsplash.com/photo-1526362456488-87e35b7501a3?w=600&h=400&fit=crop' },
@@ -121,10 +127,10 @@ export default function Home() {
   ]
 
   const PROCESS_STEPS = [
-    { title: "Milk Collection", desc: "Fresh A2 milk sourced from happy, free-grazing cows." },
-    { title: "Curd Culturing", desc: "Milk is boiled and traditionally set into curd overnight." },
-    { title: "Bilona Churning", desc: "Curd is hand-churned in wooden bilona to separate Makhan." },
-    { title: "Slow Heating", desc: "Makhan is slowly heated on cow-dung fire to craft liquid gold." }
+    { title: t('home.processStep1Title', "Milk Collection"), desc: t('home.processStep1Desc', "Fresh A2 milk sourced from happy, free-grazing cows.") },
+    { title: t('home.processStep2Title', "Curd Culturing"), desc: t('home.processStep2Desc', "Milk is boiled and traditionally set into curd overnight.") },
+    { title: t('home.processStep3Title', "Bilona Churning"), desc: t('home.processStep3Desc', "Curd is hand-churned in wooden bilona to separate Makhan.") },
+    { title: t('home.processStep4Title', "Slow Heating"), desc: t('home.processStep4Desc', "Makhan is slowly heated on cow-dung fire to craft liquid gold.") }
   ]
 
   return (
@@ -138,18 +144,20 @@ export default function Home() {
 
       {/* ══════════ TRUST BAR ══════════ */}
       <div className="max-w-[1280px] mx-auto px-6 -mt-8 relative z-20 mb-20">
-        <motion.div {...fadeUp(0)} className="bg-white rounded-3xl shadow-xl border border-brand-primary/5 p-6 md:p-8 flex md:justify-between items-center gap-8 overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {TRUST_ITEMS.map((item, idx) => (
-            <div key={idx} className="flex items-center gap-4 group shrink-0 snap-center">
-              <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center text-brand-secondary transition-transform duration-300 group-hover:scale-110 group-hover:bg-brand-secondary group-hover:text-white">
-                {item.icon}
+        <motion.div {...fadeUp(0)} className="bg-white rounded-3xl shadow-xl border border-brand-primary/5 p-6 md:p-8 overflow-hidden relative">
+          <div className="flex md:justify-between items-center gap-12 w-max md:w-full animate-marquee-mobile md:animate-none">
+            {[...TRUST_ITEMS, ...TRUST_ITEMS].map((item, idx) => (
+              <div key={idx} className={`flex items-center gap-4 group shrink-0 ${idx >= TRUST_ITEMS.length ? 'md:hidden' : ''}`}>
+                <div className="w-12 h-12 rounded-full bg-brand-bg flex items-center justify-center text-brand-secondary transition-transform duration-300 group-hover:scale-110 group-hover:bg-brand-secondary group-hover:text-white">
+                  {item.icon}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-brand-primary tracking-wide">{item.title}</h4>
+                  <p className="text-xs text-brand-text/60 mt-0.5">{item.sub}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-brand-primary tracking-wide">{item.title}</h4>
-                <p className="text-xs text-brand-text/60 mt-0.5">{item.sub}</p>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </motion.div>
       </div>
 
@@ -211,22 +219,22 @@ export default function Home() {
           </motion.div>
           
           <div className="max-w-lg">
-            <motion.h4 {...fadeUp(0.1)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-4">Our Heritage</motion.h4>
+            <motion.h4 {...fadeUp(0.1)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-4">{t('home.ourHeritageLabel', 'Our Heritage')}</motion.h4>
             <motion.h2 {...fadeUp(0.2)} className="text-4xl md:text-5xl font-display font-bold text-brand-primary leading-tight mb-6">
-              From Our Farms <br/> <span className="italic font-light">To Your Family</span>
+              {t('home.farmToFamilyTitle', 'From Our Farms')} <br/> <span className="italic font-light">{t('home.farmToFamilySub', 'To Your Family')}</span>
             </motion.h2>
             <motion.p {...fadeUp(0.3)} className="text-brand-text/70 mb-10 leading-relaxed font-light">
-              Nurtured with love in the pure environment of Khuri, Jaisalmer. Our free-grazing cows feed on natural organic grass, ensuring the milk produced is rich in vital nutrients. Every step of our process honors ancient traditions to bring you unparalleled purity.
+              {t('home.farmToFamilyDesc', 'Nurtured with love in the pure environment of Khuri, Jaisalmer. Our free-grazing cows feed on natural organic grass, ensuring the milk produced is rich in vital nutrients. Every step of our process honors ancient traditions to bring you unparalleled purity.')}
             </motion.p>
             
             <motion.div {...fadeUp(0.4)} className="grid grid-cols-2 gap-8 mb-10">
               <div>
                 <h3 className="text-4xl font-display font-bold text-brand-secondary mb-1">600+</h3>
-                <p className="text-sm text-brand-text/60 font-medium">Happy Cows</p>
+                <p className="text-sm text-brand-text/60 font-medium">{t('home.happyCowsLabel', 'Happy Cows')}</p>
               </div>
               <div>
                 <h3 className="text-4xl font-display font-bold text-brand-secondary mb-1">50+</h3>
-                <p className="text-sm text-brand-text/60 font-medium">Acres of Farm</p>
+                <p className="text-sm text-brand-text/60 font-medium">{t('home.acresFarmLabel', 'Acres of Farm')}</p>
               </div>
             </motion.div>
             
@@ -276,16 +284,18 @@ export default function Home() {
           </div>
           
           {/* Process Timeline below */}
-          <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16 pb-6 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {PROCESS_STEPS.map((step, idx) => (
-              <motion.div key={idx} {...fadeUp(0.3 + idx * 0.1)} className="shrink-0 w-[85%] sm:w-[320px] md:w-auto snap-center p-6 rounded-[2rem] bg-[var(--ivory)] border border-brand-primary/10 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-brand-secondary/30 transition-all">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-secondary/10 rounded-bl-[4rem] -z-10 group-hover:scale-150 transition-transform duration-500" />
-                <div className="text-4xl font-display font-bold text-brand-secondary mb-4">{`0${idx + 1}`}</div>
-                <h4 className="text-lg font-bold text-brand-primary mb-2">{step.title}</h4>
-                <p className="text-sm text-brand-text/60 font-light">{step.desc}</p>
-              </motion.div>
-            ))}
-          </div>
+          <motion.div {...fadeUp(0.3)} className="overflow-hidden relative mt-12 md:mt-16 pb-6 -mx-6 px-6 md:mx-0 md:px-0">
+            <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-6 w-max md:w-full animate-marquee-mobile md:animate-none">
+              {[...PROCESS_STEPS, ...PROCESS_STEPS].map((step, idx) => (
+                <div key={idx} className={`shrink-0 w-[260px] md:w-auto p-5 md:p-6 rounded-3xl bg-[var(--ivory)] border border-brand-primary/10 shadow-sm relative overflow-hidden group hover:shadow-md hover:border-brand-secondary/30 transition-all ${idx >= PROCESS_STEPS.length ? 'md:hidden' : ''}`}>
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-brand-secondary/10 rounded-bl-[4rem] -z-10 group-hover:scale-150 transition-transform duration-500" />
+                  <div className="text-3xl md:text-4xl font-display font-bold text-brand-secondary mb-3 md:mb-4">{`0${(idx % PROCESS_STEPS.length) + 1}`}</div>
+                  <h4 className="text-base md:text-lg font-bold text-brand-primary mb-1 md:mb-2">{step.title}</h4>
+                  <p className="text-xs md:text-sm text-brand-text/60 font-light leading-relaxed">{step.desc}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -300,17 +310,19 @@ export default function Home() {
             </motion.p>
           </div>
           
-          <div className="flex overflow-x-auto md:grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 pb-6 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {WHY_CHOOSE.map((item, idx) => (
-              <motion.div key={idx} {...fadeUp(idx * 0.05)} className="shrink-0 w-[85%] sm:w-[320px] md:w-auto snap-center p-8 rounded-3xl bg-brand-bg border border-brand-primary/5 hover:border-brand-secondary/30 transition-all hover:shadow-xl group">
-                <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-brand-secondary mb-6 shadow-sm group-hover:scale-110 transition-transform">
-                  {item.icon}
+          <motion.div {...fadeUp(0.3)} className="overflow-hidden relative pb-6 -mx-6 px-6 md:mx-0 md:px-0">
+            <div className="flex md:grid md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8 w-max md:w-full animate-marquee-mobile md:animate-none">
+              {[...WHY_CHOOSE, ...WHY_CHOOSE].map((item, idx) => (
+                <div key={idx} className={`shrink-0 w-[260px] md:w-auto p-6 md:p-8 rounded-3xl bg-brand-bg border border-brand-primary/5 hover:border-brand-secondary/30 transition-all hover:shadow-xl group ${idx >= WHY_CHOOSE.length ? 'md:hidden' : ''}`}>
+                  <div className="w-12 h-12 md:w-16 md:h-16 rounded-2xl bg-white flex items-center justify-center text-brand-secondary mb-4 md:mb-6 shadow-sm group-hover:scale-110 transition-transform">
+                    {item.icon}
+                  </div>
+                  <h4 className="text-base md:text-xl font-bold text-brand-primary mb-2 md:mb-3">{item.title}</h4>
+                  <p className="text-xs md:text-base text-brand-text/60 font-light leading-relaxed">{item.text}</p>
                 </div>
-                <h4 className="text-xl font-bold text-brand-primary mb-3">{item.title}</h4>
-                <p className="text-brand-text/60 font-light leading-relaxed">{item.text}</p>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -321,27 +333,29 @@ export default function Home() {
 
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="text-center mb-16">
-            <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">Testimonials</motion.h4>
-            <motion.h2 {...fadeUp(0.1)} className="text-4xl font-display font-bold text-brand-primary">Loved by Families</motion.h2>
+            <motion.h4 {...fadeUp(0)} className="text-sm font-bold uppercase tracking-[0.2em] text-brand-secondary mb-2">{t('home.testimonialTag', 'Testimonials')}</motion.h4>
+            <motion.h2 {...fadeUp(0.1)} className="text-4xl font-display font-bold text-brand-primary">{t('home.testimonialTitle', 'Loved by Families')}</motion.h2>
           </div>
 
-          <div className="flex overflow-x-auto md:grid md:grid-cols-3 gap-6 md:gap-8 pb-6 -mx-6 px-6 md:mx-0 md:px-0 snap-x snap-mandatory [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {TESTIMONIALS.map((review, idx) => (
-              <motion.div key={idx} {...fadeUp(idx * 0.1)} className="shrink-0 w-[85%] sm:w-[320px] md:w-auto snap-center bg-white p-10 rounded-[2rem] shadow-card relative border border-brand-primary/5 flex flex-col">
-                <div className="flex gap-1 mb-6 text-brand-secondary">
-                  {[...Array(review.rating)].map((_, i) => <FiStar key={i} size={18} fill="currentColor" />)}
-                </div>
-                <p className="text-brand-text/70 italic leading-relaxed mb-8 font-serif">"{review.text}"</p>
-                <div className="flex items-center gap-4 mt-auto">
-                  <img src={review.image} alt={review.name} className="w-12 h-12 rounded-full object-cover shadow-md" />
-                  <div>
-                    <h5 className="font-bold text-brand-primary text-sm">{review.name}</h5>
-                    <p className="text-xs text-brand-text/50">{review.role}</p>
+          <motion.div {...fadeUp(0.2)} className="overflow-hidden relative pb-6 -mx-6 px-6 md:mx-0 md:px-0">
+            <div className="flex md:grid md:grid-cols-3 gap-5 md:gap-8 w-max md:w-full animate-marquee-mobile md:animate-none">
+              {[...TESTIMONIALS, ...TESTIMONIALS].map((review, idx) => (
+                <div key={idx} className={`shrink-0 w-[280px] md:w-auto bg-white p-6 md:p-10 rounded-[2rem] shadow-card relative border border-brand-primary/5 flex flex-col ${idx >= TESTIMONIALS.length ? 'md:hidden' : ''}`}>
+                  <div className="flex gap-1 mb-4 md:mb-6 text-brand-secondary">
+                    {[...Array(review.rating)].map((_, i) => <FiStar key={i} size={16} fill="currentColor" className="w-[14px] md:w-[18px]" />)}
+                  </div>
+                  <p className="text-xs md:text-base text-brand-text/70 italic leading-relaxed mb-6 md:mb-8 font-serif">"{review.text}"</p>
+                  <div className="flex items-center gap-3 md:gap-4 mt-auto">
+                    <img src={review.image} alt={review.name} className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-md" />
+                    <div>
+                      <h5 className="font-bold text-brand-primary text-xs md:text-sm">{review.name}</h5>
+                      <p className="text-[10px] md:text-xs text-brand-text/50">{review.role}</p>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
@@ -354,15 +368,23 @@ export default function Home() {
               <motion.p {...fadeUp(0.1)} className="text-brand-text/60">Glimpses of our heritage and process.</motion.p>
             </div>
             <motion.div {...fadeUp(0.2)} className="flex flex-wrap gap-2 justify-center">
-              {GALLERY_TABS.map(tab => (
-                <button
-                  key={tab}
-                  onClick={() => setGalleryFilter(tab)}
-                  className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${galleryFilter === tab ? 'bg-brand-primary text-white shadow-md' : 'bg-brand-bg text-brand-primary hover:bg-brand-secondary/10'}`}
+              {GALLERY_TABS.map((tab, idx) => {
+              const tabKeys = ['All', 'Farm', 'Products', 'Bilona', 'Lifestyle'];
+              const rawTab = tabKeys[idx];
+              return (
+                <button 
+                  key={idx}
+                  onClick={() => setGalleryFilter(rawTab)}
+                  className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
+                    galleryFilter === rawTab 
+                      ? 'bg-brand-primary text-white shadow-md' 
+                      : 'bg-brand-bg text-brand-text/60 hover:bg-brand-primary/5 hover:text-brand-primary'
+                  }`}
                 >
                   {tab}
                 </button>
-              ))}
+              );
+            })}
             </motion.div>
           </div>
 
@@ -406,18 +428,18 @@ export default function Home() {
             
             <div className="relative z-10 max-w-xl text-white">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-brand-secondary/20 flex items-center justify-center text-brand-secondary">
-                  <FiTruck size={20} />
+                <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-brand-secondary/20 flex items-center justify-center text-brand-secondary">
+                  <FiTruck size={20} className="md:w-6 md:h-6" />
                 </div>
-                <h3 className="text-2xl md:text-3xl font-display font-bold">Track Your Order</h3>
+                <h3 className="text-2xl md:text-3xl font-display font-bold text-white">{t('home.trackOrderTitle', 'Track Your Order')}</h3>
               </div>
-              <p className="text-white/70 text-base md:text-lg font-light leading-relaxed">
-                Waiting for your pure Bilona Ghee? Use our tracking portal to get real-time updates on your delivery status.
+              <p className="text-white/80 text-base md:text-lg font-light leading-relaxed">
+                {t('home.trackOrderDesc', 'Waiting for your pure Bilona Ghee? Use our tracking portal to get real-time updates on your delivery status.')}
               </p>
             </div>
             
             <div className="relative z-10 w-full md:w-auto shrink-0">
-               <Link to="/track-order" className="btn btn-secondary h-14 px-10 text-[15px] rounded-full flex items-center justify-center gap-2 shadow-gold whitespace-nowrap w-full">
+               <Link to="/track-order" className="btn btn-primary h-14 px-10 text-[15px] rounded-full flex items-center justify-center gap-2 shadow-gold whitespace-nowrap w-full">
                  Track Now <FiArrowRight />
                </Link>
             </div>
@@ -426,13 +448,13 @@ export default function Home() {
       </section>
 
       {/* ══════════ NEWSLETTER & LIMITED OFFER ══════════ */}
-      <section className="py-16 bg-white relative pb-24">
-        <div className="max-w-[1280px] mx-auto px-6 grid lg:grid-cols-2 gap-10">
-          <motion.div {...fadeUp(0)} className="bg-brand-bg p-12 rounded-[2.5rem] relative overflow-hidden border border-brand-primary/5">
+      <section className="py-12 bg-white relative pb-20">
+        <div className="max-w-[1280px] mx-auto px-6 grid lg:grid-cols-2 gap-8 md:gap-10">
+          <motion.div {...fadeUp(0)} className="bg-brand-bg p-8 md:p-10 rounded-[2rem] relative overflow-hidden border border-brand-primary/5">
             <div className="absolute top-0 right-0 w-64 h-64 bg-brand-secondary/10 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2" />
             
-            <h3 className="text-3xl font-display font-bold text-brand-primary mb-4">{t('home.joinFamilyTitle', 'Join The Daatasa Family')}</h3>
-            <p className="text-brand-text/70 mb-8 font-light">{t('home.joinFamilyDesc', 'Subscribe to get exclusive health tips, early access to new products, and special family-only discounts.')}</p>
+            <h3 className="text-2xl md:text-3xl font-display font-bold text-brand-primary mb-3">{t('home.joinFamilyTitle', 'Join The Daatasa Family')}</h3>
+            <p className="text-brand-text/70 mb-6 font-light">{t('home.joinFamilyDesc', 'Subscribe to get exclusive health tips, early access to new products, and special family-only discounts.')}</p>
             
             <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
               <input 
@@ -440,30 +462,30 @@ export default function Home() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder={t('home.emailPlaceholder', 'Enter your email address')} 
-                className="flex-1 px-6 py-4 rounded-xl bg-white border border-brand-primary/10 focus:border-brand-secondary outline-none shadow-sm text-sm"
+                className="flex-1 px-5 py-3.5 rounded-xl bg-white border border-brand-primary/10 focus:border-brand-secondary outline-none shadow-sm text-sm"
               />
-              <button type="submit" disabled={subscribing} className="btn btn-primary h-[54px] px-8 rounded-full whitespace-nowrap">
+              <button type="submit" disabled={subscribing} className="btn btn-primary h-[50px] px-6 rounded-full whitespace-nowrap">
                 {subscribing ? t('home.subscribingBtn', 'Joining...') : t('home.subscribeBtn', 'Subscribe Now')}
               </button>
             </form>
           </motion.div>
 
-          <motion.div {...slideIn(0.2, "right")} className="bg-brand-primary rounded-[2.5rem] p-12 text-white relative overflow-hidden flex flex-col justify-center">
+          <motion.div {...slideIn(0.2, "right")} className="bg-brand-primary rounded-[2rem] p-8 md:p-10 text-white relative overflow-hidden flex flex-col justify-center">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay" />
             <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/4 opacity-20">
-              <FiAward size={240} />
+              <FiAward size={200} />
             </div>
             
             <div className="relative z-10">
-              <span className="inline-block px-3 py-1 rounded bg-brand-secondary text-brand-primary text-xs font-bold uppercase tracking-widest mb-4">{t('home.limitedOffer', 'Limited Time Offer')}</span>
-              <h3 className="text-4xl font-display font-bold mb-4 text-white">{t('home.get10Off', 'Get 10% OFF')}</h3>
-              <p className="text-white/70 mb-8 text-lg font-light">{t('home.offerDesc', 'On your first order of our premium Desi Cow Bilona Ghee.')}</p>
+              <span className="inline-block px-3 py-1 rounded bg-brand-secondary text-brand-primary text-[10px] md:text-xs font-bold uppercase tracking-widest mb-3">{t('home.limitedOffer', 'Limited Time Offer')}</span>
+              <h3 className="text-3xl md:text-4xl font-display font-bold mb-3 text-white">{t('home.get10Off', 'Get 10% OFF')}</h3>
+              <p className="text-white/70 mb-6 text-sm md:text-base font-light">{t('home.offerDesc', 'On your first order of our premium Desi Cow Bilona Ghee.')}</p>
               
-              <div className="flex items-center gap-4">
-                <div className="px-6 py-3 border border-white/20 rounded-xl bg-white/10 font-mono text-brand-secondary text-xl font-bold tracking-widest shadow-inner">
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="w-full sm:w-auto px-5 py-3 border border-white/20 rounded-xl bg-white/10 font-mono text-brand-secondary text-lg md:text-xl font-bold tracking-widest shadow-inner text-center">
                   FIRST10
                 </div>
-                <Link to="/products" className="btn btn-accent h-[54px] px-8 rounded-full flex items-center shadow-gold bg-brand-secondary text-brand-primary hover:bg-white transition-colors">
+                <Link to="/products" className="btn btn-accent w-full sm:w-auto h-[50px] px-6 rounded-full flex items-center justify-center shadow-gold bg-brand-secondary text-brand-primary hover:bg-white transition-colors">
                   {t('home.orderNowBtn', 'Order Now')} <FiArrowRight className="ml-2" />
                 </Link>
               </div>

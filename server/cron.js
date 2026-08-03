@@ -3,6 +3,7 @@ const Product = require('./models/Product');
 const User = require('./models/User');
 const { sendLowStockAlertEmail, sendAbandonedCartEmail } = require('./services/emailService');
 const Cart = require('./models/Cart');
+const Notification = require('./models/Notification');
 
 const initCronJobs = () => {
   // Run every day at 10:00 AM (0 10 * * *)
@@ -80,6 +81,21 @@ const initCronJobs = () => {
       }
     } catch (error) {
       console.error('[CRON] Error running abandoned cart check:', error);
+    }
+  });
+
+  // Run every day at midnight (0 0 * * *)
+  cron.schedule('0 0 * * *', async () => {
+    console.log('[CRON] Running daily read-notifications cleanup...');
+    try {
+      const result = await Notification.deleteMany({ isRead: true });
+      if (result.deletedCount > 0) {
+        console.log(`[CRON] Deleted ${result.deletedCount} read notifications.`);
+      } else {
+        console.log('[CRON] No read notifications found to delete.');
+      }
+    } catch (error) {
+      console.error('[CRON] Error deleting read notifications:', error);
     }
   });
 
