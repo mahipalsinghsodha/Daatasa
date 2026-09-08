@@ -184,11 +184,19 @@ export default function Home() {
       <Helmet>
         <title>Daatasa — Premium Vedic Bilona Ghee | 100% Pure Desi Cow Ghee</title>
         <meta name="description" content="Experience the pinnacle of purity with Daatasa authentic A2 Vedic Bilona Ghee, traditionally hand-churned from free-grazing cows in Khuri, Jaisalmer. Fast delivery across India." />
-        <meta name="keywords" content="A2 ghee, Bilona Ghee, Desi Cow Ghee, Vedic Ghee, Organic Ghee, Daatasa, Pure Ghee Rajasthan" />
-        <meta property="og:title" content="Daatasa — Premium Vedic Bilona Ghee" />
-        <meta property="og:description" content="Handcrafted Vedic Bilona Ghee direct from our Khuri farm in Rajasthan to your family." />
+        <meta name="keywords" content="Daatasa, daatasa.com, A2 ghee, Bilona Ghee, Desi Cow Ghee, Vedic Ghee, Organic Ghee, Pure Ghee Rajasthan, buy ghee online" />
+        <link rel="canonical" href="https://daatasa.com/" />
+        <meta property="og:title" content="Daatasa — Premium Vedic Bilona Ghee | 100% Pure Desi Cow Ghee" />
+        <meta property="og:description" content="Handcrafted Vedic Bilona Ghee direct from our Khuri farm in Rajasthan to your family. 100% Pure & Lab Tested." />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://daatasa.com/" />
+        <meta property="og:image" content="https://daatasa.com/gallery-jar.png" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Daatasa — Premium Vedic Bilona Ghee" />
+        <meta name="twitter:description" content="Handcrafted Vedic Bilona Ghee direct from Rajasthan to your doorstep." />
+        <meta name="twitter:image" content="https://daatasa.com/gallery-jar.png" />
       </Helmet>
+
 
       {/* ══════════ HERO SECTION (Image Slider) ══════════ */}
       <HeroCarousel />

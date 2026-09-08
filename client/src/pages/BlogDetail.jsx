@@ -46,12 +46,53 @@ const BlogDetail = () => {
     )
   }
 
+  const plainSummary = blog.content?.substring(0, 160).replace(/<[^>]*>?/gm, '') || 'Read authentic insights on pure Vedic A2 Bilona Desi Cow Ghee and traditional dairy wellness from Daatasa.'
+  const blogImage = blog.images?.[0] || 'https://daatasa.com/gallery-jar.png'
+  const blogUrl = `https://daatasa.com/blogs/${blog.slug}`
+
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text pb-12 sm:pb-16">
       <Helmet>
-        <title>{blog.title} — Daatasa</title>
-        <meta name="description" content={blog.content?.substring(0, 150).replace(/<[^>]*>?/gm, '')} />
+        <title>{blog.title} — Daatasa Journal</title>
+        <meta name="description" content={plainSummary} />
+        <link rel="canonical" href={blogUrl} />
+        <meta property="og:title" content={`${blog.title} — Daatasa`} />
+        <meta property="og:description" content={plainSummary} />
+        <meta property="og:image" content={blogImage} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={blogUrl} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={blog.title} />
+        <meta name="twitter:description" content={plainSummary} />
+        <meta name="twitter:image" content={blogImage} />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: blog.title,
+          description: plainSummary,
+          image: [blogImage],
+          datePublished: blog.createdAt,
+          dateModified: blog.updatedAt || blog.createdAt,
+          author: {
+            '@type': 'Organization',
+            name: blog.author || 'Daatasa Team',
+            url: 'https://daatasa.com'
+          },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Daatasa',
+            logo: {
+              '@type': 'ImageObject',
+              url: 'https://daatasa.com/logo_circle.png'
+            }
+          },
+          mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': blogUrl
+          }
+        })}</script>
       </Helmet>
+
 
       {/* Header Image */}
       <div className="w-full h-[32vh] sm:h-[45vh] relative bg-brand-primary overflow-hidden">

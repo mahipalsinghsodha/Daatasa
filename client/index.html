@@ -3,33 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#b45309" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Daatasa" />
 
     <!-- ── Primary SEO ─────────────────────────────────────────────── -->
-    <title>Daatasa — Premium Bilona Desi Ghee | Order Online India</title>
-    <meta name="description" content="Buy pure, lab-tested Bilona Desi Ghee online. Crafted from farm-fresh milk using the traditional hand-churned method. FSSAI certified. Pan India delivery. Free shipping above ₹500." />
-    <meta name="keywords" content="bilona ghee, desi ghee online, pure cow ghee, organic ghee, buy ghee online india, Daatasa, premium ghee" />
+    <title>Daatasa — 100% Pure Vedic A2 Bilona Desi Cow Ghee | Buy Online India</title>
+    <meta name="description" content="Buy authentic Vedic A2 Bilona Desi Cow Ghee online from Daatasa. Hand-churned from grass-fed Tharparkar & Rathi cows in Rajasthan. 100% pure, lab tested, FSSAI certified. Free shipping across India." />
+    <meta name="keywords" content="Daatasa, daatasa.com, daatasa ghee, bilona ghee, A2 ghee, pure desi cow ghee, organic ghee online, vedic bilona ghee, buy ghee online india, a2 desi cow bilona ghee, grass fed ghee, rajasthan bilona ghee" />
     <meta name="author" content="Daatasa" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://daatasa.in/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://daatasa.com/" />
+
+    <!-- ── Search Engine Verification ──────────────────────────────── -->
+    <!-- Replace content with your Google Search Console verification code -->
+    <meta name="google-site-verification" content="GOOGLE_SEARCH_CONSOLE_VERIFICATION_KEY" />
 
     <!-- ── Open Graph / Facebook ─────────────────────────────────── -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Daatasa" />
-    <meta property="og:title" content="Daatasa — Premium Bilona Desi Ghee | Order Online India" />
-    <meta property="og:description" content="Pure, lab-tested Bilona Desi Ghee crafted the traditional way. FSSAI certified. Pan India delivery." />
-    <meta property="og:image" content="https://daatasa.in/og-image.jpg" />
-    <meta property="og:url" content="https://daatasa.in/" />
+    <meta property="og:title" content="Daatasa — 100% Pure Vedic A2 Bilona Desi Cow Ghee" />
+    <meta property="og:description" content="Experience traditional hand-churned Vedic Bilona Ghee made from grass-fed desi cows. 100% pure, lab tested, FSSAI certified with free delivery across India." />
+    <meta property="og:image" content="https://daatasa.com/gallery-jar.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Daatasa Pure A2 Vedic Bilona Desi Cow Ghee" />
+    <meta property="og:url" content="https://daatasa.com/" />
     <meta property="og:locale" content="en_IN" />
 
     <!-- ── Twitter Card ──────────────────────────────────────────── -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Daatasa — Premium Bilona Desi Ghee" />
-    <meta name="twitter:description" content="Pure, lab-tested Bilona Desi Ghee. FSSAI certified. Pan India delivery." />
-    <meta name="twitter:image" content="https://daatasa.in/og-image.jpg" />
+    <meta name="twitter:title" content="Daatasa — Premium Vedic A2 Bilona Desi Cow Ghee" />
+    <meta name="twitter:description" content="Pure Vedic A2 Bilona Desi Ghee crafted the authentic way. FSSAI certified. Pan-India shipping." />
+    <meta name="twitter:image" content="https://daatasa.com/gallery-jar.png" />
+    <meta name="twitter:creator" content="@daatasa" />
 
-    <!-- ── Favicon ───────────────────────────────────────────────── -->
+    <!-- ── Favicon & PWA Webmanifest ─────────────────────────────── -->
     <link rel="icon" type="image/png" href="/logo_circle.png" />
     <link rel="apple-touch-icon" href="/logo_circle.png" />
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- ── Fonts (non-blocking) ──────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -39,41 +53,85 @@
       rel="stylesheet"
     />
 
-    <!-- ── JSON-LD Structured Data ───────────────────────────────── -->
+    <!-- ── JSON-LD Structured Data (Organization, WebSite, LocalStore) ── -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "Daatasa",
-      "url": "https://daatasa.in",
-      "logo": "https://daatasa.in/ghee.png",
-      "description": "Premium Bilona Desi Ghee crafted using the traditional hand-churned method. FSSAI certified and lab tested.",
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer service",
-        "availableLanguage": ["English", "Hindi"]
-      },
-      "sameAs": []
-    }
-    </script>
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "Daatasa",
-      "url": "https://daatasa.in",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": "https://daatasa.in/products?search={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://daatasa.com/#organization",
+          "name": "Daatasa",
+          "url": "https://daatasa.com",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://daatasa.com/logo_circle.png",
+            "caption": "Daatasa Premium Vedic Bilona Ghee"
+          },
+          "image": "https://daatasa.com/gallery-jar.png",
+          "description": "Authentic, lab-tested Vedic A2 Bilona Desi Cow Ghee handcrafted from farm-fresh milk using the traditional wooden bilona churning method. FSSAI certified.",
+          "telephone": "+91-9876543210",
+          "email": "support@daatasa.com",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Khuri, Jaisalmer",
+            "addressRegion": "Rajasthan",
+            "addressCountry": "IN"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "customer service",
+            "availableLanguage": ["English", "Hindi"],
+            "areaServed": "IN"
+          },
+          "sameAs": [
+            "https://www.instagram.com/daatasa",
+            "https://www.facebook.com/daatasa"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://daatasa.com/#website",
+          "name": "Daatasa",
+          "url": "https://daatasa.com",
+          "publisher": {
+            "@id": "https://daatasa.com/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://daatasa.com/products?search={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Store",
+          "@id": "https://daatasa.com/#store",
+          "name": "Daatasa — Pure A2 Vedic Ghee Store",
+          "url": "https://daatasa.com",
+          "image": "https://daatasa.com/gallery-jar.png",
+          "priceRange": "₹₹",
+          "paymentAccepted": "Cash, Credit Card, UPI, Net Banking, Razorpay",
+          "currenciesAccepted": "INR",
+          "description": "Buy authentic Vedic A2 Bilona Desi Cow Ghee directly from Rajasthan farms.",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Jaisalmer",
+            "addressRegion": "Rajasthan",
+            "addressCountry": "IN"
+          }
+        }
+      ]
     }
     </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <!-- Razorpay loaded only on checkout page via dynamic import -->
+    <!-- Razorpay loaded dynamically where needed -->
     <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
   </body>
 </html>
+

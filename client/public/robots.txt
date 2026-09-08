@@ -1,15 +1,29 @@
 User-agent: *
 Allow: /
+Allow: /products
+Allow: /category
+Allow: /blogs
+Allow: /about
+Allow: /contact
+Allow: /faq
+Allow: /how-it-works
+Allow: /b2b
 
-# Block admin pages from search engines
+# Block sensitive and user-specific pages
 Disallow: /admin
 Disallow: /admin/
 Disallow: /checkout
 Disallow: /cart
 Disallow: /orders
 Disallow: /profile
-Disallow: /reset-password/
+Disallow: /addresses
+Disallow: /wishlist
+Disallow: /return-request
+Disallow: /reset-password
 Disallow: /forgot-password
+Disallow: /api/
 
 # Sitemap location
+Sitemap: https://daatasa.com/sitemap.xml
 Sitemap: https://daatasa.in/sitemap.xml
+

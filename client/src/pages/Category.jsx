@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
 
@@ -14,15 +15,6 @@ const Category = () => {
     fetchCategoryData()
   }, [slug])
 
-  useEffect(() => {
-    if (category) {
-      document.title = `${category.name} | DhaniFresh`
-      const meta = document.querySelector('meta[name="description"]')
-      if (meta) {
-        meta.setAttribute('content', category.description || `Browse our premium selection of ${category.name}.`)
-      }
-    }
-  }, [category])
 
   const fetchCategoryData = async () => {
     setLoading(true)
@@ -63,6 +55,15 @@ const Category = () => {
 
   return (
     <div className="min-h-screen bg-[var(--bg-base)] pb-20">
+      <Helmet>
+        <title>{category.name} — Daatasa | Premium Pure Vedic Ghee</title>
+        <meta name="description" content={category.description || `Buy 100% Pure authentic ${category.name} online from Daatasa. Lab-tested, Vedic bilona method, free shipping.`} />
+        <link rel="canonical" href={`https://daatasa.com/category/${category.slug}`} />
+        <meta property="og:title" content={`${category.name} — Daatasa`} />
+        <meta property="og:description" content={category.description || `Shop premium ${category.name} at Daatasa.`} />
+        {category.image && <meta property="og:image" content={category.image} />}
+      </Helmet>
+
       {/* Hero Section */}
       <div className="relative bg-brand-primary text-white overflow-hidden rounded-b-[3rem] shadow-sm">
         {category.image && (

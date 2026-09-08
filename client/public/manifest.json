@@ -1,0 +1,22 @@
+{
+  "short_name": "Daatasa",
+  "name": "Daatasa — Pure Vedic A2 Bilona Desi Cow Ghee",
+  "description": "Authentic, lab-tested Vedic A2 Bilona Desi Cow Ghee handcrafted in Rajasthan.",
+  "icons": [
+    {
+      "src": "/logo_circle.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo_circle.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#b45309",
+  "display": "standalone",
+  "scope": "/"
+}

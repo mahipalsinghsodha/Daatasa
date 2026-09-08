@@ -60,14 +60,34 @@ export default function FAQ() {
   const { t } = useTranslation()
   const SECTIONS = useMemo(() => getSections(t), [t])
   const [open, setOpen] = useState({})
-  const toggle = (sid, qi) => setOpen(p => ({ ...p, [`${sid}-${qi}`]: !p[`${sid}-${qi}`] }))
+  // Build FAQPage Schema.org JSON-LD
+  const allFaqItems = useMemo(() => {
+    return SECTIONS.flatMap(sec => sec.faqs.map(item => ({
+      '@type': 'Question',
+      name: item.q,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.a
+      }
+    })))
+  }, [SECTIONS])
 
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
-        <title>{t('faq.pageTitle')} — Daatasa</title>
+        <title>{t('faq.pageTitle')} — Frequently Asked Questions | Daatasa</title>
         <meta name="description" content={t('faq.heroDesc')} />
+        <link rel="canonical" href="https://daatasa.com/faq" />
+        <meta property="og:title" content={`${t('faq.pageTitle')} — Daatasa`} />
+        <meta property="og:description" content={t('faq.heroDesc')} />
+        <meta property="og:url" content="https://daatasa.com/faq" />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: allFaqItems
+        })}</script>
       </Helmet>
+
 
       {/* ── Premium Hero ──────────────────────────── */}
       <div className="relative overflow-hidden bg-white text-brand-primary border-b border-brand-primary/5">

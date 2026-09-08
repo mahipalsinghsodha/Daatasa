@@ -359,8 +359,8 @@ const ProductDetail = () => {
           <meta property="og:description" content={product.description?.slice(0, 200)} />
           <meta property="og:image" content={product.image} />
           <meta property="og:type" content="product" />
-          <meta property="og:url" content={`https://daatasa.in/products/${product._id}`} />
-          <link rel="canonical" href={`https://daatasa.in/products/${product._id}`} />
+          <meta property="og:url" content={`https://daatasa.com/products/${product._id}`} />
+          <link rel="canonical" href={`https://daatasa.com/products/${product._id}`} />
           <script type="application/ld+json">{JSON.stringify({
             '@context': 'https://schema.org',
             '@type': 'Product',
@@ -373,7 +373,7 @@ const ProductDetail = () => {
               priceCurrency: 'INR',
               price: product.price,
               availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-              url: `https://daatasa.in/products/${product._id}`,
+              url: `https://daatasa.com/products/${product._id}`,
             },
             ...(product.rating && {
               aggregateRating: {
