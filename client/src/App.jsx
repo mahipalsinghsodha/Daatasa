@@ -124,24 +124,58 @@ function ScrollToTop() {
   return null
 }
 
+// ============================================================================
+// 🚀 FRONTEND HARDCODED COMING SOON CONFIGURATION
+// ============================================================================
+// ✅ IS_COMING_SOON_HARDCODED = true -> Hamesha Coming Soon dikhega (API par depend nahi karega)
+// 📅 HARDCODED_LAUNCH_DATE -> 01 Jan 2027 tak countdown chalta rahega
+// 🟢 Jab Live karna ho -> IS_COMING_SOON_HARDCODED ko `false` kar dein!
+// ============================================================================
+const IS_COMING_SOON_HARDCODED = true; // 👉 Live karne ke liye yahan `false` karein
+const HARDCODED_LAUNCH_DATE = '2027-01-01T00:00:00.000Z'; // 👉 01 Jan 2027
+
 // ─── Site Status Interceptor ──────────────────────────────────────────────────
 function SiteStatusWrapper({ children }) {
   const { user, loading: authLoading } = useAuth()
   const [settings, setSettings] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const location = useLocation()
 
   useEffect(() => {
-    api.get('/api/settings')
-      .then(res => setSettings(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false))
+    // Only fetch settings if not in hardcoded coming soon mode
+    if (!IS_COMING_SOON_HARDCODED) {
+      setLoading(true)
+      api.get('/api/settings')
+        .then(res => setSettings(res.data))
+        .catch(console.error)
+        .finally(() => setLoading(false))
+    }
   }, [])
 
   if (loading || authLoading) return <PageLoader />
 
   const isAdmin = ['admin', 'superadmin', 'support'].includes(user?.role)
 
+  // 1️⃣ HARDCODED COMING SOON (Frontend Priority)
+  if (IS_COMING_SOON_HARDCODED && !isAdmin) {
+    const isLaunchPast = new Date(HARDCODED_LAUNCH_DATE).getTime() < Date.now();
+    
+    if (!isLaunchPast) {
+      // Allow admin login and admin panels
+      if (location.pathname !== '/' && location.pathname !== '/login' && !location.pathname.startsWith('/admin')) {
+        return <Navigate to="/" replace />;
+      }
+      if (location.pathname === '/') {
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ComingSoon launchDate={HARDCODED_LAUNCH_DATE} />
+          </Suspense>
+        );
+      }
+    }
+  }
+
+  // 2️⃣ DYNAMIC DB SETTINGS (Active when IS_COMING_SOON_HARDCODED = false)
   if (!isAdmin && settings) {
     if (settings.isMaintenanceMode || settings.isComingSoon) {
       let isLaunchPast = false;
@@ -151,9 +185,7 @@ function SiteStatusWrapper({ children }) {
 
       // If active mode is on, lock down the site
       if (settings.isMaintenanceMode || (settings.isComingSoon && !isLaunchPast)) {
-        
-        // If the user tries to access /login, /products, etc., automatically redirect them to the root URL (/)
-        if (location.pathname !== '/') {
+        if (location.pathname !== '/' && location.pathname !== '/login' && !location.pathname.startsWith('/admin')) {
           return <Navigate to="/" replace />;
         }
 
@@ -166,7 +198,7 @@ function SiteStatusWrapper({ children }) {
         } else {
           return (
             <Suspense fallback={<PageLoader />}>
-              <ComingSoon launchDate={settings.comingSoonLaunchDate} />
+              <ComingSoon launchDate={settings.comingSoonLaunchDate || HARDCODED_LAUNCH_DATE} />
             </Suspense>
           );
         }
