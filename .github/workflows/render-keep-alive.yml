@@ -1,0 +1,22 @@
+name: Render Backend Keep Alive
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free instance from sleeping
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual run from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render Health Check
+        run: |
+          echo "Pinging Render backend health endpoint..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://daatasa.onrender.com/api/health)
+          echo "HTTP Status Code: $STATUS"
+          if [ "$STATUS" -eq 200 ]; then
+            echo "Success: Render backend is awake and healthy!"
+          else
+            echo "Notice: Endpoint returned status $STATUS"
+          fi

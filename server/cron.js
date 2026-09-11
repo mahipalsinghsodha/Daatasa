@@ -1,4 +1,6 @@
 const cron = require('node-cron');
+const https = require('https');
+const http = require('http');
 const Product = require('./models/Product');
 const User = require('./models/User');
 const { sendLowStockAlertEmail, sendAbandonedCartEmail } = require('./services/emailService');
@@ -6,6 +8,27 @@ const Cart = require('./models/Cart');
 const Notification = require('./models/Notification');
 
 const initCronJobs = () => {
+  // Keep alive self-ping for Render Free Tier (runs every 10 minutes)
+  cron.schedule('*/10 * * * *', () => {
+    const backendUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://daatasa.onrender.com';
+    const healthUrl = `${backendUrl.replace(/\/$/, '')}/api/health`;
+
+    try {
+      const client = healthUrl.startsWith('https') ? https : http;
+      client.get(healthUrl, (res) => {
+        if (res.statusCode === 200) {
+          console.log(`[CRON] Keep-alive ping successful: ${healthUrl} (Status: ${res.statusCode})`);
+        } else {
+          console.warn(`[CRON] Keep-alive ping status: ${res.statusCode}`);
+        }
+      }).on('error', (err) => {
+        console.error('[CRON] Keep-alive ping error:', err.message);
+      });
+    } catch (err) {
+      console.error('[CRON] Keep-alive trigger error:', err.message);
+    }
+  });
+
   // Run every day at 10:00 AM (0 10 * * *)
   cron.schedule('0 10 * * *', async () => {
     console.log('[CRON] Running daily low stock check...');
