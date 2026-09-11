@@ -4,14 +4,22 @@
   "description": "Authentic, lab-tested Vedic A2 Bilona Desi Cow Ghee handcrafted in Rajasthan.",
   "icons": [
     {
-      "src": "/logo_circle.png",
+      "src": "/favicon-48x48.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "48x48",
+      "purpose": "any"
     },
     {
-      "src": "/logo_circle.png",
+      "src": "/favicon-192x192.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
   "start_url": "/",
