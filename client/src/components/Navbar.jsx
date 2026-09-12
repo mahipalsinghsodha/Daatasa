@@ -118,7 +118,7 @@ const Navbar = () => {
   }
 
   const navLinkCls = (path) => `
-    relative px-3.5 py-1.5 text-[13.5px] font-semibold rounded-lg transition-all duration-200 group
+    relative px-2 xl:px-3 py-1.5 text-[12.5px] xl:text-[13.5px] font-semibold rounded-lg transition-all duration-200 group whitespace-nowrap
     ${isActive(path) ? 'text-[var(--gold)]' : 'text-white/75 hover:text-white'}
   `
 
@@ -143,36 +143,36 @@ const Navbar = () => {
         boxShadow: scrolled ? '0 4px 30px rgba(27,47,110,0.40)' : 'none',
       }}
     >
-      <div className="max-w-[1280px] mx-auto px-2 sm:px-4 md:px-6">
-        <div className="flex items-center justify-between h-[60px] sm:h-[68px]">
+      <div className="max-w-[1280px] mx-auto px-2.5 sm:px-4 lg:px-5 xl:px-6">
+        <div className="flex items-center justify-between h-[60px] sm:h-[68px] gap-1 sm:gap-2">
 
           {/* ── Logo ── */}
-          <Link to={isAdmin ? '/admin' : isSupport ? '/support-panel' : '/'} className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 group bg-[#fffdf8] rounded-xl px-1 sm:px-1.5 py-1">
+          <Link to={isAdmin ? '/admin' : isSupport ? '/support-panel' : '/'} className="flex items-center gap-1 sm:gap-2 shrink-0 group bg-[#fffdf8] rounded-xl px-1 sm:px-1.5 py-0.5 sm:py-1">
             <img 
               src="/logo_rectangle.png" 
               alt="Daatasa Logo" 
-              className="h-[34px] sm:h-[48px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
+              className="h-[30px] sm:h-[38px] xl:h-[46px] w-auto transition-transform duration-300 group-hover:scale-[1.02]" 
             />
             {(isAdmin || isSupport) && (
-              <span className="hidden sm:inline-block ml-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full"
+              <span className="hidden xl:inline-block ml-1 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest rounded-full"
                 style={{ background: 'var(--gold)', color: 'var(--navy)' }}>
                 {user.role === 'superadmin' ? 'Super' : isSupport ? 'Support' : 'Admin'}
               </span>
             )}
           </Link>
 
-          {/* ── Desktop Nav ── */}
-          <nav className="hidden md:flex items-center gap-0.5">
+          {/* ── Desktop Nav (Active on lg: 1024px+ for small laptops and desktops) ── */}
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1 min-w-0">
             {isCustomer && (
               <>
                 <Link to="/" className={navLinkCls('/')}>
                   {t('navbar.home', 'Home')}
-                  {isActive('/') && <motion.span layoutId="navActive" className="absolute bottom-0 left-3.5 right-3.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                  {isActive('/') && <motion.span layoutId="navActive" className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
                 </Link>
 
                 <div className="relative group">
-                  <button className="relative px-3.5 py-1.5 text-[13.5px] font-semibold rounded-lg transition-all duration-200 text-white/75 hover:text-white flex items-center gap-1">
-                    {t('navbar.categories', 'Categories')} <ChevronDown size={14} className="opacity-70 group-hover:rotate-180 transition-transform" />
+                  <button className="relative px-2 xl:px-3 py-1.5 text-[12.5px] xl:text-[13.5px] font-semibold rounded-lg transition-all duration-200 text-white/75 hover:text-white flex items-center gap-1 whitespace-nowrap">
+                    {t('navbar.categories', 'Categories')} <ChevronDown size={13} className="opacity-70 group-hover:rotate-180 transition-transform" />
                   </button>
                   <div className="absolute top-full left-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="bg-[#132b69] border border-white/10 rounded-xl shadow-2xl p-2 min-w-[200px] backdrop-blur-xl">
@@ -188,61 +188,113 @@ const Navbar = () => {
                   </div>
                 </div>
 
-                {[
-                  { to: '/products', label: t('navbar.shop', 'Products') },
-                  { to: '/how-it-works', label: t('navbar.process', 'Our Process') },
-                  { to: '/about', label: t('navbar.about', 'About Us') },
-                  { to: '/blogs', label: t('navbar.blogs', 'Blogs') },
-                  ...(user ? [{ to: '#support', label: t('navbar.help', 'Help'), isSupport: true }] : []),
-                  { to: '/contact', label: t('navbar.contact', 'Contact') },
-                ].map(({ to, label, isSupport }) => (
-                  isSupport ? (
-                    <button
-                      key="support-nav-btn"
-                      onClick={() => openSupport()}
-                      className={`${navLinkCls('/support')} cursor-pointer bg-transparent border-none`}
-                    >
-                      {label}
-                    </button>
-                  ) : (
-                    <Link key={to} to={to} className={navLinkCls(to)}>
-                      {label}
-                      {isActive(to) && (
-                        <motion.span
-                          layoutId="navActive"
-                          className="absolute bottom-0 left-3.5 right-3.5 h-0.5 rounded-full"
-                          style={{ background: 'var(--gold)' }}
-                        />
+                <Link to="/products" className={navLinkCls('/products')}>
+                  {t('navbar.shop', 'Products')}
+                  {isActive('/products') && <motion.span layoutId="navActive" className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                </Link>
+
+                <Link to="/how-it-works" className={navLinkCls('/how-it-works')}>
+                  {t('navbar.process', 'Our Process')}
+                  {isActive('/how-it-works') && <motion.span layoutId="navActive" className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                </Link>
+
+                <Link to="/about" className={navLinkCls('/about')}>
+                  {t('navbar.about', 'About Us')}
+                  {isActive('/about') && <motion.span layoutId="navActive" className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                </Link>
+
+                {/* Visible directly on xl (1280px+) */}
+                <Link to="/blogs" className={`${navLinkCls('/blogs')} hidden xl:block`}>
+                  {t('navbar.blogs', 'Blogs')}
+                  {isActive('/blogs') && <motion.span layoutId="navActive" className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                </Link>
+
+                {user && (
+                  <button
+                    onClick={() => openSupport()}
+                    className={`${navLinkCls('/support')} hidden xl:block cursor-pointer bg-transparent border-none`}
+                  >
+                    {t('navbar.help', 'Help')}
+                  </button>
+                )}
+
+                <Link to="/contact" className={navLinkCls('/contact')}>
+                  {t('navbar.contact', 'Contact')}
+                  {isActive('/contact') && <motion.span layoutId="navActive" className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full" style={{ background: 'var(--gold)' }} />}
+                </Link>
+
+                {/* More dropdown on lg (1024px to 1279px) to prevent overflow */}
+                <div className="relative group xl:hidden">
+                  <button className="relative px-2 py-1.5 text-[12.5px] font-semibold rounded-lg transition-all duration-200 text-white/75 hover:text-white flex items-center gap-1 whitespace-nowrap">
+                    <span>More</span> <ChevronDown size={13} className="opacity-70 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="bg-[#132b69] border border-white/10 rounded-xl shadow-2xl p-1.5 min-w-[150px] backdrop-blur-xl">
+                      <Link to="/blogs" className="block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
+                        {t('navbar.blogs', 'Blogs')}
+                      </Link>
+                      {user && (
+                        <button
+                          onClick={() => openSupport()}
+                          className="w-full text-left block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors bg-transparent border-none cursor-pointer"
+                        >
+                          {t('navbar.help', 'Help')}
+                        </button>
                       )}
-                    </Link>
-                  )
-                ))}
+                    </div>
+                  </div>
+                </div>
               </>
             )}
             {isAdmin && (
               <>
-                {[
-                  { to: '/admin', label: t('navbar.dashboard', 'Dashboard') },
-                  ...(hasPermission('products') ? [{ to: '/admin/products', label: t('navbar.products', 'Products') }] : []),
-                  ...(hasPermission('products') ? [{ to: '/admin/reviews', label: t('navbar.reviews', 'Reviews') }] : []),
-                  ...(hasPermission('products') ? [{ to: '/admin/subscriptions', label: t('navbar.subscriptions', 'Subscriptions') }] : []),
-                  ...(hasPermission('orders') ? [{ to: '/admin/ordersAdmin', label: t('navbar.ordersAdmin', 'Orders') }] : []),
-                  ...(hasPermission('users') ? [{ to: '/admin/users', label: t('navbar.users', 'Users') }] : []),
-                  ...(user?.role === 'superadmin' ? [{ to: '/admin/newsletters', label: t('navbar.newsletters', 'Newsletters') }] : []),
-                  { to: '/admin/blogs', label: t('navbar.manageBlogs', 'Blogs') },
-                  { to: '/admin/analytics', label: t('navbar.analytics', 'Analytics') },
-                ].map(({ to, label }) => (
-                  <Link key={to} to={to} className={navLinkCls(to)}>
-                    {label}
-                    {isActive(to) && (
-                      <motion.span
-                        layoutId="navActiveAdmin"
-                        className="absolute bottom-0 left-3.5 right-3.5 h-0.5 rounded-full"
-                        style={{ background: 'var(--gold)' }}
-                      />
-                    )}
-                  </Link>
-                ))}
+                <Link to="/admin" className={navLinkCls('/admin')}>{t('navbar.dashboard', 'Dashboard')}</Link>
+                {hasPermission('products') && (
+                  <Link to="/admin/products" className={navLinkCls('/admin/products')}>{t('navbar.products', 'Products')}</Link>
+                )}
+                {hasPermission('orders') && (
+                  <Link to="/admin/ordersAdmin" className={navLinkCls('/admin/ordersAdmin')}>{t('navbar.ordersAdmin', 'Orders')}</Link>
+                )}
+                <Link to="/admin/analytics" className={navLinkCls('/admin/analytics')}>{t('navbar.analytics', 'Analytics')}</Link>
+
+                {/* Additional Admin links directly on xl */}
+                {hasPermission('products') && (
+                  <Link to="/admin/reviews" className={`${navLinkCls('/admin/reviews')} hidden xl:block`}>{t('navbar.reviews', 'Reviews')}</Link>
+                )}
+                {hasPermission('products') && (
+                  <Link to="/admin/subscriptions" className={`${navLinkCls('/admin/subscriptions')} hidden xl:block`}>{t('navbar.subscriptions', 'Subscriptions')}</Link>
+                )}
+                {hasPermission('users') && (
+                  <Link to="/admin/users" className={`${navLinkCls('/admin/users')} hidden xl:block`}>{t('navbar.users', 'Users')}</Link>
+                )}
+                {user?.role === 'superadmin' && (
+                  <Link to="/admin/newsletters" className={`${navLinkCls('/admin/newsletters')} hidden xl:block`}>{t('navbar.newsletters', 'Newsletters')}</Link>
+                )}
+                <Link to="/admin/blogs" className={`${navLinkCls('/admin/blogs')} hidden xl:block`}>{t('navbar.manageBlogs', 'Blogs')}</Link>
+
+                {/* More dropdown for Admin on lg */}
+                <div className="relative group xl:hidden">
+                  <button className="relative px-2 py-1.5 text-[12.5px] font-semibold rounded-lg transition-all duration-200 text-white/75 hover:text-white flex items-center gap-1 whitespace-nowrap">
+                    <span>More</span> <ChevronDown size={13} className="opacity-70 group-hover:rotate-180 transition-transform" />
+                  </button>
+                  <div className="absolute top-full right-0 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                    <div className="bg-[#132b69] border border-white/10 rounded-xl shadow-2xl p-1.5 min-w-[160px] backdrop-blur-xl">
+                      {hasPermission('products') && (
+                        <Link to="/admin/reviews" className="block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">{t('navbar.reviews', 'Reviews')}</Link>
+                      )}
+                      {hasPermission('products') && (
+                        <Link to="/admin/subscriptions" className="block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">{t('navbar.subscriptions', 'Subscriptions')}</Link>
+                      )}
+                      {hasPermission('users') && (
+                        <Link to="/admin/users" className="block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">{t('navbar.users', 'Users')}</Link>
+                      )}
+                      {user?.role === 'superadmin' && (
+                        <Link to="/admin/newsletters" className="block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">{t('navbar.newsletters', 'Newsletters')}</Link>
+                      )}
+                      <Link to="/admin/blogs" className="block px-3 py-2 text-[12.5px] font-semibold text-white/75 hover:text-white hover:bg-white/10 rounded-lg transition-colors">{t('navbar.manageBlogs', 'Blogs')}</Link>
+                    </div>
+                  </div>
+                </div>
               </>
             )}
             {isSupport && (
@@ -256,7 +308,7 @@ const Navbar = () => {
                     {isActive(to) && (
                       <motion.span
                         layoutId="navActiveSupport"
-                        className="absolute bottom-0 left-3.5 right-3.5 h-0.5 rounded-full"
+                        className="absolute bottom-0 left-2.5 right-2.5 h-0.5 rounded-full"
                         style={{ background: 'var(--gold)' }}
                       />
                     )}
@@ -267,35 +319,33 @@ const Navbar = () => {
           </nav>
 
           {/* ── Desktop Actions ── */}
-          <div className="hidden md:flex items-center gap-1.5">
+          <div className="hidden lg:flex items-center gap-1 xl:gap-1.5 shrink-0">
 
             {/* Search */}
             <button
               onClick={() => setSearchOpen(v => !v)}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
+              className="w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
               aria-label="Search" id="search-toggle"
             >
-              <Search size={16} />
+              <Search size={15} />
             </button>
-
-            {/* Theme toggle */}
-
 
             {/* Language Switcher */}
             <button
               onClick={() => handleLanguageChange(i18n.language?.startsWith('hi') ? 'en' : 'hi')}
-              className="flex items-center gap-1.5 px-3 py-1.5 h-9 rounded-full transition-all text-[13px] font-bold border border-white/20 text-white hover:bg-white/12"
+              className="flex items-center gap-1 xl:gap-1.5 px-2.5 xl:px-3 py-1 xl:py-1.5 h-8 xl:h-9 rounded-full transition-all text-[11.5px] xl:text-[13px] font-bold border border-white/20 text-white hover:bg-white/12 whitespace-nowrap"
               title={t('navbar.language', 'Language')}
             >
-              <Globe size={14} />
-              {i18n.language?.startsWith('hi') ? 'English' : 'हिंदी'}
+              <Globe size={13} />
+              <span className="xl:hidden">{i18n.language?.startsWith('hi') ? 'EN' : 'HI'}</span>
+              <span className="hidden xl:inline">{i18n.language?.startsWith('hi') ? 'English' : 'हिंदी'}</span>
             </button>
 
             {/* Cart (Rendered for all customers: guest or logged-in user) */}
             {isCustomer && (
               <Link
                 to="/cart"
-                className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
+                className="relative w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
                 aria-label="Cart"
               >
                 <ShoppingCart size={16} />
@@ -322,10 +372,10 @@ const Navbar = () => {
                 {/* Notifications */}
                 <button
                   onClick={toggleDrawer}
-                  className="relative w-9 h-9 rounded-full flex items-center justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
+                  className="relative w-8 h-8 xl:w-9 xl:h-9 rounded-full flex items-center justify-center transition-all text-white/65 hover:text-white hover:bg-white/12"
                   aria-label="Notifications" id="notifications-btn"
                 >
-                  <Bell size={16} />
+                  <Bell size={15} />
                   <AnimatePresence>
                     {unreadCount > 0 && (
                       <motion.span
@@ -346,15 +396,15 @@ const Navbar = () => {
                 <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full transition-all hover:bg-white/12"
+                    className="flex items-center gap-1.5 pl-1.5 pr-2 xl:pr-3 py-1 rounded-full transition-all hover:bg-white/12"
                   >
                     <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold"
+                      className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0"
                       style={{ background: 'var(--gold)', color: 'var(--navy)' }}
                     >
                       {(user.name || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-[13px] font-semibold text-white max-w-[72px] truncate hidden lg:block">
+                    <span className="text-[12.5px] xl:text-[13px] font-semibold text-white max-w-[72px] truncate hidden xl:block">
                       {(user.name || 'User').split(' ')[0]}
                     </span>
                     <ChevronDown size={13} className={`text-white/45 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} />
@@ -452,43 +502,56 @@ const Navbar = () => {
             )}
 
             {!user && (
-              <>
-                <Link to="/login" className="text-[13.5px] font-semibold text-white/75 hover:text-white px-3.5 py-1.5 rounded-lg hover:bg-white/12 transition-all">
+              <div className="flex items-center gap-1 xl:gap-2">
+                <Link to="/login" className="text-[12px] xl:text-[13.5px] font-semibold text-white/75 hover:text-white px-2.5 xl:px-3.5 py-1.5 rounded-lg hover:bg-white/12 transition-all whitespace-nowrap">
                   {t('navbar.login', 'Log in')}
                 </Link>
                 <Link to="/register"
-                  className="text-[13.5px] font-bold px-5 py-2 rounded-lg transition-all hover:scale-105 flex items-center gap-1.5"
+                  className="text-[11.5px] xl:text-[13.5px] font-bold px-3 xl:px-5 py-1.5 xl:py-2 rounded-lg transition-all hover:scale-105 flex items-center gap-1.5 whitespace-nowrap"
                   style={{ background: 'var(--gold)', color: 'var(--navy)', boxShadow: '0 4px 14px rgba(245,166,35,0.40)' }}
                 >
-                  <Sparkles size={13} />
-                  {t('navbar.getStarted', 'Get Started')}
+                  <Sparkles size={12} className="hidden xl:inline" />
+                  <span>{t('navbar.getStarted', 'Get Started')}</span>
                 </Link>
-              </>
+              </div>
             )}
           </div>
 
-          {/* ── Mobile Right ── */}
-          <div className="flex md:hidden items-center gap-0.5 sm:gap-1.5">
+          {/* ── Mobile & Tablet Right Bar (< lg) ── */}
+          <div className="flex lg:hidden items-center gap-1 sm:gap-2">
+            {/* Search Toggle Button */}
+            <button
+              onClick={() => setSearchOpen(v => !v)}
+              className="w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all"
+              aria-label="Search"
+            >
+              <Search size={16} />
+            </button>
+
+            {/* Language Switcher */}
             <button
               onClick={() => handleLanguageChange(i18n.language?.startsWith('hi') ? 'en' : 'hi')}
-              className="flex items-center gap-0.5 sm:gap-1 px-1.5 sm:px-2.5 h-8 rounded-full transition-all text-[11px] sm:text-[12px] font-bold border border-white/20 text-white hover:bg-white/12"
+              className="flex items-center gap-1 px-2 sm:px-2.5 h-8 rounded-full transition-all text-[11px] sm:text-[12px] font-bold border border-white/20 text-white hover:bg-white/12 whitespace-nowrap"
               title={t('navbar.language', 'Language')}
             >
               <Globe size={12} />
-              {i18n.language?.startsWith('hi') ? 'EN' : 'हिंदी'}
+              <span>{i18n.language?.startsWith('hi') ? 'EN' : 'हिंदी'}</span>
             </button>
 
+            {/* Cart */}
             {isCustomer && (
-              <Link to="/cart" className="relative w-9 h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all">
+              <Link to="/cart" className="relative w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all">
                 <ShoppingCart size={17} />
                 {cartCount > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center"
                     style={{ background: 'var(--gold)', color: 'var(--navy)' }}>
-                    {cartCount}
+                    {cartCount > 99 ? '99+' : cartCount}
                   </span>
                 )}
               </Link>
             )}
+
+            {/* Hamburger Toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="w-8 sm:w-9 h-8 sm:h-9 rounded-full flex items-center justify-center text-white/80 hover:bg-white/12 transition-all"
@@ -502,7 +565,7 @@ const Navbar = () => {
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: 0.12 }}
                 >
-                  {mobileOpen ? <X size={18} className="sm:w-5 sm:h-5" /> : <Menu size={18} className="sm:w-5 sm:h-5" />}
+                  {mobileOpen ? <X size={20} /> : <Menu size={20} />}
                 </motion.span>
               </AnimatePresence>
             </button>
@@ -584,7 +647,7 @@ const Navbar = () => {
         )}
       </AnimatePresence>
 
-      {/* ── Mobile Menu ── */}
+      {/* ── Mobile & Tablet Menu Drawer (< lg) ── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -592,7 +655,7 @@ const Navbar = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 top-[68px] bg-black/50 backdrop-blur-sm z-40 md:hidden"
+              className="fixed inset-0 top-[60px] sm:top-[68px] bg-black/50 backdrop-blur-sm z-40 lg:hidden"
               onClick={() => setMobileOpen(false)}
             />
             <motion.div
@@ -600,57 +663,60 @@ const Navbar = () => {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: -10, opacity: 0 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-              className="md:hidden absolute top-full left-0 right-0 z-50"
+              className="lg:hidden absolute top-full left-0 right-0 z-50 max-h-[calc(100vh-68px)] overflow-y-auto"
               style={{
-                background: 'rgba(19, 43, 105, 0.97)',
+                background: 'rgba(19, 43, 105, 0.98)',
                 backdropFilter: 'blur(20px)',
                 borderTop: '1px solid rgba(255,255,255,0.10)',
                 boxShadow: '0 20px 50px rgba(27,47,110,0.55)',
               }}
             >
-              <div className="px-3 sm:px-4 py-4 sm:py-5 space-y-1">
+              <div className="max-w-[1280px] mx-auto px-3 sm:px-6 py-4 sm:py-5 space-y-3">
                 {user && (
-                  <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl mb-4"
+                  <div className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
                     style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.10)' }}>
-                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-extrabold shadow-md"
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-extrabold shadow-md shrink-0"
                       style={{ background: 'var(--gold)', color: 'var(--navy)' }}>
                       {(user.name || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-[13px] font-bold text-white">{user.name || 'User'}</p>
-                      <p className="text-[11px] truncate max-w-[200px]" style={{ color: 'rgba(255,255,255,0.50)' }}>{user.email}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[13px] font-bold text-white truncate">{user.name || 'User'}</p>
+                      <p className="text-[11px] truncate max-w-[240px]" style={{ color: 'rgba(255,255,255,0.50)' }}>{user.email}</p>
                     </div>
                   </div>
                 )}
 
                 {isCustomer && (
                   <>
-                    {[
-                      { to: '/', label: t('navbar.home', 'Home') },
-                      { to: '/products', label: t('navbar.shop', 'Products') },
-                      { to: '/how-it-works', label: t('navbar.process', 'Our Process') },
-                      { to: '/about', label: t('navbar.about', 'About Us') },
-                      { to: '/blogs', label: t('navbar.blogs', 'Blogs') },
-                      ...(user ? [{ to: '/support', label: t('navbar.help', 'Help') }] : []),
-                      { to: '/contact', label: t('navbar.contact', 'Contact') },
-                    ].map(({ to, label }, i) => (
-                      <motion.div
-                        key={to}
-                        initial={{ opacity: 0, x: -12 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                      >
-                        <Link to={to} className={mobileLinkCls(to)}>
-                          {isActive(to) && (
-                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--gold)' }} />
-                          )}
-                          {label}
-                        </Link>
-                      </motion.div>
-                    ))}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
+                      {[
+                        { to: '/', label: t('navbar.home', 'Home') },
+                        { to: '/products', label: t('navbar.shop', 'Products') },
+                        { to: '/how-it-works', label: t('navbar.process', 'Our Process') },
+                        { to: '/about', label: t('navbar.about', 'About Us') },
+                        { to: '/blogs', label: t('navbar.blogs', 'Blogs') },
+                        ...(user ? [{ to: '/support', label: t('navbar.help', 'Help') }] : []),
+                        { to: '/contact', label: t('navbar.contact', 'Contact') },
+                      ].map(({ to, label }, i) => (
+                        <motion.div
+                          key={to}
+                          initial={{ opacity: 0, x: -12 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                        >
+                          <Link to={to} className={mobileLinkCls(to)}>
+                            {isActive(to) && (
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: 'var(--gold)' }} />
+                            )}
+                            {label}
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </div>
+
                     {categories.length > 0 && (
-                      <div className="pt-3 pb-1 px-4 mt-1 border-t border-white/10">
-                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">{t('navbar.shopByCategory', 'Shop by Category')}</p>
+                      <div className="pt-3 pb-1 px-4 mt-2 border-t border-white/10">
+                        <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2.5">{t('navbar.shopByCategory', 'Shop by Category')}</p>
                         <div className="flex flex-wrap gap-2">
                           <Link to="/products" onClick={() => setMobileOpen(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-semibold text-brand-secondary bg-brand-secondary/15 hover:bg-brand-secondary hover:text-brand-primary transition-all border border-brand-secondary/30">
                             {t('navbar.allCategories', 'All Categories')}
@@ -666,7 +732,7 @@ const Navbar = () => {
                   </>
                 )}
                 {isAdmin && (
-                  <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                     <Link to="/admin" className={mobileLinkCls('/admin')}>{t('navbar.dashboard', 'Dashboard')}</Link>
                     <Link to="/admin/products" className={mobileLinkCls('/admin/products')}>{t('navbar.products', 'Products')}</Link>
                     <Link to="/admin/reviews" className={mobileLinkCls('/admin/reviews')}>{t('navbar.reviews', 'Reviews')}</Link>
@@ -674,18 +740,18 @@ const Navbar = () => {
                     <Link to="/admin/users" className={mobileLinkCls('/admin/users')}>{t('navbar.users', 'Users')}</Link>
                     <Link to="/admin/blogs" className={mobileLinkCls('/admin/blogs')}>{t('navbar.manageBlogs', 'Blogs')}</Link>
                     <Link to="/admin/analytics" className={mobileLinkCls('/admin/analytics')}>{t('navbar.analytics', 'Analytics')}</Link>
-                  </>
+                  </div>
                 )}
                 {isSupport && (
-                  <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                     <Link to="/admin/support" className={mobileLinkCls('/admin/support')}>Live Chat Support</Link>
                     <Link to="/support-panel" className={mobileLinkCls('/support-panel')}>Support Tickets</Link>
-                  </>
+                  </div>
                 )}
 
                 <div className="pt-4 mt-2 space-y-1" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
                   {user ? (
-                    <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 sm:gap-2">
                       <Link to="/profile" className={mobileLinkCls('/profile')}><User size={16} className="shrink-0" />{t('navbar.profile', 'Profile')}</Link>
                       {isCustomer && (
                         <>
@@ -706,9 +772,9 @@ const Navbar = () => {
                         style={{ color: '#FC8181' }}>
                         <LogOut size={16} className="shrink-0" /> {t('navbar.logout', 'Log out')}
                       </button>
-                    </>
+                    </div>
                   ) : (
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="grid grid-cols-2 gap-2 pt-1 max-w-md mx-auto sm:max-w-none">
                       <Link to="/login" className="flex items-center justify-center h-11 rounded-xl border border-white/20 text-white font-semibold text-[13.5px] hover:bg-white/10 transition-all">
                           {t('navbar.login', 'Log in')}
                       </Link>
