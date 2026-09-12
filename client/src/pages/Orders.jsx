@@ -15,19 +15,20 @@ import OrderTimeline from '../components/OrderTimeline'
 import { useSocket } from '../hooks/useSocket'
 import { useSupportStore } from '../store/support'
 import { formatOrderId } from '../utils/formatOrderId'
+import BrandLoader from '../components/BrandLoader'
 
 const getStatus = (order) => {
+  if (order.paymentStatus === 'FAILED') {
+    return { label: 'Payment Failed', cls: 'badge-danger', icon: FiAlertCircle }
+  }
+  if (order.paymentStatus === 'EXPIRED') {
+    return { label: 'Expired', cls: 'badge-muted', icon: FiClock }
+  }
   if (order.orderStatus === 'CANCELLED' || order.paymentStatus === 'CANCELLED') {
     return { label: 'Cancelled', cls: 'badge-muted', icon: FiX }
   }
   if (order.orderStatus === 'RETURNED' || (order.returnRequest?.requestedAt && ['RETURN_APPROVED', 'APPROVED'].includes(order.returnRequest?.status))) {
     return { label: 'Returned', cls: 'badge-muted', icon: FiRotateCcw }
-  }
-  if (order.paymentStatus === 'FAILED') {
-    return { label: 'Failed', cls: 'badge-danger', icon: FiAlertCircle }
-  }
-  if (order.paymentStatus === 'EXPIRED') {
-    return { label: 'Expired', cls: 'badge-muted', icon: FiClock }
   }
   if (order.orderStatus === 'DELIVERED' || order.isDelivered) {
     return { label: 'Delivered', cls: 'badge-success', icon: FiCheckCircle }
@@ -39,9 +40,12 @@ const getStatus = (order) => {
     return { label: 'In Transit', cls: 'badge-info', icon: FiTruck }
   }
   if (order.orderStatus === 'ACCEPTED' || order.acceptedAt) {
-    return { label: 'Confirmed', cls: 'badge-info', icon: FiCheck }
+    return { label: 'Confirmed & Packed', cls: 'badge-info', icon: FiCheck }
   }
-  return { label: 'Pending Acceptance', cls: 'badge-warning', icon: FiClock }
+  if (!['COD', 'cod'].includes(order.paymentMethod) && (order.paymentStatus === 'PENDING' || !order.isPaid)) {
+    return { label: 'Payment Pending', cls: 'badge-warning', icon: FiAlertCircle }
+  }
+  return { label: ['COD', 'cod'].includes(order.paymentMethod) ? 'Order Placed (COD)' : 'Order Placed', cls: 'badge-info', icon: FiClock }
 }
 
 const StatusBadge = ({ order }) => {
@@ -218,12 +222,12 @@ const CancelModal = ({ order, onClose, onConfirm, loading }) => {
     : (order.paymentMethod === 'Wallet' && order.isPaid ? Number(order.totalPrice || 0) : 0)
 
   const netPayable = Math.max(0, Number(order.totalPrice || 0) - Number(order.walletUsed || 0) - Number(order.giftCard?.amountUsed || 0))
-  const onlineRefund = (order.paymentMethod === 'Online' && order.isPaid && netPayable > 0)
+  const onlineRefund = (!['COD', 'cod'].includes(order.paymentMethod) && order.isPaid && netPayable > 0)
     ? netPayable
     : 0
 
   const giftCardRefund = Number(order.giftCard?.amountUsed || 0)
-  const isCOD = order.paymentMethod === 'COD'
+  const isCOD = ['COD', 'cod'].includes(order.paymentMethod)
 
   const handleSubmit = () => {
     if (loading) return
@@ -520,6 +524,7 @@ const Orders = () => {
   const [reviewModal,   setReviewModal]   = useState(null)
   const [reviewedIds,   setReviewedIds]   = useState(new Set())
   const [supportDrawerOrder, setSupportDrawerOrder] = useState(null)
+  const [retryingOrderId, setRetryingOrderId] = useState(null)
 
   useEffect(() => { if (user) fetchOrders() }, [user])
 
@@ -643,18 +648,88 @@ const Orders = () => {
     }
   }
 
+  // 💳 Retry Payment for failed or pending online orders
+  const handleRetryPayment = async (order) => {
+    setRetryingOrderId(order._id)
+    try {
+      // 1. Request backend to create/retrieve Razorpay order
+      const { data } = await api.post('/api/payment/create-order', { orderId: order._id })
+      const rzrOrder = data
+      const razorpayKey = rzrOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_EvzmZvtG1AJQAS'
+
+      // 2. Ensure Razorpay SDK is ready
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+          script.async = true
+          script.onload = resolve
+          script.onerror = () => reject(new Error('Failed to load Razorpay payment gateway'))
+          document.body.appendChild(script)
+        })
+      }
+
+      // 3. Open Razorpay checkout
+      const rzp = new window.Razorpay({
+        key: razorpayKey,
+        order_id: rzrOrder.id,
+        name: 'Daatasa',
+        description: `Order #${formatOrderId(order)}`,
+        amount: rzrOrder.amount,
+        theme: { color: '#F5A623' },
+        prefill: {
+          name: user?.name || order.shippingAddress?.name || '',
+          email: user?.email || order.guestEmail || '',
+          contact: user?.phone || order.shippingAddress?.phone || ''
+        },
+        handler: async (res) => {
+          try {
+            toast.info('Verifying payment and confirming your order…')
+            await api.post('/api/payment/verify', res)
+            toast.success('🎉 Payment successful! Your order has been confirmed.')
+            fetchOrders()
+          } catch (verifyErr) {
+            toast.error(verifyErr.response?.data?.message || 'Payment verification failed')
+            fetchOrders()
+          } finally {
+            setRetryingOrderId(null)
+          }
+        },
+        modal: {
+          ondismiss: async () => {
+            setRetryingOrderId(null)
+            try {
+              await api.post('/api/orders/fail', { razorpay_order_id: rzrOrder.id })
+            } catch {}
+            toast.info('Payment window closed. You can retry paying anytime.')
+            fetchOrders()
+          }
+        }
+      })
+
+      rzp.open()
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate payment. Product might be out of stock.')
+      setRetryingOrderId(null)
+    }
+  }
+
   const canCancel = (o) =>
     !['CANCELLED', 'FAILED'].includes(o.paymentStatus) &&
     !['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'RETURNED'].includes(o.orderStatus) &&
     !o.isDelivered
   const canReturn = (o) => o.isDelivered && !o.returnRequest?.requestedAt && (Date.now() - new Date(o.deliveredAt).getTime()) / (1000 * 60 * 60 * 24) <= 7
 
+  const isUnpaidOnline = (o) => !['COD', 'cod'].includes(o.paymentMethod) && (!o.isPaid && !['CANCELLED', 'EXPIRED'].includes(o.paymentStatus) || o.paymentStatus === 'FAILED')
+  const unpaidCount = orders.filter(isUnpaidOnline).length
+
   const visible = orders.filter(o => {
     if (filter === 'all') return true
-    if (filter === 'pending') return !o.isPaid && !o.isDelivered && !['CANCELLED', 'FAILED'].includes(o.paymentStatus)
+    if (filter === 'unpaid') return isUnpaidOnline(o)
+    if (filter === 'pending') return (!o.isDelivered && (['COD', 'cod'].includes(o.paymentMethod) || o.isPaid) && !['CANCELLED', 'EXPIRED', 'FAILED'].includes(o.paymentStatus))
     if (filter === 'paid') return o.isPaid && !o.isDelivered
     if (filter === 'delivered') return o.isDelivered
-    if (filter === 'cancelled') return ['CANCELLED', 'FAILED'].includes(o.paymentStatus)
+    if (filter === 'cancelled') return ['CANCELLED', 'EXPIRED'].includes(o.paymentStatus) || o.orderStatus === 'CANCELLED'
     return true
   })
 
@@ -692,6 +767,13 @@ const Orders = () => {
 
   return (
     <div className="min-h-screen pb-20 bg-[var(--ivory)] font-sans text-brand-text">
+      {/* 🌟 Signature Brand Loader Overlay during Payment Retry */}
+      <BrandLoader
+        visible={!!retryingOrderId}
+        text="Connecting to Payment Gateway…"
+        subtext="Preparing secure payment window for your order"
+        mode="overlay"
+      />
       <Helmet>
         <title>My Orders — Daatasa</title>
         <meta name="description" content="Track and manage your Daatasa orders. View order history, cancel, return, or reorder with one click." />
@@ -710,7 +792,7 @@ const Orders = () => {
             <div className="text-center sm:text-right p-5 rounded-[1.5rem] bg-[var(--ivory)] border border-brand-primary/5">
               <p className="text-[10px] mb-1 text-brand-text/40 uppercase tracking-widest font-bold">Total Spent</p>
               <p className="text-3xl font-bold font-display text-brand-primary">
-                ₹{orders.reduce((acc, o) => acc + (o.paymentStatus !== 'CANCELLED' ? o.totalPrice : 0), 0).toLocaleString('en-IN')}
+                ₹{orders.reduce((acc, o) => acc + (o.isPaid || ['COD_CONFIRMED', 'PAID'].includes(o.paymentStatus) ? o.totalPrice : 0), 0).toLocaleString('en-IN')}
               </p>
             </div>
           </div>
@@ -719,6 +801,7 @@ const Orders = () => {
           <div className="flex gap-3 overflow-x-auto no-scrollbar pt-2 sm:justify-center">
             {[
               { id: 'all', label: 'All Orders' },
+              { id: 'unpaid', label: 'Payment Pending', badge: unpaidCount },
               { id: 'pending', label: 'Pending' },
               { id: 'paid', label: 'Processing' },
               { id: 'delivered', label: 'Delivered' },
@@ -727,13 +810,20 @@ const Orders = () => {
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id)}
-                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                className={`px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap flex items-center gap-2 ${
                   filter === f.id
                     ? 'bg-brand-primary text-white shadow-sm'
                     : 'bg-white text-brand-text/60 border border-brand-primary/10 hover:border-brand-primary/30 hover:text-brand-primary'
                 }`}
               >
-                {f.label}
+                <span>{f.label}</span>
+                {f.badge > 0 && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                    filter === f.id ? 'bg-white text-brand-primary' : 'bg-amber-500 text-white'
+                  }`}>
+                    {f.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -794,6 +884,20 @@ const Orders = () => {
                     </div>
 
                     <div className="flex items-center gap-5">
+                      {!['COD', 'cod'].includes(o.paymentMethod) && !o.isPaid && ['PENDING', 'FAILED'].includes(o.paymentStatus) && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleRetryPayment(o) }}
+                          disabled={retryingOrderId === o._id}
+                          className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full text-xs font-bold uppercase tracking-wider transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer disabled:opacity-50 shrink-0"
+                        >
+                          {retryingOrderId === o._id ? (
+                            <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <FiCreditCard size={14} />
+                          )}
+                          Pay Now
+                        </button>
+                      )}
                       {['COD_CONFIRMED', 'PAID'].includes(o.paymentStatus) && (
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReorder(o) }}
@@ -958,6 +1062,22 @@ const Orders = () => {
 
                           {/* Actions */}
                           <div className="mt-8 flex flex-wrap gap-4 justify-end pt-6 border-t border-brand-primary/10">
+                            {/* Retry Pay button */}
+                            {!['COD', 'cod'].includes(o.paymentMethod) && !o.isPaid && ['PENDING', 'FAILED'].includes(o.paymentStatus) && (
+                              <button
+                                onClick={() => handleRetryPayment(o)}
+                                disabled={retryingOrderId === o._id}
+                                className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-full text-sm transition-all flex items-center gap-2 shadow-md hover:shadow-lg active:scale-95 cursor-pointer disabled:opacity-50"
+                              >
+                                {retryingOrderId === o._id ? (
+                                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                ) : (
+                                  <FiCreditCard size={16} />
+                                )}
+                                Complete Payment (₹{Number((o.payableAmount !== undefined && o.payableAmount !== null) ? o.payableAmount : Math.max(0, o.totalPrice - (o.walletUsed || 0) - (o.giftCard?.amountUsed || 0))).toLocaleString('en-IN')})
+                              </button>
+                            )}
+
                             {/* Reorder button */}
                             {['COD_CONFIRMED', 'PAID'].includes(o.paymentStatus) && (
                               <button

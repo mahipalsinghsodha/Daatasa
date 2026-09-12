@@ -5,9 +5,6 @@ import { FiMail, FiCheck } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 
-// 🚀 Hardcoded Launch Date (01 Jan 2027)
-const DEFAULT_LAUNCH_DATE = '2027-01-01T00:00:00.000Z';
-
 const ComingSoon = ({ launchDate }) => {
   const [timeLeft, setTimeLeft] = useState(null);
   const [email, setEmail] = useState('');
@@ -15,22 +12,18 @@ const ComingSoon = ({ launchDate }) => {
   const [subscribed, setSubscribed] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const targetDate = launchDate || DEFAULT_LAUNCH_DATE;
-
   useEffect(() => {
-    const target = new Date(targetDate).getTime();
+    if (!launchDate) return;
+    
+    const target = new Date(launchDate).getTime();
     
     const calculateTimeLeft = () => {
       const now = new Date().getTime();
       const difference = target - now;
       
       if (difference <= 0) {
-        return {
-          days: 0,
-          hours: 0,
-          minutes: 0,
-          seconds: 0
-        };
+        window.location.reload();
+        return null;
       }
       
       return {
@@ -47,7 +40,7 @@ const ComingSoon = ({ launchDate }) => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [launchDate]);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();

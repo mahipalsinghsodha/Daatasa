@@ -11,6 +11,7 @@ import {
   FiArrowRight, FiHome, FiBriefcase,
   FiCheck, FiAlertCircle, FiEdit2, FiLock, FiBox
 } from 'react-icons/fi'
+import BrandLoader from '../components/BrandLoader'
 
 const STATES = [
   'Andaman and Nicobar Islands','Andhra Pradesh','Arunachal Pradesh','Assam','Bihar',
@@ -83,9 +84,27 @@ const Checkout = () => {
       return;
     }
 
-    fetchCart(); 
-    fetchAddresses();
-    api.get('/api/wallet').then(res => setWalletBalance(res.data.walletBalance)).catch(console.error)
+    // 1️⃣ Initialize addresses from auth context immediately (0ms delay)
+    if (user?.addresses && user.addresses.length > 0) {
+      setSaved(user.addresses);
+      const def = user.addresses.find(a => a.isDefault) || user.addresses[user.addresses.length - 1];
+      if (def) setSelAddr(String(def._id));
+    } else {
+      fetchAddresses();
+    }
+
+    // 2️⃣ Initialize cart from CartContext immediately (0ms delay)
+    if (cartItems && cartItems.length > 0) {
+      setCart({ items: cartItems });
+    } else {
+      fetchCart();
+    }
+
+    // 3️⃣ Parallel fetch for preview and wallet (Zero Waterfall)
+    Promise.allSettled([
+      fetchPreview(),
+      api.get('/api/wallet').then(res => setWalletBalance(res.data.walletBalance))
+    ]).catch(console.error);
 
     const cleanPhone = (user.phone || '').replace(/\D/g, '').slice(-10);
     setNewAddr(prev => ({
@@ -129,13 +148,12 @@ const Checkout = () => {
       if (user) {
         const res = await api.get('/api/cart')
         setCart(res.data)
-        if (res.data.items.length === 0) { navigate('/cart'); return }
+        if (!res.data.items || res.data.items.length === 0) { navigate('/cart'); return }
       } else {
         const parsedItems = JSON.parse(guestCartStr);
         setCart({ items: parsedItems })
         if (parsedItems.length === 0) { navigate('/cart'); return }
       }
-      fetchPreview()
     } catch(e) { console.error(e) }
   }
 
@@ -756,25 +774,13 @@ const Checkout = () => {
         </form>
       </div>
 
-      {/* Full-screen Order Processing Overlay */}
-      <AnimatePresence>
-        {isProcessingOrder && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-md flex flex-col items-center justify-center text-white text-center p-6 select-none"
-          >
-            <div className="w-16 h-16 border-4 border-white/20 border-t-amber-400 rounded-full animate-spin mb-4" />
-            <h3 className="text-xl sm:text-2xl font-bold font-display text-white">
-              {processingMessage || 'Processing Your Order…'}
-            </h3>
-            <p className="text-sm text-white/80 mt-2 max-w-sm">
-              Please do not refresh the page or press back while we confirm your order.
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 🌟 Signature Brand Loader Overlay during Order Placement */}
+      <BrandLoader
+        visible={isProcessingOrder}
+        text={processingMessage || 'Processing Your Order…'}
+        subtext="Please do not refresh or press back while we confirm your order"
+        mode="overlay"
+      />
 
       {/* Stock Modal */}
       <AnimatePresence>

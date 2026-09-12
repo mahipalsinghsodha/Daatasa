@@ -15,6 +15,7 @@ import { useSocket } from '../../hooks/useSocket'
 import { useConfirm } from '../../context/ConfirmContext'
 import { formatOrderId } from '../../utils/formatOrderId'
 import Pagination from '../../components/Pagination'
+import BrandLoader from '../../components/BrandLoader'
 
 const fmtINR = (val) => `₹${Number(val || 0).toLocaleString('en-IN')}`
 const qrUrl = (data, size = 120) => `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(data)}&margin=6`
@@ -24,8 +25,9 @@ const getStatus = (o) => {
   if (o.orderStatus === 'RETURNED' || (o.returnRequest?.requestedAt && o.returnRequest.status === 'APPROVED') || o.paymentStatus === 'RETURN_APPROVED') return { label: 'Returned', color: '#16a34a', bg: 'rgba(22,163,74,0.12)', border: 'rgba(22,163,74,0.35)' }
   if (o.returnRequest?.requestedAt && o.returnRequest.status === 'REJECTED') return { label: 'Return Rejected', color: '#dc2626', bg: 'rgba(220,38,38,0.12)', border: 'rgba(220,38,38,0.35)' }
   if (o.isDelivered || o.orderStatus === 'DELIVERED') return { label: 'Delivered', color: 'var(--success)', bg: 'rgba(56,161,105,0.08)', border: 'rgba(56,161,105,0.25)' }
+  if (o.paymentStatus === 'FAILED') return { label: 'Payment Failed', color: '#dc2626', bg: 'rgba(220,38,38,0.12)', border: 'rgba(220,38,38,0.35)' }
   if (o.orderStatus === 'CANCELLED' || o.paymentStatus === 'CANCELLED') return { label: 'Cancelled', color: 'var(--text-muted)', bg: 'var(--bg-alt)', border: 'var(--border-color)' }
-  if (o.paymentStatus === 'FAILED') return { label: 'Failed', color: 'var(--danger)', bg: 'rgba(229,62,62,0.08)', border: 'rgba(229,62,62,0.25)' }
+  if (!['COD', 'cod'].includes(o.paymentMethod) && !o.isPaid) return { label: 'Payment Pending', color: '#d97706', bg: 'rgba(217,119,6,0.12)', border: 'rgba(217,119,6,0.35)' }
   if (o.orderStatus === 'OUT_FOR_DELIVERY') return { label: 'Out for Delivery', color: '#8b5cf6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.25)' }
   if (['SHIPPED', 'PICKED_UP', 'ASSIGNED_TO_COURIER'].includes(o.orderStatus) || !!o.trackingNumber) return { label: 'Shipped', color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)', border: 'rgba(14,165,233,0.25)' }
   if (o.orderStatus === 'ACCEPTED') return { label: 'Accepted', color: 'var(--brand-secondary)', bg: 'rgba(30,58,138,0.08)', border: 'rgba(30,58,138,0.25)' }
@@ -115,8 +117,10 @@ const ManageOrders = () => {
   const [previewImage, setPreviewImage] = useState(null)
   const [previewVideo, setPreviewVideo] = useState(null)
   const [pendingReturnsCount, setPendingReturnsCount] = useState(0)
+  const [unpaidOrdersCount, setUnpaidOrdersCount] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [actionLoading, setActionLoading] = useState({ active: false, text: '', subtext: '' })
 
   const [trackingNum, setTrackingNum] = useState('')
   const [shippingProv, setShippingProv] = useState('')
@@ -161,6 +165,7 @@ const ManageOrders = () => {
       if (res.data.pages !== undefined) setTotalPages(res.data.pages)
       if (res.data.total !== undefined) setTotalOrders(res.data.total)
       if (res.data.pendingReturnsCount !== undefined) setPendingReturnsCount(res.data.pendingReturnsCount)
+      if (res.data.unpaidOrdersCount !== undefined) setUnpaidOrdersCount(res.data.unpaidOrdersCount)
       if (res.data.page && res.data.page !== pg) {
         setPage(res.data.page)
       }
@@ -179,61 +184,129 @@ const ManageOrders = () => {
   }, [hasPermission, page, limit, filter, search])
 
   const handleExportCSV = async () => {
+    setActionLoading({
+      active: true,
+      text: 'Exporting Orders CSV…',
+      subtext: 'Compiling order records into spreadsheet'
+    })
     try {
-      const res = await api.get('/api/orders/export/csv', { responseType: 'blob' })
-      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const params = new URLSearchParams()
+      if (startDate) params.append('startDate', startDate)
+      if (endDate) params.append('endDate', endDate)
+      if (filter && filter !== 'all') params.append('filter', filter)
+
+      const urlPath = `/api/orders/export/csv${params.toString() ? '?' + params.toString() : ''}`
+      const res = await api.get(urlPath, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', 'orders_export.csv')
+      link.setAttribute('download', `orders_export_${startDate || 'all'}_to_${endDate || 'now'}.csv`)
       document.body.appendChild(link)
       link.click()
       link.parentNode.removeChild(link)
-    } catch {
-      toast.error('Failed to export orders')
+      window.URL.revokeObjectURL(url)
+      toast.success('Orders exported successfully!')
+    } catch (err) {
+      let msg = 'Failed to export orders'
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text()
+          const json = JSON.parse(text)
+          msg = json.message || msg
+        } catch {}
+      } else if (err.response?.data?.message) {
+        msg = err.response.data.message
+      }
+      toast.error(msg)
+    } finally {
+      setActionLoading({ active: false, text: '', subtext: '' })
     }
   }
 
   const markPaid = async (id) => {
     if (!(await confirm('Mark this order as PAID?'))) return
-    try { await api.put(`/api/orders/${id}/pay`); fetchOrders(false, page); toast.success('Order marked as paid') }
-    catch { toast.error('Failed to update') }
+    setActionLoading({ active: true, text: 'Recording Payment...', subtext: 'Marking order as PAID' })
+    try {
+      await api.put(`/api/orders/${id}/pay`)
+      await fetchOrders(false, page)
+      toast.success('Order marked as paid')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update')
+    } finally {
+      setActionLoading({ active: false, text: '', subtext: '' })
+    }
   }
 
   const markAccepted = async (id) => {
     if (!(await confirm('Accept this order?'))) return
-    try { await api.put(`/api/orders/${id}/accept`); fetchOrders(false, page); toast.success('Order accepted') }
-    catch { toast.error('Failed to accept order') }
+    setActionLoading({ active: true, text: 'Accepting Order...', subtext: 'Moving to packing & fulfillment' })
+    try {
+      await api.put(`/api/orders/${id}/accept`)
+      await fetchOrders(false, page)
+      toast.success('Order accepted')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to accept order')
+    } finally {
+      setActionLoading({ active: false, text: '', subtext: '' })
+    }
   }
 
   const markDelivered = async (id) => {
     if (!(await confirm('Mark this order as DELIVERED? This cannot be undone.'))) return
-    try { await api.put(`/api/orders/${id}/deliver`); fetchOrders(false, page); toast.success('Order marked as delivered') }
-    catch { toast.error('Failed to update') }
+    setActionLoading({ active: true, text: 'Marking Order as Delivered...', subtext: 'Updating status & crediting reward points' })
+    try {
+      await api.put(`/api/orders/${id}/deliver`)
+      await fetchOrders(false, page)
+      toast.success('Order marked as delivered')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update')
+    } finally {
+      setActionLoading({ active: false, text: '', subtext: '' })
+    }
   }
 
   const handleCancel = async (reason) => {
     setSubmitting(true)
-    try { await api.post(`/api/orders/${cancelModal._id}/cancel`, { reason }); toast.success('Order cancelled'); setCancelModal(null); fetchOrders(false, page) }
-    catch { toast.error('Cancellation failed') }
-    finally { setSubmitting(false) }
+    setActionLoading({ active: true, text: 'Cancelling Order...', subtext: 'Restoring inventory and calculating refund' })
+    try {
+      await api.post(`/api/orders/${cancelModal._id}/cancel`, { reason })
+      toast.success('Order cancelled')
+      setCancelModal(null)
+      await fetchOrders(false, page)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Cancellation failed')
+    } finally {
+      setSubmitting(false)
+      setActionLoading({ active: false, text: '', subtext: '' })
+    }
   }
 
   const handleAddTracking = async (e) => {
     e.preventDefault()
     setSubmitting(true)
+    setActionLoading({ active: true, text: 'Shipping Order...', subtext: 'Adding tracking details & notifying customer' })
     try {
       await api.put(`/api/orders/${trackingModal._id}/ship`, { trackingNumber: trackingNum, shippingProvider: shippingProv })
       toast.success('Tracking info added and order shipped!')
       setTrackingModal(null)
       setTrackingNum('')
       setShippingProv('')
-      fetchOrders(false, page)
-    } catch { toast.error('Failed to add tracking') }
-    finally { setSubmitting(false) }
+      await fetchOrders(false, page)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add tracking')
+    } finally {
+      setSubmitting(false)
+      setActionLoading({ active: false, text: '', subtext: '' })
+    }
   }
 
   const handleProcessReturn = async (orderId, status, adminNote, bookReversePickup) => {
     setSubmitting(true)
+    setActionLoading({
+      active: true,
+      text: 'Processing Return...',
+      subtext: status === 'APPROVED' ? 'Approving return and processing refund' : 'Updating return record'
+    })
     try {
       const res = await api.put(`/api/orders/${orderId}/return-status`, {
         status,
@@ -242,11 +315,12 @@ const ManageOrders = () => {
       })
       toast.success(res.data.message || (status === 'APPROVED' ? 'Return approved & refund processed!' : 'Return rejected'))
       setReturnActionModal(null)
-      fetchOrders(false, page)
+      await fetchOrders(false, page)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update return status')
     } finally {
       setSubmitting(false)
+      setActionLoading({ active: false, text: '', subtext: '' })
     }
   }
 
@@ -258,14 +332,16 @@ const ManageOrders = () => {
   const handleShipWithShiprocket = async (id) => {
     if (!(await confirm('Dispatch this order via Shiprocket (Delhivery / BlueDart)? This will assign courier, generate AWB tracking, and mark as Shipped.'))) return
     setSyncing(true)
+    setActionLoading({ active: true, text: 'Connecting to Shiprocket...', subtext: 'Assigning courier & generating AWB label' })
     try {
       const res = await api.post(`/api/shiprocket/ship/${id}`)
       toast.success(res.data.message || 'Dispatched via Shiprocket successfully!')
-      fetchOrders(false, page)
+      await fetchOrders(false, page)
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to dispatch via Shiprocket')
     } finally {
       setSyncing(false)
+      setActionLoading({ active: false, text: '', subtext: '' })
     }
   }
 
@@ -285,13 +361,23 @@ const ManageOrders = () => {
     if (!(await confirm(`Mark ${selectedOrders.size} orders as ${actionText}?`))) return
     
     setSyncing(true)
+    setActionLoading({
+      active: true,
+      text: `Updating ${selectedOrders.size} Orders in Bulk...`,
+      subtext: `Setting status to ${actionText}`
+    })
     try {
-      await api.put('/api/orders/bulk/update', { orderIds: Array.from(selectedOrders), action })
-      toast.success(`Orders marked as ${actionText.toLowerCase()}`)
+      const res = await api.put('/api/orders/bulk/update', { orderIds: Array.from(selectedOrders), action })
+      toast.success(res.data?.message || `Orders marked as ${actionText.toLowerCase()}`)
       setSelectedOrders(new Set())
-      fetchOrders(false, page)
-    } catch { toast.error('Bulk update failed') }
-    finally { setSyncing(false) }
+      await fetchOrders(false, page)
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Bulk update failed')
+    }
+    finally {
+      setSyncing(false)
+      setActionLoading({ active: false, text: '', subtext: '' })
+    }
   }
 
   const toggleSelection = (id) => {
@@ -306,7 +392,8 @@ const ManageOrders = () => {
     else setSelectedOrders(new Set(filteredOrders.map(o => o._id)))
   }
 
-  const isVoid = (o) => ['CANCELLED', 'FAILED'].includes(o.paymentStatus)
+  const isVoid = (o) => ['CANCELLED', 'FAILED'].includes(o.paymentStatus) || o.orderStatus === 'CANCELLED'
+  const isUnpaidOnline = (o) => !['COD', 'cod'].includes(o.paymentMethod) && !o.isPaid
 
   const filteredOrders = orders;
 
@@ -337,6 +424,13 @@ const ManageOrders = () => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
+      {/* 🌟 Signature Brand Loader Overlay for all actions */}
+      <BrandLoader
+        visible={actionLoading.active}
+        text={actionLoading.text}
+        subtext={actionLoading.subtext}
+        mode="overlay"
+      />
       {/* ── Premium Admin Header ── */}
       <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"
@@ -396,8 +490,9 @@ const ManageOrders = () => {
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
             {[
               { v: 'all',       l: 'All' },
-              { v: 'pending',   l: 'Pending' },
-              { v: 'accepted',  l: 'Accepted' },
+              { v: 'unpaid',    l: 'Payment Pending', badge: unpaidOrdersCount },
+              { v: 'pending',   l: 'Pending (To Pack)' },
+              { v: 'accepted',  l: 'Accepted (Packed)' },
               { v: 'cod',       l: 'COD' },
               { v: 'paid',      l: 'Paid' },
               { v: 'delivered', l: 'Delivered' },
@@ -414,7 +509,7 @@ const ManageOrders = () => {
                 {badge > 0 && (
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] font-black"
                     style={{
-                      background: filter === v ? 'var(--navy)' : '#ea580c',
+                      background: filter === v ? 'var(--navy)' : (v === 'unpaid' ? '#d97706' : '#ea580c'),
                       color: filter === v ? 'var(--gold)' : '#fff'
                     }}>
                     {badge}
@@ -429,10 +524,10 @@ const ManageOrders = () => {
       {/* Bulk Actions Bar */}
       {selectedOrders.size > 0 && (() => {
         const selectedList = orders.filter(o => selectedOrders.has(o._id));
-        const hasPending = selectedList.some(o => o.orderStatus === 'PENDING_ACCEPTANCE' && !isVoid(o));
-        const hasUnpaid = selectedList.some(o => !o.isPaid && !isVoid(o));
-        const hasUndelivered = selectedList.some(o => !o.isDelivered && !isVoid(o) && (o.orderStatus === 'ACCEPTED' || o.orderStatus === 'SHIPPED'));
-        const hasValid = selectedList.some(o => !isVoid(o));
+        const hasPending = selectedList.some(o => o.orderStatus === 'PENDING_ACCEPTANCE' && !isVoid(o) && !isUnpaidOnline(o));
+        const hasUnpaid = selectedList.some(o => !o.isPaid && !isVoid(o) && !isUnpaidOnline(o));
+        const hasUndelivered = selectedList.some(o => !o.isDelivered && !isVoid(o) && !isUnpaidOnline(o) && (o.orderStatus === 'ACCEPTED' || o.orderStatus === 'SHIPPED'));
+        const hasValid = selectedList.some(o => !isVoid(o) && !isUnpaidOnline(o));
 
         return (
           <div className="sticky top-[72px] z-30 max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-3 mb-2 bg-white dark:bg-gray-800 shadow-sm border-b rounded-b-2xl flex items-center justify-between flex-wrap gap-2">
@@ -541,6 +636,22 @@ const ManageOrders = () => {
                     {isExp && (
                       <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} style={{ overflow: 'hidden' }}>
                         <div style={{ padding: 20, borderTop: '1px solid var(--border-color)', background: 'var(--bg-alt)' }}>
+                          {isUnpaidOnline(o) && (
+                            <div className="mb-4 p-3.5 rounded-xl border flex items-center gap-3"
+                              style={{
+                                background: o.paymentStatus === 'FAILED' ? 'rgba(220,38,38,0.08)' : 'rgba(217,119,6,0.09)',
+                                borderColor: o.paymentStatus === 'FAILED' ? 'rgba(220,38,38,0.3)' : 'rgba(217,119,6,0.3)',
+                                color: o.paymentStatus === 'FAILED' ? '#dc2626' : '#b45309'
+                              }}>
+                              <FiAlertCircle size={18} className="shrink-0" />
+                              <div className="text-xs leading-relaxed">
+                                <strong className="font-bold">
+                                  {o.paymentStatus === 'FAILED' ? 'Payment Failed' : 'Payment Not Received (Online Checkout Incomplete)'}:
+                                </strong>{' '}
+                                Customer selected Online Payment, but payment has not been received or completed. Do NOT pack, accept, or dispatch this order until payment is verified.
+                              </div>
+                            </div>
+                          )}
                           <div className="grid lg:grid-cols-2 gap-6">
                             {/* Left: Items */}
                             <div>
@@ -710,20 +821,22 @@ const ManageOrders = () => {
                                 <button onClick={() => downloadInvoice(o._id)} className="btn btn-secondary text-xs h-auto py-2">
                                   <FiPrinter size={13} /> Invoice
                                 </button>
-                                <button onClick={() => openPrint(shippingLabelHTML(o), `Label #${formatOrderId(o)}`)} className="btn btn-secondary text-xs h-auto py-2">
-                                  <FiTag size={13} /> Shipping Label
-                                </button>
-                                {o.orderStatus === 'PENDING_ACCEPTANCE' && !isVoid(o) && (
+                                {!isUnpaidOnline(o) && (
+                                  <button onClick={() => openPrint(shippingLabelHTML(o), `Label #${formatOrderId(o)}`)} className="btn btn-secondary text-xs h-auto py-2">
+                                    <FiTag size={13} /> Shipping Label
+                                  </button>
+                                )}
+                                {o.orderStatus === 'PENDING_ACCEPTANCE' && !isVoid(o) && !isUnpaidOnline(o) && (
                                   <button onClick={() => markAccepted(o._id)} style={{ padding: '8px 14px', background: 'var(--brand-secondary)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                                     <FiCheckCircle size={13} /> Accept Order
                                   </button>
                                 )}
-                                {!o.isPaid && !isVoid(o) && (
+                                {!o.isPaid && !isVoid(o) && !isUnpaidOnline(o) && (
                                   <button onClick={() => markPaid(o._id)} style={{ padding: '8px 14px', background: 'var(--success)', color: '#fff', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                                     <FiCheckCircle size={13} /> Mark Paid
                                   </button>
                                 )}
-                                {['ACCEPTED', 'SHIPPED', 'PICKED_UP', 'ASSIGNED_TO_COURIER', 'OUT_FOR_DELIVERY'].includes(o.orderStatus) && !o.isDelivered && !isVoid(o) && (
+                                {['ACCEPTED', 'SHIPPED', 'PICKED_UP', 'ASSIGNED_TO_COURIER', 'OUT_FOR_DELIVERY'].includes(o.orderStatus) && !o.isDelivered && !isVoid(o) && !isUnpaidOnline(o) && (
                                   <>
                                     {!o.awbCode && !o.trackingNumber && (
                                       <>
@@ -742,7 +855,7 @@ const ManageOrders = () => {
                                 )}
                                 {!o.isDelivered && !isVoid(o) && (
                                   <button onClick={() => setCancelModal(o)} style={{ padding: '8px 14px', background: 'rgba(229,62,62,0.1)', color: 'var(--danger)', border: '1.5px solid rgba(229,62,62,0.25)', borderRadius: 10, fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                                    <FiX size={13} /> Cancel
+                                    <FiX size={13} /> Cancel Order
                                   </button>
                                 )}
                               </div>

@@ -7,6 +7,7 @@ import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Check, Sparkles } from 'luci
 import { toast } from 'react-toastify'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
+import BrandLoader from '../components/BrandLoader'
 
 const FloatingInput = ({ id, label, type = 'text', value, onChange, icon: Icon, rightElement, autoComplete, required, placeholder }) => {
   const [focused, setFocused] = useState(false)
@@ -63,7 +64,7 @@ const Register = () => {
   const location = useLocation()
 
   const [name,         setName]         = useState('')
-  const [email,        setEmail]        = useState('')
+  const [email,        setEmail]        = useState(location.state?.email || '')
   const [password,     setPassword]     = useState('')
   const [confirm,      setConfirm]      = useState('')
   const [referralCode, setReferralCode] = useState('')
@@ -72,6 +73,12 @@ const Register = () => {
   const [loading,      setLoading]      = useState(false)
 
   useEffect(() => { if (user) navigate('/', { replace: true }) }, [user, navigate])
+
+  useEffect(() => {
+    if (location.state?.email && !email) {
+      setEmail(location.state.email)
+    }
+  }, [location.state])
 
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -159,6 +166,14 @@ const Register = () => {
 
   return (
     <div className="py-4 sm:py-8 lg:py-10 px-3 sm:px-6 flex flex-col items-center justify-start bg-[var(--ivory)] font-sans relative">
+      {/* 🌟 Signature Brand Loader */}
+      <BrandLoader
+        visible={loading}
+        text="Creating Account…"
+        subtext="Setting up your pure Vedic ghee experience"
+        mode="overlay"
+      />
+
       <Helmet>
         <title>Create Account — Daatasa</title>
         <meta name="description" content="Create a Daatasa account to shop pure Bilona ghee online." />
@@ -180,6 +195,13 @@ const Register = () => {
             <Link to="/login" className="text-brand-secondary font-bold hover:text-brand-primary transition-colors">{t('auth.signInBtn', 'Sign in')}</Link>
           </p>
         </div>
+
+        {location.state?.email && (
+          <div className="mb-3 p-2.5 rounded-xl bg-brand-primary/5 border border-brand-secondary/20 flex items-center gap-2 text-xs text-brand-primary">
+            <Sparkles size={14} className="text-brand-secondary shrink-0" />
+            <span>Welcome! Complete registration below to get started.</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-2.5">
           <FloatingInput

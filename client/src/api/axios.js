@@ -52,11 +52,50 @@ export const getAccessToken = () => _accessToken;
 let refreshPromise = null;
 
 export const refreshAuthToken = () => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    return Promise.reject(new Error('No refresh token available'));
+  }
+
   if (!refreshPromise) {
-    const refreshToken = getRefreshToken();
-    refreshPromise = api.post('/api/auth/refresh', { refreshToken }).finally(() => {
-      refreshPromise = null;
-    });
+    const baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:5000');
+    // Using raw axios to prevent circular request/response interceptors & token header pollution
+    refreshPromise = axios
+      .post(
+        `${baseURL}/api/auth/refresh`,
+        { refreshToken },
+        {
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000,
+        }
+      )
+      .then((res) => {
+        const { token, refreshToken: newRefreshToken } = res.data || {};
+        if (token) setAccessToken(token);
+        if (newRefreshToken) setRefreshToken(newRefreshToken);
+        return res;
+      })
+      .catch((err) => {
+        // Clear tokens on failed refresh
+        setAccessToken(null);
+        setRefreshToken(null);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('token');
+
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('auth:forced_logout', {
+              detail: { reason: 'Your session has expired. Please login again.' },
+            })
+          );
+        }
+        return Promise.reject(err);
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
   }
   return refreshPromise;
 };
@@ -65,8 +104,13 @@ export const refreshAuthToken = () => {
 api.interceptors.request.use(
   (config) => {
     // Always attach latest token from memory
-    if (_accessToken && !config.headers['Authorization']) {
-      config.headers['Authorization'] = `Bearer ${_accessToken}`;
+    if (_accessToken) {
+      if (config.headers?.set) {
+        config.headers.set('Authorization', `Bearer ${_accessToken}`);
+      } else {
+        config.headers = config.headers || {};
+        config.headers['Authorization'] = `Bearer ${_accessToken}`;
+      }
     }
     return config;
   },
@@ -74,74 +118,49 @@ api.interceptors.request.use(
 );
 
 // ─── Response Interceptor (401 → auto-refresh → retry) ───────────────────────
-let isRefreshing = false;
-let failedQueue  = []; // Queue of { resolve, reject } for requests waiting on refresh
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
-  failedQueue = [];
-};
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
     // Network error (server down, ECONNREFUSED, etc.) — do NOT attempt token refresh.
-    // Only refresh on actual 401 HTTP responses.
-    if (!error.response) {
+    if (!error.response || !originalRequest) {
       return Promise.reject(error);
     }
 
     // Only intercept 401 (Unauthorized) errors
     // Skip: already retried, refresh endpoint itself, login/register endpoints
     if (
-      error.response?.status === 401 &&
+      error.response.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/api/auth/refresh') &&
       !originalRequest.url?.includes('/api/auth/login') &&
       !originalRequest.url?.includes('/api/auth/register')
     ) {
-      if (isRefreshing) {
-        // Queue this request to retry once refresh completes
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then((token) => {
-          originalRequest.headers['Authorization'] = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch((err) => Promise.reject(err));
+      // If there is no refresh token stored, fail immediately without sending useless requests
+      if (!getRefreshToken()) {
+        return Promise.reject(error);
       }
 
       originalRequest._retry = true;
-      isRefreshing = true;
 
       try {
-        // Attempt token refresh using shared singleton promise
+        // All concurrent 401s share this single promise!
         const res = await refreshAuthToken();
-        const { token, refreshToken } = res.data;
+        const newToken = res.data?.token || _accessToken;
 
-        setAccessToken(token);
-        if (refreshToken) setRefreshToken(refreshToken);
-        processQueue(null, token);
+        if (newToken) {
+          if (originalRequest.headers?.set) {
+            originalRequest.headers.set('Authorization', `Bearer ${newToken}`);
+          } else {
+            originalRequest.headers = originalRequest.headers || {};
+            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          }
+        }
 
-        originalRequest.headers['Authorization'] = `Bearer ${token}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed — force logout and clear ALL stored tokens
-        processQueue(refreshError, null);
-        setAccessToken(null);
-        setRefreshToken(null);
-        // Also clear any leftover keys
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('token');
-
-        // Dispatch global logout event (AuthContext listens to this)
-        window.dispatchEvent(new CustomEvent('auth:forced_logout'));
-
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

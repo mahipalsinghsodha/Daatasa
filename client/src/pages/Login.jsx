@@ -3,11 +3,12 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Eye, EyeOff, Lock, ArrowLeft, ArrowRight, Phone, Mail, Sparkles, HelpCircle } from 'lucide-react'
+import { Eye, EyeOff, Lock, ArrowLeft, ArrowRight, Phone, Mail, Sparkles, HelpCircle, UserX, AlertCircle } from 'lucide-react'
 import { toast } from 'react-toastify'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 import api from '../api/axios'
+import BrandLoader from '../components/BrandLoader'
 
 // ── Shared Floating Input System ──
 const FloatingInput = ({ id, label, type = 'text', value, onChange, icon: Icon, prefix, rightElement, autoComplete, required, autoFocus, maxLength, placeholder, disabled }) => {
@@ -73,14 +74,16 @@ const Login = () => {
   const location = useLocation()
   const from = location.state?.from || '/'
 
-  const [step, setStep] = useState('IDENTIFIER')
-  const [mode, setMode] = useState('mobile') // 'mobile' | 'email'
-  const [identifier, setIdentifier] = useState('')
-  const [otp, setOtp]               = useState(['', '', '', '', '', ''])
-  const [password, setPassword]     = useState('')
-  const [showPass, setShowPass]     = useState(false)
-  const [loading, setLoading]       = useState(false)
-  const [timeLeft, setTimeLeft]     = useState(30)
+  const [step, setStep]                         = useState('IDENTIFIER')
+  const [mode, setMode]                         = useState('mobile') // 'mobile' | 'email'
+  const [identifier, setIdentifier]             = useState('')
+  const [otp, setOtp]                           = useState(['', '', '', '', '', ''])
+  const [password, setPassword]                 = useState('')
+  const [showPass, setShowPass]                 = useState(false)
+  const [loading, setLoading]                   = useState(false)
+  const [timeLeft, setTimeLeft]                 = useState(30)
+  const [emailCheckStatus, setEmailCheckStatus] = useState(null)
+  const [verifiedUser, setVerifiedUser]         = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -115,6 +118,7 @@ const Login = () => {
 
   const handleIdentifierSubmit = async (e) => {
     e.preventDefault()
+    setEmailCheckStatus(null)
     const trimmed = identifier.trim()
     if (!trimmed) {
       toast.error(mode === 'mobile' ? 'Please enter your 10-digit mobile number' : 'Please enter your email or username')
@@ -140,16 +144,75 @@ const Login = () => {
         setLoading(false)
       }
     } else {
+      // ── EMAIL / USERNAME FLOW: CHECK IF REGISTERED FIRST ──
+      if (trimmed.length < 2) {
+        toast.error('Please enter a valid email or username (at least 2 characters)')
+        return
+      }
+
       const hasAtSymbol = trimmed.includes('@')
       if (hasAtSymbol) {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
         if (!emailRegex.test(trimmed)) {
-          toast.error('Please enter a valid email address (e.g. name@gmail.com, name@domain.in, name@domain.co.in)')
+          toast.error('Please enter a valid email address (e.g. name@gmail.com)')
           return
         }
       }
-      // Valid email or username (e.g. support1, admin) -> proceed to password
-      setStep('PASSWORD')
+
+      setLoading(true)
+      try {
+        const res = await api.post('/api/auth/check-email', { email: trimmed })
+
+        if (res.data?.registered) {
+          if (res.data.isBlocked) {
+            setEmailCheckStatus({
+              isBlocked: true,
+              message: res.data.message || 'This account has been suspended. Please contact customer support.'
+            })
+            toast.error(res.data.message || 'Account suspended')
+            return
+          }
+
+          if (res.data.authMethod === 'google') {
+            setEmailCheckStatus({
+              googleOnly: true,
+              message: 'This account was registered using Google Sign-In. Please click Continue with Google below.'
+            })
+            toast.info('This account uses Google Sign-In')
+            return
+          }
+
+          // User is registered and has password!
+          setVerifiedUser({
+            name: res.data.name,
+            email: res.data.email || trimmed,
+            role: res.data.role
+          })
+          setStep('PASSWORD')
+        }
+      } catch (err) {
+        const status = err.response?.status
+        const data = err.response?.data
+
+        if (status === 404 || data?.registered === false) {
+          setEmailCheckStatus({
+            notFound: true,
+            email: trimmed,
+            message: data?.message || 'This email is not registered with Daatasa.'
+          })
+          toast.error('No account found. Please register to continue.')
+        } else if (status === 403) {
+          setEmailCheckStatus({
+            isBlocked: true,
+            message: data?.message || 'This account has been suspended.'
+          })
+          toast.error(data?.message || 'Account suspended')
+        } else {
+          toast.error(data?.message || 'Failed to verify account. Please try again.')
+        }
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
@@ -224,6 +287,24 @@ const Login = () => {
 
   return (
     <div className="py-4 sm:py-8 lg:py-10 px-3 sm:px-6 flex flex-col items-center justify-start bg-[var(--ivory)] font-sans relative">
+      {/* 🌟 Signature Luxury Brand Loader */}
+      <BrandLoader
+        visible={loading}
+        text={
+          step === 'OTP'
+            ? 'Verifying OTP…'
+            : mode === 'email' && step === 'IDENTIFIER'
+            ? 'Checking Account…'
+            : 'Signing In…'
+        }
+        subtext={
+          mode === 'email' && step === 'IDENTIFIER'
+            ? 'Verifying registration status with Daatasa'
+            : 'Authenticating securely with Daatasa'
+        }
+        mode="overlay"
+      />
+
       <Helmet>
         <title>Login or Signup — Daatasa</title>
         <meta name="description" content="Sign in to your Daatasa account to access pure Vedic Bilona Ghee orders." />
@@ -263,7 +344,7 @@ const Login = () => {
               <div className="flex bg-brand-primary/5 p-1 rounded-xl mb-3">
                 <button
                   type="button"
-                  onClick={() => { setMode('mobile'); setIdentifier(''); }}
+                  onClick={() => { setMode('mobile'); setIdentifier(''); setEmailCheckStatus(null); }}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     mode === 'mobile'
                       ? 'bg-white text-brand-primary shadow-xs'
@@ -275,7 +356,7 @@ const Login = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setMode('email'); setIdentifier(''); }}
+                  onClick={() => { setMode('email'); setIdentifier(''); setEmailCheckStatus(null); }}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                     mode === 'email'
                       ? 'bg-white text-brand-primary shadow-xs'
@@ -308,16 +389,91 @@ const Login = () => {
                     required
                   />
                 ) : (
-                  <FloatingInput
-                    id="identifier"
-                    label="Email or Username*"
-                    icon={Mail}
-                    placeholder="e.g. name@gmail.com, support1"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    autoFocus
-                    required
-                  />
+                  <>
+                    <FloatingInput
+                      id="identifier"
+                      label="Email or Username*"
+                      icon={Mail}
+                      placeholder="e.g. name@gmail.com, support1"
+                      value={identifier}
+                      onChange={(e) => {
+                        setIdentifier(e.target.value)
+                        if (emailCheckStatus) setEmailCheckStatus(null)
+                      }}
+                      autoFocus
+                      required
+                    />
+
+                    {/* Inline Alert: Email Not Registered */}
+                    {emailCheckStatus?.notFound && (
+                      <div className="p-3 rounded-xl bg-red-50/90 border border-red-200 text-left my-2 transition-all">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-red-100 flex items-center justify-center text-red-600 shrink-0 mt-0.5">
+                            <UserX size={15} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-xs font-bold text-red-900 leading-tight">Account Not Registered</h4>
+                            <p className="text-[11px] text-red-700 mt-0.5 leading-normal">
+                              No account exists for <span className="font-semibold break-all text-red-900">{emailCheckStatus.email}</span>.
+                            </p>
+                            <div className="mt-2.5 flex flex-wrap items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => navigate('/register', { state: { email: identifier.trim() } })}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] shadow-sm transition-all active:scale-95"
+                              >
+                                <span>Create an Account</span>
+                                <ArrowRight size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setEmailCheckStatus(null); setIdentifier(''); }}
+                                className="text-[11px] font-semibold text-red-800 hover:underline px-1"
+                              >
+                                Try another email
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Inline Alert: Google Sign-In required */}
+                    {emailCheckStatus?.googleOnly && (
+                      <div className="p-3 rounded-xl bg-amber-50/90 border border-amber-200 text-left my-2 transition-all">
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 shrink-0 mt-0.5">
+                            <Sparkles size={15} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-xs font-bold text-amber-900 leading-tight">Google Sign-In Account</h4>
+                            <p className="text-[11px] text-amber-800 mt-0.5 leading-normal">
+                              {emailCheckStatus.message}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={handleGoogleLogin}
+                              className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-amber-300 text-brand-primary font-bold text-[11px] shadow-2xs hover:bg-amber-100/50 transition-all"
+                            >
+                              <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-3.5 h-3.5" />
+                              <span>Continue with Google</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Inline Alert: Suspended Account */}
+                    {emailCheckStatus?.isBlocked && (
+                      <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-left my-2 text-rose-800 text-xs">
+                        <div className="flex items-center gap-1.5 font-bold text-rose-900">
+                          <AlertCircle size={14} />
+                          <span>Account Suspended</span>
+                        </div>
+                        <p className="text-[11px] mt-0.5 text-rose-700">{emailCheckStatus.message}</p>
+                      </div>
+                    )}
+                  </>
                 )}
                 
                 <p className="text-[10px] text-gray-500 my-2 leading-relaxed">
@@ -494,10 +650,21 @@ const Login = () => {
               </button>
 
               <div className="mb-3">
-                <h2 className="text-xl sm:text-2xl font-bold font-display text-brand-primary mb-0.5">Enter Password</h2>
-                <p className="text-xs font-medium text-brand-text/60">
-                  For <span className="font-bold text-brand-primary font-mono">{/^\d{10}$/.test(identifier) ? `+91 ${identifier}` : identifier}</span>
-                </p>
+                <h2 className="text-xl sm:text-2xl font-bold font-display text-brand-primary mb-0.5">
+                  {verifiedUser?.name ? `Welcome back, ${verifiedUser.name}!` : 'Enter Password'}
+                </h2>
+                <div className="flex items-center justify-between text-xs font-medium text-brand-text/60">
+                  <span>
+                    For <span className="font-bold text-brand-primary font-mono">{verifiedUser?.email || (/^\d{10}$/.test(identifier) ? `+91 ${identifier}` : identifier)}</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setStep('IDENTIFIER'); setEmailCheckStatus(null); }}
+                    className="text-[11px] font-bold text-brand-secondary hover:underline ml-2"
+                  >
+                    Change
+                  </button>
+                </div>
               </div>
 
               <form onSubmit={handlePasswordSubmit} className="space-y-2.5">

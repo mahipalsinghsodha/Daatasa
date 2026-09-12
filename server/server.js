@@ -276,7 +276,6 @@ START SERVER
 const startServer = async () => {
   await connectDB();
 
-  // Clean up accidental empty returnRequest objects created by previous schema default
   try {
     const Order = require('./models/Order');
     await Order.updateMany(
@@ -289,8 +288,13 @@ const startServer = async () => {
       },
       { $unset: { returnRequest: 1 } }
     );
+    // Sanitize any legacy numeric rewardPointsAwarded, PENDING status, and invalid user references
+    await Order.updateMany({ rewardPointsAwarded: { $type: 'number', $gt: 0 } }, { $set: { rewardPointsAwarded: true } });
+    await Order.updateMany({ rewardPointsAwarded: { $type: 'number', $lte: 0 } }, { $set: { rewardPointsAwarded: false } });
+    await Order.updateMany({ orderStatus: 'PENDING' }, { $set: { orderStatus: 'PENDING_ACCEPTANCE' } });
+    await Order.updateMany({ user: { $not: { $type: 'objectId' } } }, { $set: { user: null } });
   } catch (err) {
-    console.error('Order cleanup stale returnRequest error:', err);
+    console.error('Order startup migration error:', err);
   }
 
   // Start background jobs

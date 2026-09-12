@@ -7,22 +7,22 @@
 //   ✅ Device fingerprint on password reset
 //   ✅ Rate limiting on all auth endpoints
 
-const express     = require('express');
-const router      = express.Router();
-const jwt         = require('jsonwebtoken');
-const crypto      = require('crypto');
+const express = require('express');
+const router = express.Router();
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { sendPasswordResetEmail, sendWelcomeEmail, sendEmailVerificationOtp } = require('../services/emailService');
-const User        = require('../models/User');
-const auth        = require('../middleware/auth');
-const dbCheck     = require('../middleware/dbCheck');
+const User = require('../models/User');
+const auth = require('../middleware/auth');
+const dbCheck = require('../middleware/dbCheck');
 const { logAction } = require('../utils/logger');
-const rateLimit   = require('express-rate-limit');
+const rateLimit = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const JWT_SECRET         = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET;
-const CLIENT_URL         = process.env.CLIENT_URL || 'http://localhost:3000';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 // ─── Rate Limiting ────────────────────────────────────────────────────────────
 const authLimiter = rateLimit({
@@ -57,26 +57,26 @@ const makeRefreshToken = (user) => jwt.sign(
 
 /** Public user object — never expose password/reset tokens/refresh hashes */
 const safeUser = (u) => ({
-  id:          u._id,
-  _id:         u._id,
-  name:        u.name,
-  email:       u.email || null,
-  role:        u.role,
+  id: u._id,
+  _id: u._id,
+  name: u.name,
+  email: u.email || null,
+  role: u.role,
   permissions: u.permissions || [],
-  phone:       u.phone || '',
-  avatar:      u.avatar || null,
-  addresses:   u.addresses || [],
-  wishlist:    u.wishlist   || [],
-  language:    u.language   || 'en',
-  isBlocked:   u.isBlocked  || false,
-  referralCode:u.referralCode|| null,
-  lastLogin:   u.lastLogin   || null,
+  phone: u.phone || '',
+  avatar: u.avatar || null,
+  addresses: u.addresses || [],
+  wishlist: u.wishlist || [],
+  language: u.language || 'en',
+  isBlocked: u.isBlocked || false,
+  referralCode: u.referralCode || null,
+  lastLogin: u.lastLogin || null,
 });
 
 /* ── Device fingerprint helper ──────────────────────────────────────────────── */
 const makeFingerprint = (req) => {
-  const ip  = req.ip || req.connection?.remoteAddress || 'unknown';
-  const ua  = req.headers['user-agent'] || 'unknown';
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const ua = req.headers['user-agent'] || 'unknown';
   return crypto.createHash('sha256').update(`${ip}::${ua}`).digest('hex');
 };
 
@@ -106,7 +106,7 @@ router.post('/register', authLimiter, dbCheck, [
     }
 
     const user = new User({ name, email, password, referralCode: newReferralCode });
-    
+
     // Handle Referral Code (Link to referrer, no instant bonus)
     let referrer = null;
     if (referralCode) {
@@ -134,7 +134,7 @@ router.post('/register', authLimiter, dbCheck, [
       console.error('Error linking guest orders:', err);
     }
 
-    const accessToken  = makeAccessToken(user);
+    const accessToken = makeAccessToken(user);
     const refreshToken = makeRefreshToken(user);
 
     // Store hashed refresh token in DB for rotation tracking
@@ -159,6 +159,74 @@ router.post('/register', authLimiter, dbCheck, [
 });
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+/*  CHECK EMAIL (Verify registration status ONLY for Email / Password login)   */
+/* ─────────────────────────────────────────────────────────────────────────── */
+router.post('/check-email', authLimiter, dbCheck, async (req, res) => {
+  try {
+    const rawInput = req.body.email || req.body.identifier || '';
+    const trimmedInput = rawInput.trim();
+
+    if (!trimmedInput) {
+      return res.status(400).json({ registered: false, message: 'Please enter your email or username' });
+    }
+
+    if (trimmedInput.length < 2) {
+      return res.status(400).json({ registered: false, message: 'Please enter a valid email or username (at least 2 characters)' });
+    }
+
+    const isEmail = trimmedInput.includes('@');
+    let query;
+
+    if (isEmail) {
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(trimmedInput)) {
+        return res.status(400).json({ registered: false, message: 'Please enter a valid email address (e.g. name@gmail.com)' });
+      }
+      query = { email: trimmedInput.toLowerCase() };
+    } else {
+      // Support staff handles or usernames
+      query = {
+        $or: [
+          { email: trimmedInput.toLowerCase() },
+          { email: `${trimmedInput.toLowerCase()}@daatasa.com` },
+          { email: `${trimmedInput.toLowerCase()}@gmail.com` },
+          { name: new RegExp(`^${trimmedInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') }
+        ]
+      };
+    }
+
+    const user = await User.findOne(query).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        registered: false,
+        message: 'This email is not registered with Daatasa. Please create an account to proceed.'
+      });
+    }
+
+    if (user.isBlocked) {
+      return res.status(403).json({
+        registered: true,
+        isBlocked: true,
+        message: 'This account has been suspended. Please contact customer support.'
+      });
+    }
+
+    const hasPassword = Boolean(user.password);
+    return res.json({
+      registered: true,
+      name: user.name || 'Valued Customer',
+      email: user.email || trimmedInput,
+      role: user.role,
+      hasPassword,
+      authMethod: hasPassword ? 'password' : 'google',
+      message: hasPassword ? 'Account verified' : 'This account uses Google Sign-In. Please sign in with Google.'
+    });
+  } catch (error) {
+    res.status(500).json({ registered: false, message: error.message || 'Failed to verify account' });
+  }
+});
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 /*  LOGIN                                                                      */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/login', authLimiter, dbCheck, [
@@ -173,7 +241,7 @@ router.post('/login', authLimiter, dbCheck, [
 
     const { emailOrPhone, password } = req.body;
     const trimmedInput = (emailOrPhone || '').trim();
-    
+
     // Check if input is email, phone, or username/staff handle
     const isEmail = trimmedInput.includes('@');
     const isDigitsOnly = /^\d+$/.test(trimmedInput);
@@ -218,7 +286,7 @@ router.post('/login', authLimiter, dbCheck, [
       user.refreshTokens = [];
     }
 
-    const accessToken  = makeAccessToken(user);
+    const accessToken = makeAccessToken(user);
     const refreshToken = makeRefreshToken(user);
 
     // Store hashed refresh token in DB
@@ -300,25 +368,25 @@ router.post('/login-otp', authLimiter, dbCheck, [
 
     const OTP = require('../models/OTP');
     const otpRecord = await OTP.findOne({ phone });
-    
+
     if (!otpRecord) return res.status(400).json({ message: 'OTP expired or not found' });
     if (otpRecord.otpCode !== otpCode) return res.status(400).json({ message: 'Invalid OTP' });
     if (new Date() > otpRecord.expiresAt) {
       await OTP.deleteOne({ phone });
       return res.status(400).json({ message: 'OTP has expired' });
     }
-    
+
     // Valid OTP - clean it up
     await OTP.deleteOne({ phone });
 
     // Check if user exists by phone
     let user = await User.findOne({ phone }).select('+refreshTokens');
-    
+
     if (!user) {
       // Create new user (Clean registration with email: null)
       const crypto = require('crypto');
       let newReferralCode = crypto.randomBytes(3).toString('hex').toUpperCase();
-      
+
       user = new User({
         name: 'Customer',
         email: null,
@@ -331,12 +399,12 @@ router.post('/login-otp', authLimiter, dbCheck, [
       user.email = null;
       await user.save({ validateBeforeSave: false });
     }
-    
+
     if (user.isBlocked) {
       return res.status(403).json({ message: 'Your account has been suspended.' });
     }
 
-    const accessToken  = makeAccessToken(user);
+    const accessToken = makeAccessToken(user);
     const refreshToken = makeRefreshToken(user);
 
     // Store hashed refresh token in DB
@@ -370,7 +438,7 @@ router.post('/login-otp', authLimiter, dbCheck, [
         if (geo) location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
       }
       await UserActivity.create({ user: user._id, action: 'LOGIN_OTP', ipAddress, location });
-    } catch (err) {}
+    } catch (err) { }
 
     res.json({ token: accessToken, refreshToken, user: safeUser(user) });
   } catch (error) {
@@ -415,7 +483,7 @@ router.post('/refresh', async (req, res) => {
     // Rotate: remove old, issue new
     const newRefreshToken = makeRefreshToken(user);
     const newHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
-    
+
     let activeTokens = (user.refreshTokens || []).filter(t => t.expiresAt > Date.now() && t.tokenHash !== incomingHash);
     activeTokens.push({
       tokenHash: newHash,
@@ -471,7 +539,7 @@ router.post('/logout', async (req, res) => {
               ipAddress,
               location
             });
-          } catch (err) {}
+          } catch (err) { }
         }
       } catch { /* ignore invalid token on logout */ }
     }
@@ -586,16 +654,17 @@ router.post('/profile/send-email-otp', auth, async (req, res) => {
     }
 
     const user = await User.findById(req.user._id);
-    
+
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
     user.pendingEmail = newEmail;
     user.emailUpdateOTP = otp;
     user.emailUpdateOTPExpire = Date.now() + 10 * 60 * 1000; // 10 mins
     await user.save();
 
-    await sendEmailVerificationOtp({ to: newEmail, userName: user.name, otp });
+    sendEmailVerificationOtp({ to: newEmail, userName: user.name, otp })
+      .catch(err => console.error('Verification email error (non-fatal):', err.message));
 
     res.json({ message: 'OTP sent to new email' });
   } catch (error) {
@@ -658,7 +727,7 @@ router.post('/change-password', auth, async (req, res) => {
     // Invalidate sessions (optional for change password, but good practice)
     user.tokenVersion = (user.tokenVersion || 0) + 1;
     user.refreshTokens = [];
-    
+
     await user.save();
     res.json({ message: 'Password updated successfully. Please log in again.' });
   } catch (error) {
@@ -688,7 +757,7 @@ const handleForgotPasswordRequest = async (req, res) => {
 
     const isResend = Boolean(req.body.isResend);
     if (!isResend && user.resetPasswordToken && user.resetPasswordExpire && user.resetPasswordExpire > Date.now()) {
-      const remainingMs      = user.resetPasswordExpire - Date.now();
+      const remainingMs = user.resetPasswordExpire - Date.now();
       const remainingSeconds = Math.ceil(remainingMs / 1000);
       return res.status(409).json({
         message: 'A reset request was already sent and is still active.',
@@ -697,22 +766,22 @@ const handleForgotPasswordRequest = async (req, res) => {
     }
 
     // For email, use a long secure hex token. For SMS, use a 6-digit OTP.
-    const resetToken        = isEmail ? crypto.randomBytes(32).toString('hex') : Math.floor(100000 + Math.random() * 900000).toString();
-    const tokenHashed       = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetToken = isEmail ? crypto.randomBytes(32).toString('hex') : Math.floor(100000 + Math.random() * 900000).toString();
+    const tokenHashed = crypto.createHash('sha256').update(resetToken).digest('hex');
     const deviceFingerprint = makeFingerprint(req);
 
-    user.resetPasswordToken       = tokenHashed;
+    user.resetPasswordToken = tokenHashed;
     user.resetPasswordExpire = Date.now() + 5 * 60 * 1000; // 5 minutes validity
     user.resetPasswordFingerprint = deviceFingerprint;
     await user.save({ validateBeforeSave: false });
 
     if (isEmail) {
       const resetUrl = `${CLIENT_URL}/reset-password/${resetToken}`;
-      await sendPasswordResetEmail({
+      sendPasswordResetEmail({
         to: user.email,
         userName: user.name,
         resetUrl,
-      });
+      }).catch(err => console.error('Password reset email error (non-fatal):', err.message));
       res.json({ success: true, message: 'Reset link sent to your email.' });
     } else {
       const OTP = require('../models/OTP');
@@ -724,7 +793,7 @@ const handleForgotPasswordRequest = async (req, res) => {
 
       const { sendSMS } = require('../services/smsService');
       const msg = `Your Daatasa password reset code is: ${resetToken}. It is valid for 5 minutes.`;
-      await sendSMS(user.phone, msg);
+      sendSMS(user.phone, msg).catch(err => console.error('Password reset SMS error (non-fatal):', err.message));
       res.json({ success: true, message: 'Reset code sent to your mobile via SMS.', isOtp: true });
     }
   } catch (error) {
@@ -817,7 +886,7 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
     const tokenHashed = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
     const user = await User.findOne({
-      resetPasswordToken:  tokenHashed,
+      resetPasswordToken: tokenHashed,
       resetPasswordExpire: { $gt: Date.now() },
     }).select('+resetPasswordToken +resetPasswordExpire +resetPasswordFingerprint +password');
 
@@ -828,8 +897,8 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
 
     const incomingFingerprint = makeFingerprint(req);
     if (user.resetPasswordFingerprint && user.resetPasswordFingerprint !== incomingFingerprint) {
-      user.resetPasswordToken       = undefined;
-      user.resetPasswordExpire      = undefined;
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
       user.resetPasswordFingerprint = undefined;
       await user.save({ validateBeforeSave: false });
       return res.status(403).json({
@@ -844,13 +913,13 @@ router.post('/reset-password/:token', dbCheck, async (req, res) => {
         message: 'Your new password cannot be the same as your current password.',
       });
 
-    user.password                 = password;
-    user.resetPasswordToken       = undefined;
-    user.resetPasswordExpire      = undefined;
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
     user.resetPasswordFingerprint = undefined;
     // Invalidate all sessions on password change
-    user.tokenVersion             = (user.tokenVersion || 0) + 1;
-    user.refreshTokens            = [];
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.refreshTokens = [];
     await user.save();
 
     res.json({ message: 'Password reset successfully. You can now log in.' });
@@ -890,7 +959,7 @@ router.put('/addresses/:addrId', auth, async (req, res) => {
     const addr = user.addresses.id(req.params.addrId);
     if (!addr) return res.status(404).json({ message: 'Address not found' });
 
-    const fields = ['label','name','phone','street','city','district','state','zipCode','country','isDefault'];
+    const fields = ['label', 'name', 'phone', 'street', 'city', 'district', 'state', 'zipCode', 'country', 'isDefault'];
     fields.forEach(f => { if (req.body[f] !== undefined) addr[f] = req.body[f]; });
     if (req.body.isDefault)
       user.addresses.forEach(a => { if (String(a._id) !== req.params.addrId) a.isDefault = false; });
@@ -937,9 +1006,9 @@ router.patch('/addresses/:addrId/default', auth, async (req, res) => {
 router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, res) => {
   try {
     const Order = require('../models/Order');
-    const page  = parseInt(req.query.page) || 1;
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 1000;
-    const skip  = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
     const totalCount = await User.countDocuments();
     const users = await User.find()
@@ -958,7 +1027,7 @@ router.get('/users', auth, auth.admin, auth.hasPermission('users'), async (req, 
     const enrichedUsers = users.map(u => ({
       ...u,
       totalOrders: orderStatsMap[u._id.toString()]?.totalOrders || 0,
-      totalSpent:  orderStatsMap[u._id.toString()]?.totalSpent  || 0,
+      totalSpent: orderStatsMap[u._id.toString()]?.totalSpent || 0,
     }));
 
     if (req.query.page) {
@@ -997,9 +1066,9 @@ router.put('/users/:id/block', auth, auth.admin, auth.hasPermission('users'), as
     } catch (e) { console.error('Block email error (non-fatal):', e); }
 
     res.json({
-      message:   `User ${target.isBlocked ? 'blocked' : 'unblocked'} successfully`,
+      message: `User ${target.isBlocked ? 'blocked' : 'unblocked'} successfully`,
       isBlocked: target.isBlocked,
-      userId:    target._id,
+      userId: target._id,
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -1013,14 +1082,14 @@ router.put('/users/:id/role', auth, auth.admin, auth.hasPermission('users'), asy
   try {
     const { role } = req.body;
     const allowedRoles = ['user', 'admin', 'superadmin', 'support', 'courier', 'b2b_customer'];
-    
+
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ message: 'Invalid role' });
     }
 
     const target = await User.findById(req.params.id);
     if (!target) return res.status(404).json({ message: 'User not found' });
-    
+
     // Prevent non-superadmins from granting or removing superadmin role
     if (req.user.role !== 'superadmin' && (role === 'superadmin' || target.role === 'superadmin')) {
       return res.status(403).json({ message: 'Only superadmins can manage superadmin roles' });
@@ -1050,9 +1119,9 @@ router.put('/users/:id/b2b', auth, auth.admin, auth.hasPermission('users'), asyn
   try {
     const { b2bDiscountPercentage, companyName, gstin } = req.body;
     const target = await User.findById(req.params.id);
-    
+
     if (!target) return res.status(404).json({ message: 'User not found' });
-    
+
     if (b2bDiscountPercentage !== undefined) target.b2bDiscountPercentage = b2bDiscountPercentage;
     if (companyName !== undefined) target.companyName = companyName;
     if (gstin !== undefined) target.gstin = gstin;

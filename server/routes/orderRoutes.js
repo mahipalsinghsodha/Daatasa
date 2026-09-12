@@ -115,20 +115,26 @@ async function pushStatusAndNotify(order, status, note, updatedBy, notificationD
     }
   }
 
-  if (notificationData && (order.user._id || order.user)) {
-    const notif = new Notification({
-      user: order.user._id || order.user,
-      ...notificationData
-    });
-    await notif.save();
+  if (notificationData && (order.user?._id || order.user)) {
     try {
+      const notif = new Notification({
+        user: order.user?._id || order.user,
+        ...notificationData
+      });
+      await notif.save();
       const io = getIO();
-      io.to(`user:${notif.user}`).emit('notification', notif);
-    } catch (err) {}
+      if (io) {
+        io.to(`user:${notif.user}`).emit('notification', notif);
+      }
+    } catch (notifErr) {
+      console.warn('Failed to dispatch notification (non-fatal):', notifErr.message);
+    }
   }
   try {
     const io = getIO();
-    io.to(`order:${order._id}`).emit('orderStatusUpdated', order);
+    if (io) {
+      io.to(`order:${order._id}`).emit('orderStatusUpdated', order);
+    }
   } catch (err) {}
 }
 
@@ -141,6 +147,27 @@ router.post('/', auth.optional, async (req, res) => {
 
     if (!req.user && paymentMethod === 'COD') {
       return res.status(400).json({ message: 'Cash on Delivery is not available for Guest Checkout' });
+    }
+
+    // 🛡️ Clean up any previous abandoned online checkout attempts for this user
+    if (req.user && paymentMethod === 'Online') {
+      try {
+        const { restoreOrderResources } = require('../utils/orderResourceHelper');
+        const oldPendingOrders = await Order.find({
+          user: req.user._id,
+          paymentMethod: 'Online',
+          paymentStatus: 'PENDING'
+        });
+        for (const old of oldPendingOrders) {
+          await restoreOrderResources(old, 'Cancelled by new checkout attempt');
+          old.paymentStatus = 'FAILED';
+          old.orderStatus = 'CANCELLED';
+          old.cancelReason = 'Abandoned online payment attempt';
+          await old.save();
+        }
+      } catch (cleanupErr) {
+        console.error('Error cleaning up previous unpaid online orders:', cleanupErr);
+      }
     }
 
     let cartItems = [];
@@ -560,25 +587,51 @@ router.post('/', auth.optional, async (req, res) => {
     }
 
     if (paymentMethod === 'Online') {
-      const razorpay = require('../config/razorpay');
-      const amountToChargePaise = Math.round((order.payableAmount ?? order.totalPrice) * 100);
+      try {
+        const razorpay = require('../config/razorpay');
+        const amountToChargePaise = Math.round((order.payableAmount ?? order.totalPrice) * 100);
 
-      const razorpayOrder = await razorpay.orders.create({
-        amount: amountToChargePaise,
-        currency: 'INR',
-        receipt: `receipt_${order._id}`,
-        notes: {
-          orderId: order._id.toString(),
-          userId: req.user ? req.user._id.toString() : 'guest'
+        const razorpayOrder = await razorpay.orders.create({
+          amount: amountToChargePaise,
+          currency: 'INR',
+          receipt: `receipt_${order._id}`,
+          notes: {
+            orderId: order._id.toString(),
+            userId: req.user ? req.user._id.toString() : 'guest'
+          }
+        });
+        
+        order.paymentInfo = {
+          razorpay_order_id: razorpayOrder.id
+        };
+        await order.save();
+        
+        return res.status(201).json({ order, razorpayOrder });
+      } catch (razorpayErr) {
+        console.error('RAZORPAY ORDER CREATION FAILED:', razorpayErr);
+        order.paymentStatus = 'FAILED';
+        order.orderStatus = 'CANCELLED';
+        order.statusHistory.push({
+          status: 'CANCELLED',
+          note: `Payment gateway initialization failed: ${razorpayErr.message}`,
+          updatedAt: new Date()
+        });
+        await order.save();
+
+        // Rollback deducted wallet balance
+        if (order.walletUsed > 0 && req.user) {
+          try {
+            await User.findByIdAndUpdate(req.user._id, { $inc: { walletBalance: order.walletUsed } });
+          } catch (refundErr) {
+            console.error('Failed to auto-refund wallet on gateway error:', refundErr);
+          }
         }
-      });
-      
-      order.paymentInfo = {
-        razorpay_order_id: razorpayOrder.id
-      };
-      await order.save();
-      
-      return res.status(201).json({ order, razorpayOrder });
+
+        return res.status(502).json({
+          message: 'Payment gateway could not be initialized. Please try again or select Cash on Delivery.',
+          error: razorpayErr.message
+        });
+      }
     }
 
     res.status(201).json(order);
@@ -848,65 +901,25 @@ router.post('/verify-coupon', auth.optional, async (req, res) => {
 });
 
 // ========================================================================
-// GUEST TRACK ORDER
-// ========================================================================
-router.get('/track', async (req, res) => {
-  try {
-    const { orderId, phone } = req.query;
-
-    if (!orderId || !phone) {
-      return res.status(400).json({ message: 'Order ID and Phone number are required' });
-    }
-
-    const query = { 'shippingAddress.phone': phone };
-
-    const mongoose = require('mongoose');
-    let orderIdClean = orderId.trim();
-    if (orderIdClean.startsWith('#')) {
-      orderIdClean = orderIdClean.substring(1);
-    }
-
-    query.$or = [];
-    
-    // Exact ObjectId match
-    if (mongoose.Types.ObjectId.isValid(orderIdClean)) {
-      query.$or.push({ _id: orderIdClean });
-    }
-
-    // Invoice number regex match
-    query.$or.push({ invoiceNumber: { $regex: new RegExp(orderIdClean, 'i') } });
-
-    // Match _id suffix (since frontend displays last 8 chars like #4E83768D)
-    query.$or.push({
-      $expr: {
-        $regexMatch: {
-          input: { $toString: '$_id' },
-          regex: orderIdClean + '$',
-          options: 'i'
-        }
-      }
-    });
-
-    const order = await Order.findOne(query).select(
-      'invoiceNumber paymentStatus isDelivered trackingNumber shippingProvider cancelReason returnRequest statusHistory createdAt orderItems'
-    ).populate('orderItems.product', 'name image');
-
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found with provided details' });
-    }
-
-    res.json(order);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// ========================================================================
 // GET USER ORDERS
 // ========================================================================
 router.get('/myorders', auth, async (req, res) => {
   try {
-    let query = Order.find({ user: req.user._id })
+    // 🛡️ Big E-Com Standard (Amazon / Flipkart):
+    // Only return finalized orders. Unpaid online checkout attempts (paymentMethod === 'Online' && paymentStatus === 'PENDING')
+    // are uncompleted/abandoned and must NEVER be listed as placed orders.
+    const validOrdersFilter = {
+      user: req.user._id,
+      $or: [
+        { paymentMethod: 'COD' },
+        { paymentMethod: 'Wallet' },
+        { paymentStatus: { $in: ['PAID', 'REFUNDED', 'RETURN_APPROVED'] } },
+        { paymentStatus: 'CANCELLED', isPaid: true },
+        { paymentMethod: { $nin: ['COD', 'cod'] }, paymentStatus: { $in: ['FAILED', 'PENDING'] } }
+      ]
+    };
+
+    let query = Order.find(validOrdersFilter)
       .populate('orderItems.product')
       .sort({ createdAt: -1 });
 
@@ -970,13 +983,41 @@ router.get('/:id', auth, async (req, res) => {
 // ========================================================================
 router.get('/export/csv', auth, auth.admin, auth.hasPermission('orders'), async (req, res) => {
   try {
-    const orders = await Order.find()
+    const query = {};
+    if (req.query.startDate || req.query.endDate) {
+      query.createdAt = {};
+      if (req.query.startDate) query.createdAt.$gte = new Date(req.query.startDate);
+      if (req.query.endDate) {
+        const end = new Date(req.query.endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+
+    if (req.query.filter && req.query.filter !== 'all') {
+      const f = req.query.filter;
+      if (f === 'pending') {
+        query.orderStatus = { $in: ['PENDING_ACCEPTANCE', 'PENDING'] };
+      } else if (f === 'accepted') {
+        query.orderStatus = 'ACCEPTED';
+      } else if (f === 'cod') {
+        query.paymentMethod = { $in: ['COD', 'cod'] };
+      } else if (f === 'paid') {
+        query.isPaid = true;
+      } else if (f === 'delivered') {
+        query.isDelivered = true;
+      } else if (f === 'cancelled') {
+        query.$or = [{ paymentStatus: 'CANCELLED' }, { orderStatus: 'CANCELLED' }];
+      }
+    }
+
+    const orders = await Order.find(query)
       .populate('user', 'name email')
       .sort({ createdAt: -1 })
       .lean();
 
     if (!orders.length) {
-      return res.status(404).json({ message: 'No orders found to export' });
+      return res.status(404).json({ message: 'No orders found matching the selected range/filter' });
     }
 
     // Prepare CSV header
@@ -1065,11 +1106,23 @@ router.get('/', auth, auth.admin, auth.hasPermission('orders'), async (req, res)
       query.isDelivered = false;
       query.paymentStatus = { $nin: ['CANCELLED', 'FAILED'] };
       query.orderStatus = { $in: ['PENDING_ACCEPTANCE', 'PENDING'] };
+      // CRITICAL: Unpaid online orders must NOT show in pending acceptance queue
+      query.$or = [
+        { paymentMethod: 'COD' },
+        { isPaid: true }
+      ];
+    } else if (filter === 'unpaid' || filter === 'payment_pending' || filter === 'failed') {
+      query.paymentMethod = { $nin: ['COD', 'cod'] };
+      query.isPaid = false;
+      query.$or = [
+        { paymentStatus: { $in: ['PENDING', 'FAILED'] }, orderStatus: { $ne: 'CANCELLED' } },
+        { paymentStatus: 'FAILED' }
+      ];
     } else if (filter === 'accepted') {
       query.orderStatus = 'ACCEPTED';
       query.isDelivered = false;
     } else if (filter === 'cod') {
-      query.paymentMethod = 'COD';
+      query.paymentMethod = { $in: ['COD', 'cod'] };
       query.isDelivered = false;
     } else if (filter === 'paid') {
       query.isPaid = true;
@@ -1082,7 +1135,10 @@ router.get('/', auth, auth.admin, auth.hasPermission('orders'), async (req, res)
     } else if (filter === 'all_returns') {
       query['returnRequest.requestedAt'] = { $exists: true, $ne: null };
     } else if (filter === 'cancelled') {
-      query.paymentStatus = { $in: ['CANCELLED', 'FAILED'] };
+      query.$or = [
+        { paymentStatus: 'CANCELLED' },
+        { orderStatus: 'CANCELLED' }
+      ];
     }
 
     if (search) {
@@ -1114,7 +1170,7 @@ const { getNextInvoiceNumber } = require('../utils/helpers');
       .limit(limit);
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-    const [newOrdersCount, pendingReturnsCount] = await Promise.all([
+    const [newOrdersCount, pendingReturnsCount, unpaidOrdersCount] = await Promise.all([
       Order.countDocuments({
         createdAt: { $gt: fiveMinutesAgo },
         isPaid: false
@@ -1122,6 +1178,14 @@ const { getNextInvoiceNumber } = require('../utils/helpers');
       Order.countDocuments({
         'returnRequest.requestedAt': { $exists: true, $ne: null },
         'returnRequest.status': 'PENDING'
+      }),
+      Order.countDocuments({
+        paymentMethod: { $nin: ['COD', 'cod'] },
+        isPaid: false,
+        $or: [
+          { paymentStatus: { $in: ['PENDING', 'FAILED'] }, orderStatus: { $ne: 'CANCELLED' } },
+          { paymentStatus: 'FAILED' }
+        ]
       })
     ]);
 
@@ -1130,13 +1194,14 @@ const { getNextInvoiceNumber } = require('../utils/helpers');
         orders, 
         newOrdersCount, 
         pendingReturnsCount,
+        unpaidOrdersCount,
         total: totalCount, 
         page: validPage, 
         pages: totalPages 
       });
     }
 
-    res.json({ orders, newOrdersCount, pendingReturnsCount });
+    res.json({ orders, newOrdersCount, pendingReturnsCount, unpaidOrdersCount });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -1346,9 +1411,11 @@ router.put('/bulk/update', auth, auth.admin, auth.hasPermission('orders'), async
       return res.status(400).json({ message: 'Invalid order IDs' });
     }
 
-    const updatePromises = orderIds.map(async (orderId) => {
-      const order = await Order.findById(orderId);
-      if (order) {
+    const results = await Promise.allSettled(
+      orderIds.map(async (orderId) => {
+        const order = await Order.findById(orderId);
+        if (!order) return null;
+
         if (action === 'pay') {
           order.isPaid = true;
           order.paidAt = new Date();
@@ -1369,9 +1436,16 @@ router.put('/bulk/update', auth, auth.admin, auth.hasPermission('orders'), async
             link: `/orders/${order._id}`
           });
         } else if (action === 'accept') {
+          const isCOD = ['COD', 'cod'].includes(order.paymentMethod);
+          if (!order.isPaid && !isCOD) {
+            return null; // Skip unpaid online orders
+          }
           order.orderStatus = 'ACCEPTED';
           order.acceptedBy = req.user._id;
           order.acceptedAt = new Date();
+          if (isCOD && order.paymentStatus === 'PENDING') {
+            order.paymentStatus = 'COD_CONFIRMED';
+          }
           await pushStatusAndNotify(order, 'ACCEPTED', 'Order accepted by admin (Bulk)', req.user._id, {
             type: 'ORDER_CONFIRMED',
             title: 'Order Accepted',
@@ -1380,13 +1454,17 @@ router.put('/bulk/update', auth, auth.admin, auth.hasPermission('orders'), async
           });
         }
         return order.save();
-      }
-    });
+      })
+    );
 
-    await Promise.all(updatePromises);
+    const succeeded = results.filter(r => r.status === 'fulfilled' && r.value).length;
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      console.warn('Bulk update partial errors:', failed.map(f => f.reason?.message));
+    }
 
     await logAction(req, 'BULK_ORDER_UPDATE', 'ORDER', null, {
-      orderIds, action
+      orderIds, action, succeeded, failedCount: failed.length
     });
 
     const updatedOrders = await Order.find({ _id: { $in: orderIds } })
@@ -1394,7 +1472,7 @@ router.put('/bulk/update', auth, auth.admin, auth.hasPermission('orders'), async
       .populate('orderItems.product');
 
     res.json({
-      message: `${orderIds.length} orders updated successfully`,
+      message: `${succeeded} order(s) updated successfully${failed.length > 0 ? `, ${failed.length} could not be updated` : ''}`,
       orders: updatedOrders
     });
   } catch (error) {
@@ -1681,10 +1759,14 @@ router.put('/:id/accept', auth, auth.admin, auth.hasPermission('orders'), async 
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
+    if (!['COD', 'cod'].includes(order.paymentMethod) && !order.isPaid) {
+      return res.status(400).json({ message: 'Cannot accept an unpaid online order. Payment must be completed or verified first.' });
+    }
+
     order.orderStatus = 'ACCEPTED';
     order.acceptedBy = req.user._id;
     order.acceptedAt = new Date();
-    if (order.paymentMethod === 'COD' && order.paymentStatus === 'PENDING') {
+    if (['COD', 'cod'].includes(order.paymentMethod) && order.paymentStatus === 'PENDING') {
       order.paymentStatus = 'COD_CONFIRMED';
     }
 

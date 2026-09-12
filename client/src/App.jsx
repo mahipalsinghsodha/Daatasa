@@ -20,43 +20,43 @@ import { ConfirmProvider } from './context/ConfirmContext'
 import SupportPopup from './components/chat/SupportPopup'
 import IncomingChatModal from './components/chat/IncomingChatModal'
 import { useSupportStore } from './store/support'
+import BrandLoader from './components/BrandLoader'
 
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
-const Home            = lazy(() => import('./pages/Home'))
-const Products        = lazy(() => import('./pages/Products'))
-const SearchResults   = lazy(() => import('./pages/SearchResults'))
-const ProductDetail   = lazy(() => import('./pages/ProductDetail'))
-const Cart            = lazy(() => import('./pages/Cart'))
-const TrackOrder      = lazy(() => import('./pages/TrackOrder')) // ✅ P1: Track Order page
-const Category        = lazy(() => import('./pages/Category'))   // ✅ P1: Category Landing page
+const Home = lazy(() => import('./pages/Home'))
+const Products = lazy(() => import('./pages/Products'))
+const SearchResults = lazy(() => import('./pages/SearchResults'))
+const ProductDetail = lazy(() => import('./pages/ProductDetail'))
+const Cart = lazy(() => import('./pages/Cart'))
+const Category = lazy(() => import('./pages/Category'))   // ✅ P1: Category Landing page
 
-const ChangePassword  = lazy(() => import('./pages/ChangePassword')) // ✅ P1: Change Password page
-const Login           = lazy(() => import('./pages/Login'))
-const Register        = lazy(() => import('./pages/Register'))
-const ForgotPassword  = lazy(() => import('./pages/ForgotPassword'))
-const ResetPassword   = lazy(() => import('./pages/ResetPassword'))
-const Contact         = lazy(() => import('./pages/Contact'))
-const Profile         = lazy(() => import('./pages/Profile'))
-const Addresses       = lazy(() => import('./pages/Addresses')) // ✅ P1: Address Book page
-const Orders          = lazy(() => import('./pages/Orders'))
-const Checkout        = lazy(() => import('./pages/Checkout'))
-const OrderDetail     = lazy(() => import('./pages/OrderDetail'))
-const ReturnRequest   = lazy(() => import('./pages/ReturnRequest')) // ✅ P1: Return Request page
-const Wishlist        = lazy(() => import('./pages/Wishlist'))  // ✅ P1: Wishlist page
-const NotFound        = lazy(() => import('./pages/NotFound'))
+const ChangePassword = lazy(() => import('./pages/ChangePassword')) // ✅ P1: Change Password page
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const Contact = lazy(() => import('./pages/Contact'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Addresses = lazy(() => import('./pages/Addresses')) // ✅ P1: Address Book page
+const Orders = lazy(() => import('./pages/Orders'))
+const Checkout = lazy(() => import('./pages/Checkout'))
+const OrderDetail = lazy(() => import('./pages/OrderDetail'))
+const ReturnRequest = lazy(() => import('./pages/ReturnRequest')) // ✅ P1: Return Request page
+const Wishlist = lazy(() => import('./pages/Wishlist'))  // ✅ P1: Wishlist page
+const NotFound = lazy(() => import('./pages/NotFound'))
 const ComingSoon = lazy(() => import('./pages/ComingSoon'))
 const Maintenance = lazy(() => import('./pages/Maintenance'))
 
 // Static Pages
-const AboutUs         = lazy(() => import('./pages/AboutUs'))
-const PrivacyPolicy   = lazy(() => import('./pages/PrivacyPolicy'))
-const Terms           = lazy(() => import('./pages/Terms'))
-const RefundPolicy    = lazy(() => import('./pages/RefundPolicy'))
-const ShippingPolicy  = lazy(() => import('./pages/ShippingPolicy'))
-const FAQ             = lazy(() => import('./pages/FAQ'))
-const Disclaimer      = lazy(() => import('./pages/Disclaimer'))
-const HowItWorks      = lazy(() => import('./pages/HowItWorks'))
+const AboutUs = lazy(() => import('./pages/AboutUs'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
+const Terms = lazy(() => import('./pages/Terms'))
+const RefundPolicy = lazy(() => import('./pages/RefundPolicy'))
+const ShippingPolicy = lazy(() => import('./pages/ShippingPolicy'))
+const FAQ = lazy(() => import('./pages/FAQ'))
+const Disclaimer = lazy(() => import('./pages/Disclaimer'))
+const HowItWorks = lazy(() => import('./pages/HowItWorks'))
 
 const CheckoutSubscription = lazy(() => import('./pages/CheckoutSubscription'))
 const B2B = lazy(() => import('./pages/B2B'))
@@ -115,67 +115,33 @@ function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
-    
+
     if (!pathname.startsWith('/admin')) {
       api.post('/api/activity/track', { action: 'PAGE_VISIT', details: { path: pathname } })
-         .catch(e => console.error('Failed to track activity', e))
+        .catch(e => console.error('Failed to track activity', e))
     }
   }, [pathname])
   return null
 }
 
-// ============================================================================
-// 🚀 FRONTEND HARDCODED COMING SOON CONFIGURATION
-// ============================================================================
-// ✅ IS_COMING_SOON_HARDCODED = true -> Hamesha Coming Soon dikhega (API par depend nahi karega)
-// 📅 HARDCODED_LAUNCH_DATE -> 01 Jan 2027 tak countdown chalta rahega
-// 🟢 Jab Live karna ho -> IS_COMING_SOON_HARDCODED ko `false` kar dein!
-// ============================================================================
-const IS_COMING_SOON_HARDCODED = true; // 👉 Live karne ke liye yahan `false` karein
-const HARDCODED_LAUNCH_DATE = '2027-01-01T00:00:00.000Z'; // 👉 01 Jan 2027
-
 // ─── Site Status Interceptor ──────────────────────────────────────────────────
 function SiteStatusWrapper({ children }) {
   const { user, loading: authLoading } = useAuth()
   const [settings, setSettings] = useState(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const location = useLocation()
 
   useEffect(() => {
-    // Only fetch settings if not in hardcoded coming soon mode
-    if (!IS_COMING_SOON_HARDCODED) {
-      setLoading(true)
-      api.get('/api/settings')
-        .then(res => setSettings(res.data))
-        .catch(console.error)
-        .finally(() => setLoading(false))
-    }
+    api.get('/api/settings')
+      .then(res => setSettings(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
   if (loading || authLoading) return <PageLoader />
 
   const isAdmin = ['admin', 'superadmin', 'support'].includes(user?.role)
 
-  // 1️⃣ HARDCODED COMING SOON (Frontend Priority)
-  if (IS_COMING_SOON_HARDCODED && !isAdmin) {
-    const isLaunchPast = new Date(HARDCODED_LAUNCH_DATE).getTime() < Date.now();
-    
-    if (!isLaunchPast) {
-      // Allow admin login and admin panels
-      if (location.pathname !== '/' && location.pathname !== '/login' && !location.pathname.startsWith('/admin')) {
-        return <Navigate to="/" replace />;
-      }
-      if (location.pathname === '/') {
-        return (
-          <Suspense fallback={<PageLoader />}>
-            <ComingSoon launchDate={HARDCODED_LAUNCH_DATE} />
-          </Suspense>
-        );
-      }
-    }
-  }
-
-  // 2️⃣ DYNAMIC DB SETTINGS (Active when IS_COMING_SOON_HARDCODED = false)
   if (!isAdmin && settings) {
     if (settings.isMaintenanceMode || settings.isComingSoon) {
       let isLaunchPast = false;
@@ -198,7 +164,7 @@ function SiteStatusWrapper({ children }) {
         } else {
           return (
             <Suspense fallback={<PageLoader />}>
-              <ComingSoon launchDate={settings.comingSoonLaunchDate || HARDCODED_LAUNCH_DATE} />
+              <ComingSoon launchDate={settings.comingSoonLaunchDate} />
             </Suspense>
           );
         }
@@ -212,13 +178,9 @@ function SiteStatusWrapper({ children }) {
 // ─── Page loading spinner ─────────────────────────────────────────────────────
 function PageLoader() {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4"
+    <div className="flex items-center justify-center min-h-[70vh] py-16"
       style={{ background: 'var(--bg-base)' }}>
-      <div className="relative w-10 h-10">
-        <div className="absolute inset-0 rounded-full" style={{ border: '2px solid var(--border-color)' }} />
-        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-[var(--brand-primary)] animate-spin" />
-      </div>
-      <p className="text-[12px] font-medium tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>Loading…</p>
+      <BrandLoader mode="inline" size="lg" text="Loading…" subtext="Crafting your pure Vedic experience" />
     </div>
   )
 }
@@ -260,81 +222,80 @@ function AnimatedRoutes() {
           <Routes location={location} key={location.pathname}>
 
             {/* ── Public ── */}
-            <Route path="/"                       element={<Home />} />
-            <Route path="/products"               element={<Products />} />
-            <Route path="/category/:slug"         element={<Category />} /> {/* ✅ P1 */}
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/category/:slug" element={<Category />} /> {/* ✅ P1 */}
 
-            <Route path="/search"                 element={<SearchResults />} />
-            <Route path="/products/:id"           element={<ProductDetail />} />
-            <Route path="/cart"                   element={<Cart />} />
-            <Route path="/track-order"            element={<TrackOrder />} /> {/* ✅ P1 */}
-            <Route path="/checkout-subscription"  element={<ProtectedRoute><CheckoutSubscription /></ProtectedRoute>} />
-            <Route path="/contact"                element={<Contact />} />
-            <Route path="/b2b"                    element={<B2B />} />
-            <Route path="/blogs"                  element={<Blogs />} />
-            <Route path="/blog/:slug"             element={<BlogDetail />} />
-            <Route path="/gift-cards"             element={<GiftCards />} />
+            <Route path="/search" element={<SearchResults />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout-subscription" element={<ProtectedRoute><CheckoutSubscription /></ProtectedRoute>} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/b2b" element={<B2B />} />
+            <Route path="/blogs" element={<Blogs />} />
+            <Route path="/blog/:slug" element={<BlogDetail />} />
+            <Route path="/gift-cards" element={<GiftCards />} />
 
             {/* ── Static ── */}
-            <Route path="/about"                  element={<AboutUs />} />
-            <Route path="/privacy-policy"         element={<PrivacyPolicy />} />
-            <Route path="/terms"                  element={<Terms />} />
-            <Route path="/refund-policy"          element={<RefundPolicy />} />
-            <Route path="/shipping-policy"        element={<ShippingPolicy />} />
-            <Route path="/faq"                    element={<FAQ />} />
-            <Route path="/disclaimer"             element={<Disclaimer />} />
-            <Route path="/how-it-works"           element={<HowItWorks />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/shipping-policy" element={<ShippingPolicy />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/disclaimer" element={<Disclaimer />} />
+            <Route path="/how-it-works" element={<HowItWorks />} />
 
             {/* ── Guest-Only ── */}
-            <Route path="/login"                  element={<GuestRoute><Login /></GuestRoute>} />
-            <Route path="/register"               element={<GuestRoute><Register /></GuestRoute>} />
-            <Route path="/forgot-password"        element={<GuestRoute><ForgotPassword /></GuestRoute>} />
-            <Route path="/reset-password/:token"  element={<GuestRoute><ResetPassword /></GuestRoute>} />
+            <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+            <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+            <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+            <Route path="/reset-password/:token" element={<GuestRoute><ResetPassword /></GuestRoute>} />
 
             {/* ── Protected User ── */}
-            <Route path="/profile"  element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/addresses" element={<ProtectedRoute><Addresses /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/orders"   element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
             <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
             <Route path="/orders/:id/return" element={<ProtectedRoute><ReturnRequest /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/change-password" element={<ProtectedRoute><ChangePassword /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/support"  element={<ProtectedRoute><SupportRedirect /></ProtectedRoute>} />
+            <Route path="/support" element={<ProtectedRoute><SupportRedirect /></ProtectedRoute>} />
 
             {/* ── Admin ── */}
-            <Route path="/admin"                  element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/add-product"      element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
-            <Route path="/admin/products"         element={<ProtectedRoute adminOnly><AdminProducts /></ProtectedRoute>} />
-            <Route path="/admin/categories"       element={<ProtectedRoute adminOnly><AdminCategories /></ProtectedRoute>} />
-            <Route path="/products/edit/:id"      element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
-            <Route path="/admin/inventory"        element={<ProtectedRoute adminOnly><AdminInventory /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/admin/orders"           element={<ProtectedRoute adminOnly><ManageOrders /></ProtectedRoute>} />
-            <Route path="/admin/returns"          element={<ProtectedRoute adminOnly><AdminReturns /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/admin/support"          element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
-            <Route path="/admin/newsletters"      element={<ProtectedRoute adminOnly><AdminNewsletters /></ProtectedRoute>} />
-            <Route path="/admin/subscriptions"    element={<ProtectedRoute adminOnly><AdminSubscriptions /></ProtectedRoute>} />
-            <Route path="/admin/coupons"          element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
-            <Route path="/admin/users"            element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
-            <Route path="/admin/user-activity"    element={<ProtectedRoute adminOnly><AdminUserActivity /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/admin/analytics"        element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
-            <Route path="/admin/settings"          element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
-            <Route path="/admin/media"             element={<ProtectedRoute adminOnly><AdminMedia /></ProtectedRoute>} />
+            <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin/add-product" element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
+            <Route path="/admin/products" element={<ProtectedRoute adminOnly><AdminProducts /></ProtectedRoute>} />
+            <Route path="/admin/categories" element={<ProtectedRoute adminOnly><AdminCategories /></ProtectedRoute>} />
+            <Route path="/products/edit/:id" element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
+            <Route path="/admin/inventory" element={<ProtectedRoute adminOnly><AdminInventory /></ProtectedRoute>} /> {/* ✅ P1 */}
+            <Route path="/admin/orders" element={<ProtectedRoute adminOnly><ManageOrders /></ProtectedRoute>} />
+            <Route path="/admin/returns" element={<ProtectedRoute adminOnly><AdminReturns /></ProtectedRoute>} /> {/* ✅ P1 */}
+            <Route path="/admin/support" element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
+            <Route path="/admin/newsletters" element={<ProtectedRoute adminOnly><AdminNewsletters /></ProtectedRoute>} />
+            <Route path="/admin/subscriptions" element={<ProtectedRoute adminOnly><AdminSubscriptions /></ProtectedRoute>} />
+            <Route path="/admin/coupons" element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
+            <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
+            <Route path="/admin/user-activity" element={<ProtectedRoute adminOnly><AdminUserActivity /></ProtectedRoute>} /> {/* ✅ P1 */}
+            <Route path="/admin/analytics" element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
+            <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
+            <Route path="/admin/media" element={<ProtectedRoute adminOnly><AdminMedia /></ProtectedRoute>} />
             <Route path="/admin/products/:id/images" element={<ProtectedRoute adminOnly><AdminProductImages /></ProtectedRoute>} />
-            <Route path="/admin/reviews"          element={<ProtectedRoute adminOnly><AdminReviews /></ProtectedRoute>} />
-            <Route path="/admin/blogs"            element={<ProtectedRoute adminOnly><ManageBlogs /></ProtectedRoute>} />
-            <Route path="/admin/b2b"              element={<ProtectedRoute adminOnly><ManageB2B /></ProtectedRoute>} />
+            <Route path="/admin/reviews" element={<ProtectedRoute adminOnly><AdminReviews /></ProtectedRoute>} />
+            <Route path="/admin/blogs" element={<ProtectedRoute adminOnly><ManageBlogs /></ProtectedRoute>} />
+            <Route path="/admin/b2b" element={<ProtectedRoute adminOnly><ManageB2B /></ProtectedRoute>} />
 
             {/* ── Support ── */}
-            <Route path="/support-panel"          element={<ProtectedRoute supportAccess><SupportDashboard /></ProtectedRoute>} />
-            <Route path="/support-dashboard"      element={<Navigate to="/support-panel" replace />} />
-            <Route path="/support-agent"          element={<Navigate to="/support-panel" replace />} />
+            <Route path="/support-panel" element={<ProtectedRoute supportAccess><SupportDashboard /></ProtectedRoute>} />
+            <Route path="/support-dashboard" element={<Navigate to="/support-panel" replace />} />
+            <Route path="/support-agent" element={<Navigate to="/support-panel" replace />} />
 
 
             {/* ── Superadmin ── */}
-            <Route path="/admin/manage-admins"    element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminManagement /></ProtectedRoute>} />
-            <Route path="/admin/support-agents"   element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminSupportAgents /></ProtectedRoute>} />
-            <Route path="/admin/audit-logs"       element={<ProtectedRoute adminOnly permission="superadmin_view"><AuditLogs /></ProtectedRoute>} />
+            <Route path="/admin/manage-admins" element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminManagement /></ProtectedRoute>} />
+            <Route path="/admin/support-agents" element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminSupportAgents /></ProtectedRoute>} />
+            <Route path="/admin/audit-logs" element={<ProtectedRoute adminOnly permission="superadmin_view"><AuditLogs /></ProtectedRoute>} />
 
             {/* ── 404 ── */}
             <Route path="*" element={<NotFound />} />

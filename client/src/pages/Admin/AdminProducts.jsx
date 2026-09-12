@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useConfirm } from '../../context/ConfirmContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
 import Papa from 'papaparse'
+import BrandLoader from '../../components/BrandLoader'
 
 /* ── Custom Image Upload Input ── */
 const ImageUploadInput = ({ name, value, onChange, placeholder, style, onFocus, onBlur }) => {
@@ -241,7 +242,7 @@ const AdminProducts = () => {
 
   if (authLoading) return (
     <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-base)' }}>
-      <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--border-color)', borderTopColor: 'var(--brand-secondary)' }} />
+      <BrandLoader mode="inline" size="lg" text="Authenticating Admin…" subtext="Verifying security permissions" />
     </div>
   )
 
@@ -251,6 +252,13 @@ const AdminProducts = () => {
 
   return (
     <div style={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+      {/* 🌟 Brand Loader Overlay for Saving/Importing */}
+      <BrandLoader
+        visible={saving || importing}
+        text={importing ? 'Importing Products CSV…' : 'Saving Product Changes…'}
+        subtext="Updating product catalog and inventory"
+        mode="overlay"
+      />
 
       {/* ── Premium Admin Header ── */}
       <div style={{ flexShrink: 0, position: 'relative', overflow: 'hidden', background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>

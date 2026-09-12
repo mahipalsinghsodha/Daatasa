@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useCart, getCartItemDetails } from '../context/CartContext'
 import { useTranslation } from 'react-i18next'
 import api from '../api/axios'
+import BrandLoader from '../components/BrandLoader'
 
 const MAX_CART_QTY = 10
 
@@ -111,10 +112,10 @@ const Cart = () => {
     } catch { toast.error('Failed to clear cart') }
   }
 
-  // Show spinner while CartContext is fetching from DB (on login / page reload)
+  // Show signature BrandLoader while CartContext is fetching from DB
   if (cartLoading) return (
-    <div className="min-h-[60vh] flex items-center justify-center bg-[var(--ivory)]">
-      <div className="w-12 h-12 border-4 rounded-full animate-spin border-brand-secondary border-t-transparent" />
+    <div className="min-h-[60vh] flex items-center justify-center bg-[var(--ivory)] py-16">
+      <BrandLoader mode="inline" size="lg" text="Loading Your Cart…" subtext="Checking available stock & discounts" />
     </div>
   )
 

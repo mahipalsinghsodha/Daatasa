@@ -11,6 +11,7 @@ import {
   Star, Truck, Shield, RefreshCw, MapPin, Package,
   CheckCircle, AlertCircle, Tag, User, Send, BadgeCheck, Heart
 } from 'lucide-react'
+import BrandLoader from '../components/BrandLoader'
 
 // ── Helper: parse weights like "250g", "1kg", "2kg" to grams for sorting ────────
 const parseWeightToGrams = (w) => {
@@ -153,18 +154,14 @@ const ProductDetail = () => {
 
       // Fetch saved addresses for delivery info + review eligibility
       if (user) {
+        if (user.addresses && Array.isArray(user.addresses)) {
+          setAddresses(user.addresses)
+        }
         try {
-          // Fetch addresses and review eligibility in parallel
-          const [meRes, eligRes] = await Promise.allSettled([
-            api.get('/api/auth/me', { signal: controller.signal }),
-            api.get(`/api/reviews/can-review/${id}`, { signal: controller.signal })
-          ])
-          if (meRes.status === 'fulfilled') setAddresses(meRes.value.data.addresses || [])
-          if (eligRes.status === 'fulfilled') {
-            const { alreadyReviewed, orderId } = eligRes.value.data
-            if (alreadyReviewed) setHasReviewed(true)
-            if (orderId) setEligibleOrderId(orderId)
-          }
+          const eligRes = await api.get(`/api/reviews/can-review/${id}`, { signal: controller.signal })
+          const { alreadyReviewed, orderId } = eligRes.data || {}
+          if (alreadyReviewed) setHasReviewed(true)
+          if (orderId) setEligibleOrderId(orderId)
         } catch {}
       }
     } catch (error) {
@@ -290,9 +287,8 @@ const ProductDetail = () => {
 
   // ── Loading ──
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--ivory)]">
-      <div className="w-12 h-12 border-4 border-brand-secondary/20 border-t-brand-secondary rounded-full animate-spin mb-4" />
-      <p className="text-sm text-brand-text/40 font-medium">Loading product...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--ivory)] py-24">
+      <BrandLoader mode="inline" size="lg" text="Loading Vedic Product…" subtext="Fetching pure Bilona Ghee details" />
     </div>
   )
 

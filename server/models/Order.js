@@ -87,7 +87,7 @@ refundInfo: {
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['COD', 'Online', 'Wallet']
+    enum: ['COD', 'cod', 'Online', 'ONLINE', 'online', 'Wallet', 'WALLET', 'wallet', 'UPI', 'upi', 'CARD', 'Card', 'card', 'NetBanking', 'NETBANKING', 'netbanking', 'Prepaid', 'PREPAID']
   },
 
   paymentStatus: {
@@ -98,7 +98,7 @@ refundInfo: {
 
   orderStatus: {
     type: String,
-    enum: ['PENDING_ACCEPTANCE', 'ACCEPTED', 'ASSIGNED_TO_COURIER', 'PICKED_UP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'ATTEMPTED_FAILED', 'RETURNED', 'CANCELLED'],
+    enum: ['PENDING', 'PENDING_ACCEPTANCE', 'ACCEPTED', 'ASSIGNED_TO_COURIER', 'PICKED_UP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'ATTEMPTED_FAILED', 'RETURNED', 'CANCELLED'],
     default: 'PENDING_ACCEPTANCE'
   },
 
@@ -218,7 +218,7 @@ refundInfo: {
   },
 
   rewardPointsAwarded: {
-    type: Boolean,
+    type: mongoose.Schema.Types.Mixed,
     default: false
   },
 

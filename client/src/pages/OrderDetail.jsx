@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiArrowLeft, FiPrinter, FiX, FiRefreshCcw, FiExternalLink, FiHelpCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiPrinter, FiX, FiRefreshCcw, FiExternalLink, FiHelpCircle, FiCreditCard } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import api from '../api/axios';
 import OrderTimeline from '../components/OrderTimeline';
@@ -8,6 +8,7 @@ import CancelOrderModal from '../components/CancelOrderModal';
 import { useSupportStore } from '../store/support';
 import { formatOrderId } from '../utils/formatOrderId';
 import { useSocket } from '../hooks/useSocket';
+import BrandLoader from '../components/BrandLoader';
 
 const fmtINR = (val) => `₹${Number(val || 0).toLocaleString('en-IN')}`;
 
@@ -18,6 +19,7 @@ const OrderDetail = () => {
   const [cancelModal, setCancelModal] = useState(false);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [retryingPayment, setRetryingPayment] = useState(false);
   const openSupport = useSupportStore(state => state.openSupport);
 
   const { emit, on, off } = useSocket();
@@ -89,12 +91,73 @@ const OrderDetail = () => {
     }
   };
 
+  const handleRetryPayment = async () => {
+    if (retryingPayment || !order) return;
+    setRetryingPayment(true);
+    try {
+      const { data } = await api.post('/api/payment/create-order', { orderId: order._id });
+      const rzrOrder = data;
+      const razorpayKey = rzrOrder.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_EvzmZvtG1AJQAS';
 
+      if (!window.Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('Failed to load Razorpay payment gateway'));
+          document.body.appendChild(script);
+        });
+      }
+
+      const rzp = new window.Razorpay({
+        key: razorpayKey,
+        order_id: rzrOrder.id,
+        name: 'Daatasa',
+        description: `Order #${formatOrderId(order)}`,
+        amount: rzrOrder.amount,
+        theme: { color: '#F5A623' },
+        prefill: {
+          name: order.shippingAddress?.name || '',
+          email: order.guestEmail || '',
+          contact: order.shippingAddress?.phone || ''
+        },
+        handler: async (res) => {
+          try {
+            toast.info('Verifying payment and confirming your order…');
+            await api.post('/api/payment/verify', res);
+            toast.success('🎉 Payment successful! Your order has been confirmed.');
+            fetchOrder();
+          } catch (verifyErr) {
+            toast.error(verifyErr.response?.data?.message || 'Payment verification failed');
+            fetchOrder();
+          } finally {
+            setRetryingPayment(false);
+          }
+        },
+        modal: {
+          ondismiss: async () => {
+            setRetryingPayment(false);
+            try {
+              await api.post('/api/orders/fail', { razorpay_order_id: rzrOrder.id });
+            } catch {}
+            toast.info('Payment window closed. You can retry paying anytime.');
+            fetchOrder();
+          }
+        }
+      });
+
+      rzp.open();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initialize payment. Product might be out of stock.');
+      setRetryingPayment(false);
+    }
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen py-10 px-4 flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--brand-primary)' }}></div>
+      <div className="min-h-screen py-24 px-4 flex items-center justify-center" style={{ background: 'var(--bg-base)' }}>
+        <BrandLoader mode="inline" size="lg" text="Loading Order Details…" subtext="Retrieving real-time tracking from Daatasa" />
       </div>
     );
   }
@@ -108,12 +171,20 @@ const OrderDetail = () => {
     );
   }
 
+  const canRetryPayment = !['COD', 'cod'].includes(order.paymentMethod) && !order.isPaid && ['PENDING', 'FAILED'].includes(order.paymentStatus);
   const isVoid = ['CANCELLED', 'FAILED'].includes(order.paymentStatus) || order.orderStatus === 'CANCELLED';
   const isCancellable = !isVoid && !order.isDelivered && !['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'RETURNED'].includes(order.orderStatus);
   const isReturnable = (order.isDelivered || order.orderStatus === 'DELIVERED') && !isVoid && !order.returnRequest?.requestedAt && ((Date.now() - new Date(order.deliveredAt || order.updatedAt).getTime()) / (1000 * 60 * 60 * 24) <= 7);
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8" style={{ background: 'var(--bg-base)' }}>
+      {/* 🌟 Brand Loader Overlay during Payment Retry */}
+      <BrandLoader
+        visible={retryingPayment}
+        text="Initializing Payment Gateway…"
+        subtext="Connecting to Razorpay secure checkout"
+        mode="overlay"
+      />
       <div className="max-w-4xl mx-auto space-y-6">
         
         <Link to="/orders" className="inline-flex items-center gap-2 hover:underline font-medium" style={{ color: 'var(--text-muted)' }}>
@@ -129,7 +200,22 @@ const OrderDetail = () => {
               Placed on {new Date(order.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
+            {canRetryPayment && (
+              <button
+                onClick={handleRetryPayment}
+                disabled={retryingPayment}
+                className="px-5 py-2 rounded-xl text-sm font-bold flex items-center gap-2 text-white shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }}
+              >
+                {retryingPayment ? (
+                  <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <FiCreditCard />
+                )}
+                Pay Now (₹{Number((order.payableAmount !== undefined && order.payableAmount !== null) ? order.payableAmount : order.totalPrice).toLocaleString('en-IN')})
+              </button>
+            )}
             <button onClick={handleDownloadInvoice} className="px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2" style={{ background: 'var(--bg-surface)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}>
               <FiPrinter /> Invoice
             </button>
@@ -234,6 +320,24 @@ const OrderDetail = () => {
                 <p className="text-xs uppercase tracking-wider font-bold mb-1" style={{ color: 'var(--text-muted)' }}>Payment Method</p>
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{order.paymentMethod}</p>
               </div>
+
+              {canRetryPayment && (
+                <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
+                  <button
+                    onClick={handleRetryPayment}
+                    disabled={retryingPayment}
+                    className="w-full py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 text-white shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)' }}
+                  >
+                    {retryingPayment ? (
+                      <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <FiCreditCard />
+                    )}
+                    Complete Payment (₹{Number((order.payableAmount !== undefined && order.payableAmount !== null) ? order.payableAmount : order.totalPrice).toLocaleString('en-IN')})
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Address */}

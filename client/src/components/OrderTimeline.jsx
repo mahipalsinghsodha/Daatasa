@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiCheckCircle, FiCircle, FiXCircle, FiTruck, FiPackage, FiClock, FiMapPin } from 'react-icons/fi';
+import { FiCheckCircle, FiCircle, FiXCircle, FiTruck, FiPackage, FiClock, FiMapPin, FiCreditCard, FiAlertCircle } from 'react-icons/fi';
 
 const OrderTimeline = ({ order }) => {
   if (!order) return null;
@@ -23,7 +23,8 @@ const OrderTimeline = ({ order }) => {
     return statusHistory?.find(h => statusArr.includes(h.status));
   };
 
-  const isCancelled = orderStatus === 'CANCELLED' || ['CANCELLED', 'FAILED'].includes(paymentStatus);
+  const isOnlineUnpaid = !['COD', 'cod'].includes(order.paymentMethod) && !order.isPaid;
+  const isCancelled = !isOnlineUnpaid && (orderStatus === 'CANCELLED' || ['CANCELLED', 'FAILED'].includes(paymentStatus));
 
   const isConfirmed =
     orderStatus === 'ACCEPTED' ||
@@ -48,73 +49,155 @@ const OrderTimeline = ({ order }) => {
   const outHistory = getHistory(['OUT_FOR_DELIVERY']);
   const deliveredHistory = getHistory(['DELIVERED']) || (deliveredAt ? { updatedAt: deliveredAt } : null);
 
-  const steps = [
-    {
-      id: 'placed',
-      title: 'Order Placed',
-      subtitle: placedHistory ? `Placed on ${new Date(placedHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Order submitted',
-      icon: FiPackage,
-      isActive: true,
-      isCompleted: isConfirmed || isShipped || isOutForDelivery || isDeliveredStep
+  let steps = [];
+
+  if (isOnlineUnpaid) {
+    if (paymentStatus === 'FAILED') {
+      steps = [
+        {
+          id: 'payment_failed',
+          title: 'Payment Failed',
+          subtitle: cancelReason || 'Online payment was not completed or failed. Order is on hold.',
+          icon: FiAlertCircle,
+          isActive: true,
+          isCompleted: false,
+          isError: true
+        },
+        {
+          id: 'payment_retry',
+          title: 'Action Required: Pay Now',
+          subtitle: 'Click "Pay Now" button above to complete payment and confirm this order.',
+          icon: FiCreditCard,
+          isActive: true,
+          isCompleted: false,
+          isWarning: true
+        },
+        {
+          id: 'order_confirmed',
+          title: 'Order Confirmation',
+          subtitle: 'Seller will confirm and pack items once payment is received.',
+          icon: FiCheckCircle,
+          isActive: false,
+          isCompleted: false
+        },
+        {
+          id: 'delivered',
+          title: 'Dispatch & Delivery',
+          subtitle: 'Item will be dispatched after payment and confirmation.',
+          icon: FiTruck,
+          isActive: false,
+          isCompleted: false
+        }
+      ];
+    } else {
+      // paymentStatus === 'PENDING'
+      steps = [
+        {
+          id: 'payment_pending',
+          title: 'Payment Pending',
+          subtitle: 'Awaiting online payment confirmation. Order is not placed yet.',
+          icon: FiClock,
+          isActive: true,
+          isCompleted: false,
+          isWarning: true
+        },
+        {
+          id: 'complete_payment',
+          title: 'Action Required: Complete Payment',
+          subtitle: 'Click "Pay Now" above to finish checkout and place your order.',
+          icon: FiCreditCard,
+          isActive: true,
+          isCompleted: false,
+          isWarning: true
+        },
+        {
+          id: 'order_confirmed',
+          title: 'Order Confirmation',
+          subtitle: 'Order will be confirmed after successful payment.',
+          icon: FiCheckCircle,
+          isActive: false,
+          isCompleted: false
+        },
+        {
+          id: 'delivered',
+          title: 'Dispatch & Delivery',
+          subtitle: 'Items will be packed and shipped once payment is confirmed.',
+          icon: FiTruck,
+          isActive: false,
+          isCompleted: false
+        }
+      ];
     }
-  ];
-
-  if (isCancelled) {
-    const cancelledHistory = getHistory(['CANCELLED']);
-    steps.push({
-      id: 'cancelled',
-      title: 'Order Cancelled',
-      subtitle: cancelReason ? `Reason: ${cancelReason}` : 'Order was cancelled',
-      history: cancelledHistory,
-      icon: FiXCircle,
-      isActive: true,
-      isCompleted: true,
-      isError: true
-    });
   } else {
-    steps.push({
-      id: 'confirmed',
-      title: 'Order Confirmed',
-      subtitle: isConfirmed
-        ? (confirmedHistory ? `Confirmed on ${new Date(confirmedHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Seller confirmed & packed')
-        : 'Waiting for seller confirmation',
-      icon: FiCheckCircle,
-      isActive: isConfirmed,
-      isCompleted: isShipped || isOutForDelivery || isDeliveredStep
-    });
+    // Standard flow (Paid Online, COD, or Wallet)
+    steps = [
+      {
+        id: 'placed',
+        title: order.paymentMethod === 'COD' ? 'Order Placed (Cash on Delivery)' : 'Order Placed (Payment Confirmed)',
+        subtitle: placedHistory ? `Placed on ${new Date(placedHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Order submitted',
+        icon: FiPackage,
+        isActive: true,
+        isCompleted: isConfirmed || isShipped || isOutForDelivery || isDeliveredStep
+      }
+    ];
 
-    steps.push({
-      id: 'shipped',
-      title: 'Shipped',
-      subtitle: isShipped
-        ? (trackingNumber ? `${shippingProvider || 'Courier'} - Tracking: ${trackingNumber}` : 'Item handed over to courier partner')
-        : 'Item will be dispatched soon',
-      icon: FiTruck,
-      isActive: isShipped,
-      isCompleted: isOutForDelivery || isDeliveredStep
-    });
+    if (isCancelled) {
+      const cancelledHistory = getHistory(['CANCELLED']);
+      steps.push({
+        id: 'cancelled',
+        title: 'Order Cancelled',
+        subtitle: cancelReason ? `Reason: ${cancelReason}` : 'Order was cancelled',
+        history: cancelledHistory,
+        icon: FiXCircle,
+        isActive: true,
+        isCompleted: true,
+        isError: true
+      });
+    } else {
+      steps.push({
+        id: 'confirmed',
+        title: 'Order Confirmed & Packed',
+        subtitle: isConfirmed
+          ? (confirmedHistory ? `Confirmed on ${new Date(confirmedHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Seller confirmed & packed')
+          : 'Seller will confirm and pack items',
+        icon: FiCheckCircle,
+        isActive: isConfirmed,
+        isCompleted: isShipped || isOutForDelivery || isDeliveredStep
+      });
 
-    steps.push({
-      id: 'out_for_delivery',
-      title: 'Out for Delivery',
-      subtitle: isOutForDelivery
-        ? (outHistory ? `Out for delivery on ${new Date(outHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Courier partner is out for delivery')
-        : 'Will be out for delivery upon reaching hub',
-      icon: FiMapPin,
-      isActive: isOutForDelivery,
-      isCompleted: isDeliveredStep
-    });
+      steps.push({
+        id: 'shipped',
+        title: 'Shipped',
+        subtitle: isShipped
+          ? (trackingNumber ? `${shippingProvider || 'Courier'} - Tracking: ${trackingNumber}` : 'Item handed over to courier partner')
+          : 'Item will be dispatched soon',
+        icon: FiTruck,
+        isActive: isShipped,
+        isCompleted: isOutForDelivery || isDeliveredStep
+      });
 
-    steps.push({
-      id: 'delivered',
-      title: 'Delivered',
-      subtitle: isDeliveredStep
-        ? (deliveredHistory ? `Delivered on ${new Date(deliveredHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Package successfully delivered')
-        : 'Expected delivery at your address',
-      icon: FiCheckCircle,
-      isActive: isDeliveredStep,
-      isCompleted: isDeliveredStep
-    });
+      steps.push({
+        id: 'out_for_delivery',
+        title: 'Out for Delivery',
+        subtitle: isOutForDelivery
+          ? (outHistory ? `Out for delivery on ${new Date(outHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Courier partner is out for delivery')
+          : 'Will be out for delivery upon reaching hub',
+        icon: FiMapPin,
+        isActive: isOutForDelivery,
+        isCompleted: isDeliveredStep
+      });
+
+      steps.push({
+        id: 'delivered',
+        title: 'Delivered',
+        subtitle: isDeliveredStep
+          ? (deliveredHistory ? `Delivered on ${new Date(deliveredHistory.updatedAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}` : 'Package successfully delivered')
+          : 'Expected delivery at your address',
+        icon: FiCheckCircle,
+        isActive: isDeliveredStep,
+        isCompleted: isDeliveredStep
+      });
+    }
   }
 
   if (returnRequest && returnRequest.status && returnRequest.requestedAt) {
@@ -143,8 +226,8 @@ const OrderTimeline = ({ order }) => {
           iconBg = 'bg-red-50 dark:bg-red-950/40 text-red-500 border-red-500';
           lineBg = 'bg-red-400';
         } else if (step.isWarning) {
-          iconBg = 'bg-amber-50 dark:bg-amber-950/40 text-amber-500 border-amber-500';
-          lineBg = 'bg-amber-400';
+          iconBg = 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-500';
+          lineBg = 'bg-amber-300 dark:bg-amber-700';
         } else if (step.isActive) {
           iconBg = 'bg-green-50 dark:bg-green-950/40 text-green-600 dark:text-green-400 border-green-500';
           if (step.isCompleted) {
@@ -167,10 +250,10 @@ const OrderTimeline = ({ order }) => {
             </div>
 
             <div className="flex flex-col justify-center">
-              <span className={`text-sm font-bold transition-colors ${step.isActive ? (step.isError ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white') : 'text-gray-400 dark:text-gray-500'}`}>
+              <span className={`text-sm font-bold transition-colors ${step.isActive ? (step.isError ? 'text-red-600 dark:text-red-400' : (step.isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white')) : 'text-gray-400 dark:text-gray-500'}`}>
                 {step.title}
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-relaxed">
+              <span className={`text-xs mt-0.5 leading-relaxed ${step.isWarning ? 'text-amber-700/80 dark:text-amber-300' : 'text-gray-500 dark:text-gray-400'}`}>
                 {step.subtitle}
               </span>
             </div>

@@ -17,7 +17,6 @@ const getNavCols = (t) => [
     title: t('footer.quickLinksTitle') || 'Quick Links',
     links: [
       { label: t('footer.bulkOrders', 'Bulk Orders & B2B'), to: '/b2b', highlight: true },
-      { label: t('footer.quickTrackOrder', 'Track Order'), to: '/track-order' },
       { label: t('footer.quickPrivacy') || 'Privacy Policy', to: '/privacy-policy' },
       { label: t('footer.quickTerms') || 'Terms & Conditions', to: '/terms' },
       { label: t('footer.quickDisclaimer') || 'Disclaimer', to: '/disclaimer' },
@@ -70,10 +69,10 @@ export default function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-5 pr-0 lg:pr-8">
             <Link to="/" className="inline-block mb-3 sm:mb-4 bg-[#fffdf8] rounded-xl px-3 py-1.5 shadow-xs">
-              <img 
-                src="/logo_rectangle.png" 
+              <img
+                src="/logo_rectangle.png"
                 alt="Daatasa"
-                className="h-10 sm:h-12 w-auto" 
+                className="h-10 sm:h-12 w-auto"
               />
             </Link>
             <p className="text-white/70 leading-relaxed font-normal mb-4 sm:mb-5 text-xs sm:text-sm max-w-sm">

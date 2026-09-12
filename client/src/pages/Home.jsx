@@ -571,35 +571,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ══════════ TRACK ORDER BANNER ══════════ */}
-      <section className="py-6 sm:py-8 bg-white relative">
-        <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8">
-          <motion.div {...fadeUp(0)} className="bg-brand-primary p-5 sm:p-7 md:p-8 rounded-xl sm:rounded-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 shadow-md">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-brand-secondary/10 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/3 pointer-events-none" />
-            
-            <div className="relative z-10 max-w-xl text-white text-center md:text-left">
-              <div className="flex items-center justify-center md:justify-start gap-2.5 mb-1.5 sm:mb-2">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-brand-secondary/20 flex items-center justify-center text-brand-secondary shrink-0">
-                  <FiTruck size={18} />
-                </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-display font-bold text-white">
-                  {t('home.trackOrderTitle', 'Track Your Order')}
-                </h3>
-              </div>
-              <p className="text-white/80 text-xs sm:text-sm font-light leading-relaxed">
-                {t('home.trackOrderDesc', 'Waiting for your pure Bilona Ghee? Use our tracking portal to get real-time updates on your delivery status.')}
-              </p>
-            </div>
-            
-            <div className="relative z-10 w-full md:w-auto shrink-0">
-              <Link to="/track-order" className="btn btn-primary h-10 sm:h-11 px-6 sm:px-8 text-xs sm:text-sm rounded-full flex items-center justify-center gap-1.5 shadow-gold whitespace-nowrap w-full">
-                <span>{t('home.trackNowBtn', 'Track Now')}</span> <FiArrowRight size={14} />
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* ══════════ NEWSLETTER & LIMITED OFFER ══════════ */}
       <section className="py-6 sm:py-8 bg-white relative pb-10 sm:pb-14">
         <div className="max-w-[1280px] mx-auto px-3 sm:px-6 lg:px-8 grid lg:grid-cols-2 gap-4 sm:gap-6">

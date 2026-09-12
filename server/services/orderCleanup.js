@@ -11,11 +11,16 @@ const startOrderCleanup = () => {
     if (isDev) console.log('[OrderCleanup] Running cleanup check...');
 
     try {
-      const expirationTime = new Date(Date.now() - 72 * 60 * 60 * 1000); // 72 hours (3 days)
+      // 🛡️ Big E-com Standard: Online un-paid checkout attempts expire after 15 minutes; COD after 72 hours
+      const onlineExpiryTime = new Date(Date.now() - 15 * 60 * 1000); // 15 minutes
+      const codExpiryTime = new Date(Date.now() - 72 * 60 * 60 * 1000); // 72 hours
 
       const expiredOrders = await Order.find({
         paymentStatus: 'PENDING',
-        createdAt: { $lt: expirationTime }
+        $or: [
+          { paymentMethod: 'Online', createdAt: { $lt: onlineExpiryTime } },
+          { paymentMethod: { $ne: 'Online' }, createdAt: { $lt: codExpiryTime } }
+        ]
       })
         .populate('user', 'name email')
         .limit(100);

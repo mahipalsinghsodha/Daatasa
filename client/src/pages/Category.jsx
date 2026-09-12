@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import api from '../api/axios'
 import ProductCard from '../components/ProductCard'
+import BrandLoader from '../components/BrandLoader'
 
 const Category = () => {
   const { slug } = useParams()
@@ -36,8 +37,8 @@ const Category = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-20 flex items-center justify-center bg-[var(--bg-base)]">
-        <div className="w-10 h-10 border-4 border-brand-primary/30 border-t-brand-primary rounded-full animate-spin"></div>
+      <div className="min-h-screen py-24 flex items-center justify-center bg-[var(--bg-base)]">
+        <BrandLoader mode="inline" size="lg" text="Loading Category…" subtext="Curating pure Vedic selections" />
       </div>
     )
   }

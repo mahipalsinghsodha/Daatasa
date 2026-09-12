@@ -10,6 +10,7 @@ import { toast } from 'react-toastify'
 import api from '../../api/axios'
 import { useAuth } from '../../context/AuthContext'
 import RestrictedAccess from '../../components/RestrictedAccess'
+import BrandLoader from '../../components/BrandLoader'
 
 const fmtINR = (val) => `₹${Number(val || 0).toLocaleString('en-IN')}`
 
@@ -105,6 +106,13 @@ const AdminReturns = () => {
 
   return (
     <div className="min-h-screen pb-20" style={{ background: 'var(--bg-base)' }}>
+      {/* 🌟 Brand Loader Overlay for Return Actions */}
+      <BrandLoader
+        visible={submitting}
+        text="Processing Return Status…"
+        subtext={actionStatus === 'APPROVED' ? 'Booking reverse pickup and initiating refund' : 'Updating return record'}
+        mode="overlay"
+      />
       {/* ── Premium Admin Header ── */}
       <div className="relative overflow-hidden" style={{ background: 'var(--gradient-hero)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none"

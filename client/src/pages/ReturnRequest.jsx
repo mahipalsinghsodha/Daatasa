@@ -8,6 +8,7 @@ import {
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
+import BrandLoader from '../components/BrandLoader';
 
 const REASONS = [
   'Defective/Damaged product',
@@ -206,9 +207,8 @@ const ReturnRequest = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen py-16 flex flex-col items-center justify-center bg-[var(--bg-base)]">
-        <div className="w-10 h-10 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mb-4" />
-        <p className="text-sm font-semibold text-gray-500">Loading order details…</p>
+      <div className="min-h-screen py-24 flex items-center justify-center bg-[var(--bg-base)]">
+        <BrandLoader mode="inline" size="lg" text="Checking Return Policy…" subtext="Verifying delivery status & return window" />
       </div>
     );
   }
@@ -217,6 +217,13 @@ const ReturnRequest = () => {
 
   return (
     <div className="min-h-screen py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-[#FBF9F5] text-slate-800">
+      {/* 🌟 Brand Loader Overlay during Upload or Submission */}
+      <BrandLoader
+        visible={submitting || uploadingMedia}
+        text={uploadingMedia ? 'Uploading Return Evidence…' : 'Submitting Return Request…'}
+        subtext={uploadingMedia ? 'Securely storing photos and unboxing video' : 'Notifying Daatasa support team'}
+        mode="overlay"
+      />
       <div className="max-w-3xl mx-auto space-y-6">
         
         {/* Navigation Breadcrumb */}

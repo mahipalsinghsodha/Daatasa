@@ -32,9 +32,33 @@ exports.createRazorpayOrder = async (req, res) => {
       }
     }
 
-    // Security: Only create Razorpay order for PENDING payments
-    if (order.paymentStatus !== 'PENDING') {
-      return res.status(400).json({ message: 'Order already processed' });
+    // Security: Only allow Razorpay order creation for PENDING or FAILED unpaid orders
+    if (order.isPaid || ['PAID', 'REFUNDED', 'RETURN_APPROVED'].includes(order.paymentStatus)) {
+      return res.status(400).json({ message: 'Order already processed or paid' });
+    }
+
+    // Pre-check stock if stock was previously restored (e.g. on payment failure/cancellation)
+    if (order.stockRestored && order.orderItems && order.orderItems.length > 0) {
+      const Product = require('../models/Product');
+      for (const item of order.orderItems) {
+        const pId = item.product?._id || item.product;
+        const vId = item.variant?._id || item.variant;
+        const qty = Number(item.quantity || 1);
+        const prod = await Product.findById(pId);
+        if (!prod) {
+          return res.status(400).json({ message: `Product "${item.name}" is no longer available.` });
+        }
+        if (vId && prod.variants && prod.variants.length > 0) {
+          const matchedVariant = prod.variants.find(v => v._id.toString() === vId.toString());
+          if (!matchedVariant || (matchedVariant.stock ?? 0) < qty) {
+            return res.status(400).json({ message: `"${item.name}" is currently out of stock.` });
+          }
+        } else {
+          if ((prod.stock ?? 0) < qty) {
+            return res.status(400).json({ message: `"${item.name}" is currently out of stock.` });
+          }
+        }
+      }
     }
 
     // Create Razorpay order with BACKEND-calculated amount (net of wallet/gift card)
@@ -52,13 +76,19 @@ exports.createRazorpayOrder = async (req, res) => {
       }
     });
 
-    // Save Razorpay order ID to our order
+    // Save Razorpay order ID to our order and set status to PENDING for active payment attempt
     order.paymentInfo = {
+      ...(order.paymentInfo || {}),
       razorpay_order_id: razorpayOrder.id
     };
+    order.paymentStatus = 'PENDING';
+    order.orderStatus = 'PENDING_ACCEPTANCE';
     await order.save();
 
-    res.status(200).json(razorpayOrder);
+    res.status(200).json({
+      ...razorpayOrder,
+      key_id: process.env.RAZORPAY_KEY_ID
+    });
 
   } catch (error) {
     console.error('RAZORPAY ORDER ERROR:', error);
@@ -70,6 +100,7 @@ exports.createRazorpayOrder = async (req, res) => {
  * VERIFY PAYMENT
  * ✅ Signature verification
  * ✅ Amount verification (prevent frontend manipulation)
+ * ✅ Atomic stock deduction if stock was restored during retry
  * ✅ Clear cart only after successful payment
  * ✅ Increment coupon usage
  */
@@ -83,7 +114,7 @@ exports.verifyPayment = async (req, res) => {
 
     const order = await Order.findOne({
       'paymentInfo.razorpay_order_id': razorpay_order_id,
-      paymentStatus: 'PENDING'
+      paymentStatus: { $in: ['PENDING', 'FAILED'] }
     });
 
     if (!order) {
@@ -138,11 +169,84 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ message: 'Payment verification failed' });
     }
 
-    // 3️⃣ MARK ORDER AS PAID
+    // 3️⃣ ATOMIC STOCK DEDUCTION (If stock was previously restored on order failure/cancellation)
+    const Product = require('../models/Product');
+    if (order.stockRestored && order.orderItems && order.orderItems.length > 0) {
+      const stockUpdates = [];
+      let outOfStockItem = null;
+
+      for (const item of order.orderItems) {
+        const pId = item.product?._id || item.product;
+        const vId = item.variant?._id || item.variant;
+        const qty = Number(item.quantity || 1);
+
+        if (!pId || qty <= 0) continue;
+
+        let query, op;
+        if (vId) {
+          query = { _id: pId, 'variants._id': vId, 'variants.stock': { $gte: qty } };
+          op = { $inc: { 'variants.$.stock': -qty } };
+        } else {
+          query = { _id: pId, stock: { $gte: qty } };
+          op = { $inc: { stock: -qty } };
+        }
+
+        const updatedProduct = await Product.findOneAndUpdate(query, op, { new: true });
+        if (!updatedProduct) {
+          outOfStockItem = item.name || 'Item';
+          break;
+        }
+        stockUpdates.push({ pId, vId, qty });
+      }
+
+      // If any item failed stock check, rollback already deducted items and auto-refund
+      if (outOfStockItem) {
+        for (const done of stockUpdates) {
+          if (done.vId) {
+            await Product.findOneAndUpdate(
+              { _id: done.pId, 'variants._id': done.vId },
+              { $inc: { 'variants.$.stock': done.qty } }
+            );
+          } else {
+            await Product.findByIdAndUpdate(done.pId, { $inc: { stock: done.qty } });
+          }
+        }
+
+        // Auto refund via Razorpay
+        try {
+          await razorpay.payments.refund(razorpay_payment_id, {
+            notes: { reason: 'Product out of stock upon payment retry', orderId: order._id.toString() }
+          });
+        } catch (refErr) {
+          console.error('AUTO REFUND ERROR ON STOCK DEPLETION:', refErr);
+        }
+
+        order.paymentStatus = 'REFUNDED';
+        order.orderStatus = 'CANCELLED';
+        order.cancelReason = `${outOfStockItem} went out of stock during payment. Refund initiated.`;
+        await order.save();
+
+        return res.status(409).json({
+          message: `Unfortunately, "${outOfStockItem}" went out of stock before payment was finalized. A 100% full refund has been automatically initiated.`
+        });
+      }
+
+      order.stockRestored = false;
+    }
+
+    // 4️⃣ MARK ORDER AS PAID & ACCEPTED
     order.isPaid = true;
     order.paidAt = Date.now();
     order.paymentStatus = 'PAID';
-    order.statusHistory.push({ status: 'PAID', note: 'Payment verified successfully (Online)', updatedBy: req.user?._id || null, updatedAt: new Date() });
+    order.orderStatus = 'ACCEPTED';
+    order.cancelReason = '';
+    order.cancelledAt = null;
+    order.statusHistory.push({
+      status: 'PAID',
+      note: 'Payment verified successfully (Online)',
+      updatedBy: req.user?._id || null,
+      updatedAt: new Date()
+    });
     try { if (order.user) { const notif = new Notification({ user: order.user._id || order.user, type: 'ORDER_CONFIRMED', title: 'Payment Confirmed', message: 'Your online payment has been confirmed.', link: `/orders/${order._id}` }); await notif.save(); getIO().to(`user:${notif.user}`).emit('notification', notif); } } catch(e) {}
     try { getIO().to(`order:${order._id}`).emit('orderStatusUpdated', order); } catch(e) {}
     
@@ -262,10 +366,34 @@ exports.razorpayWebhook = async (req, res) => {
           if (order.paymentStatus !== 'PENDING') {
             console.log(`WEBHOOK: Order ${orderId} already processed (${order.paymentStatus}), skipping`);
           } else {
+            // Deduct stock if it was restored on failure/retry
+            if (order.stockRestored && order.orderItems && order.orderItems.length > 0) {
+              const Product = require('../models/Product');
+              for (const item of order.orderItems) {
+                const pId = item.product?._id || item.product;
+                const vId = item.variant?._id || item.variant;
+                const qty = Number(item.quantity || 1);
+                if (!pId || qty <= 0) continue;
+
+                if (vId) {
+                  await Product.findOneAndUpdate(
+                    { _id: pId, 'variants._id': vId },
+                    { $inc: { 'variants.$.stock': -qty } }
+                  );
+                } else {
+                  await Product.findByIdAndUpdate(pId, { $inc: { stock: -qty } });
+                }
+              }
+              order.stockRestored = false;
+            }
+
             // Mark as paid
             order.isPaid         = true;
             order.paidAt         = new Date();
             order.paymentStatus  = 'PAID';
+            order.orderStatus    = 'ACCEPTED';
+            order.cancelReason   = '';
+            order.cancelledAt    = null;
             order.statusHistory.push({ status: 'PAID', note: 'Payment captured via Webhook', updatedBy: order.user, updatedAt: new Date() });
             try { const notif = new Notification({ user: order.user, type: 'ORDER_CONFIRMED', title: 'Payment Confirmed', message: 'Your online payment has been verified via webhook.', link: `/orders/${order._id}` }); await notif.save(); getIO().to(`user:${notif.user}`).emit('notification', notif); } catch(e) {}
             try { getIO().to(`order:${order._id}`).emit('orderStatusUpdated', order); } catch(e) {}

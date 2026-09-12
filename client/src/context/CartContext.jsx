@@ -7,7 +7,7 @@
 //  • On logout        → cart reset to [].
 // ═══════════════════════════════════════════════════════════════════
 
-import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import api from '../api/axios'
 import { useAuth } from './AuthContext'
 import { toast } from 'react-toastify'
@@ -114,16 +114,45 @@ export const CartProvider = ({ children }) => {
     }
   }
 
-  // ── UPDATE QUANTITY ───────────────────────────────────────────────────────
-  const updateQty = async (itemId, quantity) => {
+  // Debounce timers for quantity updates
+  const debounceTimers = useRef({})
+
+  // Cleanup pending debounce timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(debounceTimers.current).forEach(clearTimeout)
+    }
+  }, [])
+
+  // ── UPDATE QUANTITY (Optimistic UI + 350ms Debounce) ───────────────────────
+  const updateQty = (itemId, quantity) => {
     if (!user) return
     if (quantity < 1) return removeItem(itemId)
-    try {
-      const res = await api.put(`/api/cart/items/${itemId}`, { quantity })
-      setItems(res.data.items || [])
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to update quantity')
+
+    // 1️⃣ OPTIMISTIC UPDATE: Immediate state change for lag-free UI
+    setItems(prevItems =>
+      prevItems.map(item =>
+        item._id === itemId ? { ...item, quantity } : item
+      )
+    )
+
+    // 2️⃣ DEBOUNCE: Clear previous pending request for this specific item
+    if (debounceTimers.current[itemId]) {
+      clearTimeout(debounceTimers.current[itemId])
     }
+
+    // 3️⃣ Send server sync only after 350ms of user stopping clicking
+    debounceTimers.current[itemId] = setTimeout(async () => {
+      try {
+        const res = await api.put(`/api/cart/items/${itemId}`, { quantity })
+        setItems(res.data.items || [])
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to update quantity')
+        fetchCart() // Revert to server truth on failure (e.g. stock limit exceeded)
+      } finally {
+        delete debounceTimers.current[itemId]
+      }
+    }, 350)
   }
 
   // ── CLEAR CART ────────────────────────────────────────────────────────────

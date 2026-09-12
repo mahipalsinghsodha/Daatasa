@@ -221,12 +221,12 @@ const CancelModal = ({ order, onClose, onConfirm, loading }) => {
     : (order.paymentMethod === 'Wallet' && order.isPaid ? Number(order.totalPrice || 0) : 0)
 
   const netPayable = Math.max(0, Number(order.totalPrice || 0) - Number(order.walletUsed || 0) - Number(order.giftCard?.amountUsed || 0))
-  const onlineRefund = (order.paymentMethod === 'Online' && order.isPaid && netPayable > 0)
+  const onlineRefund = (!['COD', 'cod'].includes(order.paymentMethod) && order.isPaid && netPayable > 0)
     ? netPayable
     : 0
 
   const giftCardRefund = Number(order.giftCard?.amountUsed || 0)
-  const isCOD = order.paymentMethod === 'COD'
+  const isCOD = ['COD', 'cod'].includes(order.paymentMethod)
 
   const handleSubmit = () => {
     if (loading) return
