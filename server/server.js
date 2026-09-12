@@ -174,7 +174,6 @@ app.use('/api/notifications', require('./routes/notificationRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/subscribers', require('./routes/subscriberRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
-app.use('/api/activity', require('./routes/activityRoutes'));
 app.use('/api/blogs', require('./routes/blogRoutes'));
 app.use('/api/giftcards', require('./routes/giftCardRoutes'));
 app.use('/api/shiprocket', require('./routes/shiprocketRoutes'));

@@ -311,25 +311,6 @@ router.post('/login', authLimiter, dbCheck, [
     }
     await user.save({ validateBeforeSave: false });
 
-    // Log LOGIN activity
-    try {
-      const geoip = require('geoip-lite');
-      const UserActivity = require('../models/UserActivity');
-      let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
-      if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
-      if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
-      let location = 'Local/Unknown';
-      if (ipAddress !== '127.0.0.1') {
-        const geo = geoip.lookup(ipAddress);
-        if (geo) location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
-      }
-      await UserActivity.create({
-        user: user._id,
-        action: 'LOGIN',
-        ipAddress,
-        location
-      });
-    } catch (err) { console.error('Error logging login activity:', err); }
 
     // Ensure user has a referral code (for older accounts)
     if (!user.referralCode) {
@@ -425,20 +406,6 @@ router.post('/login-otp', authLimiter, dbCheck, [
     }
     await user.save({ validateBeforeSave: false });
 
-    // Log LOGIN activity
-    try {
-      const geoip = require('geoip-lite');
-      const UserActivity = require('../models/UserActivity');
-      let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
-      if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
-      if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
-      let location = 'Local/Unknown';
-      if (ipAddress !== '127.0.0.1') {
-        const geo = geoip.lookup(ipAddress);
-        if (geo) location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
-      }
-      await UserActivity.create({ user: user._id, action: 'LOGIN_OTP', ipAddress, location });
-    } catch (err) { }
 
     res.json({ token: accessToken, refreshToken, user: safeUser(user) });
   } catch (error) {
@@ -521,25 +488,6 @@ router.post('/logout', async (req, res) => {
           }
           await user.save({ validateBeforeSave: false });
 
-          // Log LOGOUT activity
-          try {
-            const geoip = require('geoip-lite');
-            const UserActivity = require('../models/UserActivity');
-            let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
-            if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
-            if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
-            let location = 'Local/Unknown';
-            if (ipAddress !== '127.0.0.1') {
-              const geo = geoip.lookup(ipAddress);
-              if (geo) location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
-            }
-            await UserActivity.create({
-              user: user._id,
-              action: 'LOGOUT',
-              ipAddress,
-              location
-            });
-          } catch (err) { }
         }
       } catch { /* ignore invalid token on logout */ }
     }

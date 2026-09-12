@@ -72,7 +72,6 @@ const SupportDashboard = lazy(() => import('./pages/Admin/SupportDashboard.jsx')
 const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard.jsx'))
 const AdminReturns = lazy(() => import('./pages/Admin/AdminReturns.jsx')) // ✅ P1: Admin Returns page
 const AdminInventory = lazy(() => import('./pages/Admin/AdminInventory.jsx')) // ✅ P1: Admin Inventory page
-const AdminUserActivity = lazy(() => import('./pages/Admin/AdminUserActivity.jsx')) // ✅ P1: Admin User Activity
 const AddProduct = lazy(() => import('./pages/Admin/AddProduct.jsx'))
 const ManageOrders = lazy(() => import('./pages/Admin/ManageOrders.jsx'))
 const AdminReviews = lazy(() => import('./pages/Admin/AdminReviews.jsx'))
@@ -115,11 +114,6 @@ function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
-
-    if (!pathname.startsWith('/admin')) {
-      api.post('/api/activity/track', { action: 'PAGE_VISIT', details: { path: pathname } })
-        .catch(e => console.error('Failed to track activity', e))
-    }
   }, [pathname])
   return null
 }
@@ -277,7 +271,6 @@ function AnimatedRoutes() {
             <Route path="/admin/subscriptions" element={<ProtectedRoute adminOnly><AdminSubscriptions /></ProtectedRoute>} />
             <Route path="/admin/coupons" element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
-            <Route path="/admin/user-activity" element={<ProtectedRoute adminOnly><AdminUserActivity /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/admin/analytics" element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/media" element={<ProtectedRoute adminOnly><AdminMedia /></ProtectedRoute>} />

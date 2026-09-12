@@ -8,7 +8,6 @@ const GiftCard = require('../models/GiftCard');
 const Product = require('../models/Product');
 const Coupon = require('../models/Coupon');
 const Settings = require('../models/Settings');
-const UserActivity = require('../models/UserActivity');
 const geoip = require('geoip-lite');
 const auth = require('../middleware/auth');
 const { logAction } = require('../utils/logger');
@@ -554,37 +553,6 @@ router.post('/', auth.optional, async (req, res) => {
     // Invalidate analytics cache so next fetch gets fresh data
     invalidateAnalytics().catch(() => {});
 
-    // ── 8.6 Log User Activity (Non-blocking) ─────────────────────────
-    try {
-      let ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
-      if (ipAddress) ipAddress = ipAddress.split(',')[0].trim();
-      if (ipAddress === '::1' || ipAddress === '::ffff:127.0.0.1' || !ipAddress) ipAddress = '127.0.0.1';
-      
-      let location = 'Local/Unknown';
-      if (ipAddress !== '127.0.0.1') {
-        const geo = geoip.lookup(ipAddress);
-        if (geo) {
-          location = `${geo.city || 'Unknown City'}, ${geo.country || 'Unknown Country'}`;
-        }
-      }
-
-      UserActivity.create({
-        user: req.user ? req.user._id : null,
-        action: 'ORDER_PLACED',
-        details: {
-          orderId: order._id.toString(),
-          invoiceNumber: order.invoiceNumber,
-          totalPrice: order.totalPrice,
-          paymentMethod: order.paymentMethod,
-          itemsCount: order.orderItems.length,
-          guest: !req.user
-        },
-        ipAddress,
-        location
-      }).catch(activityErr => console.error('Failed to log order activity:', activityErr));
-    } catch (activityErr) {
-      console.error('Failed to prepare order activity:', activityErr);
-    }
 
     if (paymentMethod === 'Online') {
       try {

@@ -303,7 +303,6 @@ const AdminDashboard = () => {
             {hasPermission('orders')     && <QuickCard title="Manage Returns"    desc="Approve or reject returns"             icon={FiRefreshCw}  to="/admin/returns"       delay={0.26} />}
             {hasPermission('products')   && <QuickCard title="Subscriptions"     desc="Manage auto-renewing orders"           icon={FiRefreshCw}  to="/admin/subscriptions" delay={0.28} />}
             {hasPermission('users')      && <QuickCard title="Manage Users"      desc="View users, block/unblock accounts"    icon={FiUsers}      to="/admin/users"         delay={0.30} />}
-            {hasPermission('users')      && <QuickCard title="User Activity"     desc="Track logins and page visits"          icon={FiActivity}   to="/admin/user-activity" delay={0.31} />}
             {isSuperAdmin                && <QuickCard title="Newsletters"       desc="Manage subscribers and emails"         icon={FiMail}       to="/admin/newsletters"   delay={0.32} />}
             <QuickCard title="Manage Blogs"      desc="Publish and edit blog posts"           icon={FiEdit2}      to="/admin/blogs"         delay={0.33} />
             {hasPermission('coupons')    && <QuickCard title="Manage Coupons"    desc="Create and manage discount codes"      icon={FiTag}        to="/admin/coupons"       delay={0.35} />}
