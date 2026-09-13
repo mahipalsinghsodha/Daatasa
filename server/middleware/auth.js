@@ -29,19 +29,34 @@ const auth = async (req, res, next) => {
   }
 };
 
-// ✅ Optional Auth middleware (does not reject if no token)
+// ✅ Optional Auth middleware (Guest if no token; auto-refreshes if expired token provided)
 auth.optional = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user = await User.findById(decoded.id).select('-password');
-      if (user && !user.isBlocked && decoded.version === user.tokenVersion) {
-        req.user = user;
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+        if (user) {
+          if (user.isBlocked) {
+            return res.status(403).json({ message: 'Your account has been suspended.' });
+          }
+          if (decoded.version !== user.tokenVersion) {
+            return res.status(401).json({ message: 'Token is revoked', code: 'TOKEN_REVOKED' });
+          }
+          req.user = user;
+        }
+      } catch (tokenErr) {
+        // If an authenticated user's access token expired, signal 401 so Axios interceptor can auto-refresh
+        if (tokenErr.name === 'TokenExpiredError') {
+          return res.status(401).json({ message: 'Token expired', code: 'TOKEN_EXPIRED' });
+        }
       }
     }
-  } catch (error) {} // Ignore errors, just proceed as guest
-  next();
+    next();
+  } catch (error) {
+    next();
+  }
 };
 
 // ✅ Updated Admin middleware (allows admin, superadmin, and support staff)
@@ -62,9 +77,9 @@ auth.support = (req, res, next) => {
   }
 };
 
-// ✅ Super Admin only middleware (allows superadmin, admin, and support staff)
+// ✅ Super Admin only middleware (Strictly allows superadmin only)
 auth.superadmin = (req, res, next) => {
-  if (req.user && (req.user.role === 'superadmin' || req.user.role === 'admin' || req.user.role === 'support')) {
+  if (req.user && req.user.role === 'superadmin') {
     next();
   } else {
     res.status(403).json({ message: 'Super Admin access only' });

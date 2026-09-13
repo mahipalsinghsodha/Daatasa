@@ -83,11 +83,14 @@ const userSchema = new mongoose.Schema({
 
   // ── Refresh Token Rotation ─────────────────────────────────────────────────
   // Store hashed refresh tokens for multi-device support + rotation
-  refreshTokens: [{
-    tokenHash: { type: String, select: false },
-    expiresAt: Date,
-    deviceInfo: String, // User-Agent snippet for display
-  }],
+  refreshTokens: {
+    type: [{
+      tokenHash: { type: String },
+      expiresAt: Date,
+      deviceInfo: String, // User-Agent snippet for display
+    }],
+    select: false,
+  },
 
   wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }]
 
