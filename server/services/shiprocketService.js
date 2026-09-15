@@ -6,7 +6,43 @@ let _token = null;
 let _tokenExpiresAt = null;
 
 const isConfigured = () => {
+  if (process.env.SHIPROCKET_MOCK_MODE === 'true') return false;
   return !!(process.env.SHIPROCKET_EMAIL && process.env.SHIPROCKET_PASSWORD);
+};
+
+let _cachedPickupLocation = null;
+
+const formatShiprocketError = (error, defaultMsg) => {
+  const data = error.response?.data;
+  if (!data) return error.message || defaultMsg;
+
+  if (typeof data === 'string') return data;
+
+  if (data.errors && typeof data.errors === 'object') {
+    const errorDetails = Object.entries(data.errors)
+      .map(([field, errList]) => `${field}: ${Array.isArray(errList) ? errList.join(', ') : errList}`)
+      .join(' | ');
+    if (errorDetails) {
+      return `Shiprocket Validation: ${errorDetails}`;
+    }
+  }
+
+  if (data.message) {
+    if (typeof data.message === 'string') {
+      if (data.message.includes('billing/shipping address first')) {
+        return 'Shiprocket requires adding a Pickup Address in your Shiprocket account. Please login to your Shiprocket Dashboard, go to Settings → Pickup Address, and add your warehouse/pickup address.';
+      }
+      if (data.message.toLowerCase().includes('kyc')) {
+        return 'Shiprocket KYC Required: Please complete KYC verification in your Shiprocket Dashboard (Settings → KYC) to assign couriers & generate live AWBs.';
+      }
+      if (data.message.toLowerCase().includes('recharge') || data.message.toLowerCase().includes('balance') || data.message.toLowerCase().includes('insufficient')) {
+        return 'Shiprocket Balance Low: Please recharge your Shiprocket wallet to assign couriers & generate live AWBs.';
+      }
+    }
+    return data.message;
+  }
+
+  return error.message || defaultMsg;
 };
 
 const getToken = async () => {
@@ -29,8 +65,36 @@ const getToken = async () => {
     return _token;
   } catch (error) {
     console.error('Shiprocket Login Failed:', error.response?.data || error.message);
-    throw new Error('Failed to authenticate with Shiprocket');
+    throw new Error(formatShiprocketError(error, 'Failed to authenticate with Shiprocket'));
   }
+};
+
+/**
+ * Automatically fetch the primary active pickup location from Shiprocket
+ */
+const getPrimaryPickupLocation = async () => {
+  if (process.env.SHIPROCKET_PICKUP_LOCATION) {
+    return process.env.SHIPROCKET_PICKUP_LOCATION;
+  }
+  if (_cachedPickupLocation) return _cachedPickupLocation;
+
+  const token = await getToken();
+  if (!token) return "Primary";
+
+  try {
+    const res = await axios.get(`${SHIPROCKET_API_URL}/settings/company/pickup`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const addresses = res.data?.data?.shipping_address;
+    if (Array.isArray(addresses) && addresses.length > 0) {
+      const primary = addresses.find(a => a.is_primary_location === 1) || addresses[0];
+      _cachedPickupLocation = primary.pickup_location;
+      return _cachedPickupLocation;
+    }
+  } catch (e) {
+    console.error('Error fetching Shiprocket pickup locations:', e.message);
+  }
+  return "Primary";
 };
 
 /**
@@ -52,13 +116,17 @@ const createOrder = async (orderData) => {
   }
 
   try {
+    if (!orderData.pickup_location || orderData.pickup_location === 'Primary') {
+      orderData.pickup_location = await getPrimaryPickupLocation();
+    }
+
     const response = await axios.post(`${SHIPROCKET_API_URL}/orders/create/adhoc`, orderData, {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
     });
     return response.data;
   } catch (error) {
     console.error('Shiprocket Create Order Failed:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to create Shiprocket order');
+    throw new Error(formatShiprocketError(error, 'Failed to create Shiprocket order'));
   }
 };
 
@@ -94,7 +162,7 @@ const generateAWB = async (shipmentId) => {
     return response.data;
   } catch (error) {
     console.error('Shiprocket AWB Failed:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to generate AWB');
+    throw new Error(formatShiprocketError(error, 'Failed to generate AWB'));
   }
 };
 
@@ -116,7 +184,7 @@ const generateLabel = async (shipmentId) => {
     return response.data;
   } catch (error) {
     console.error('Shiprocket Label Failed:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to generate Shipping Label');
+    throw new Error(formatShiprocketError(error, 'Failed to generate Shipping Label'));
   }
 };
 
@@ -138,7 +206,7 @@ const requestPickup = async (shipmentId) => {
     return response.data;
   } catch (error) {
     console.error('Shiprocket Pickup Request Failed:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to schedule pickup');
+    throw new Error(formatShiprocketError(error, 'Failed to schedule pickup'));
   }
 };
 
@@ -166,7 +234,7 @@ const trackShipment = async (awbCode) => {
     return response.data;
   } catch (error) {
     console.error('Shiprocket Track Failed:', error.response?.data || error.message);
-    throw new Error(error.response?.data?.message || 'Failed to fetch tracking data');
+    throw new Error(formatShiprocketError(error, 'Failed to fetch tracking data'));
   }
 };
 
@@ -195,6 +263,27 @@ const cancelOrder = async (orderIds) => {
 };
 
 /**
+ * Automatically fetch the full active pickup location details from Shiprocket
+ */
+const getPickupLocationDetails = async () => {
+  const token = await getToken();
+  if (!token) return null;
+
+  try {
+    const res = await axios.get(`${SHIPROCKET_API_URL}/settings/company/pickup`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const addresses = res.data?.data?.shipping_address;
+    if (Array.isArray(addresses) && addresses.length > 0) {
+      return addresses.find(a => a.is_primary_location === 1) || addresses[0];
+    }
+  } catch (e) {
+    console.error('Error fetching Shiprocket pickup details:', e.message);
+  }
+  return null;
+};
+
+/**
  * Creates a Return / Reverse Pickup order in Shiprocket
  */
 const createReturnOrder = async (order, pickupAddress) => {
@@ -219,32 +308,42 @@ const createReturnOrder = async (order, pickupAddress) => {
   }
 
   try {
+    const warehouse = await getPickupLocationDetails();
+    const rawCustomerName = (addr.name || order.user?.name || "Customer").trim();
+    const nameParts = rawCustomerName.split(/\s+/).filter(Boolean);
+    const custFirstName = nameParts[0] || "Customer";
+    const custLastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : ".";
+
+    let cleanPhone = String(addr.phone || "").replace(/\D/g, '');
+    if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) cleanPhone = cleanPhone.slice(2);
+
     const returnData = {
       order_id: `RET_${order.orderIdString || order._id}`,
       order_date: new Date().toISOString().split('T')[0],
       channel_id: '',
-      pickup_customer_name: addr.name || 'Customer',
-      pickup_last_name: '',
+      pickup_customer_name: custFirstName,
+      pickup_last_name: custLastName,
       pickup_address: addr.street || '',
+      pickup_address_2: addr.district || '',
       pickup_city: addr.city || '',
       pickup_state: addr.state || '',
-      pickup_country: 'India',
-      pickup_pincode: addr.zipCode || '',
-      pickup_phone: addr.phone || '',
-      shipping_customer_name: 'Daatasa Warehouse',
-      shipping_address: process.env.WAREHOUSE_ADDRESS || 'Vedic Dairy Farm, Rajasthan',
-      shipping_city: process.env.WAREHOUSE_CITY || 'Jodhpur',
-      shipping_state: process.env.WAREHOUSE_STATE || 'Rajasthan',
-      shipping_country: 'India',
-      shipping_pincode: process.env.WAREHOUSE_PINCODE || '342001',
-      shipping_phone: process.env.WAREHOUSE_PHONE || '9882844137',
+      pickup_country: addr.country || 'India',
+      pickup_pincode: String(addr.zipCode || ''),
+      pickup_phone: cleanPhone,
+      shipping_customer_name: warehouse?.name || process.env.WAREHOUSE_NAME || 'Daatasa Warehouse',
+      shipping_address: warehouse?.address || process.env.WAREHOUSE_ADDRESS || '',
+      shipping_city: warehouse?.city || process.env.WAREHOUSE_CITY || '',
+      shipping_state: warehouse?.state || process.env.WAREHOUSE_STATE || '',
+      shipping_country: warehouse?.country || 'India',
+      shipping_pincode: warehouse?.pin_code || process.env.WAREHOUSE_PINCODE || '',
+      shipping_phone: warehouse?.phone || process.env.WAREHOUSE_PHONE || '',
       order_items: (order.orderItems || []).map(item => ({
-        name: item.name || 'Ghee Item',
-        sku: item.sku || `SKU_${item.product}`,
-        units: item.quantity || 1,
-        selling_price: item.price || 0
+        name: item.name || 'Order Item',
+        sku: item.sku || (item.product?._id ? item.product._id.toString().slice(-8) : String(item.product || 'SKU').slice(-8)),
+        units: Number(item.quantity) || 1,
+        selling_price: Number(item.price) || 0
       })),
-      sub_total: order.totalPrice || 0,
+      sub_total: Number(order.totalPrice) || 0,
       length: 12,
       breadth: 12,
       height: 12,
@@ -267,7 +366,7 @@ const createReturnOrder = async (order, pickupAddress) => {
     console.error('Shiprocket Return Order Creation Error:', error.response?.data || error.message);
     return {
       success: false,
-      error: error.response?.data?.message || error.message
+      error: formatShiprocketError(error, 'Failed to create return order in Shiprocket')
     };
   }
 };

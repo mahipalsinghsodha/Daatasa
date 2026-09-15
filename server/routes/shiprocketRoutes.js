@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Order = require('../models/Order');
+const User = require('../models/User');
 const auth = require('../middleware/auth');
 const shiprocketService = require('../services/shiprocketService');
 const { getIO } = require('../socket');
@@ -9,44 +10,122 @@ const { sendShippingUpdateEmail } = require('../services/emailService');
 const { sendShippingUpdateWhatsApp } = require('../services/whatsappService');
 
 /**
- * Helper to build Shiprocket order payload
+ * Calculate dynamic order weight (in KG) from order items
+ */
+function calculateOrderWeight(orderItems) {
+  let totalKg = 0;
+  for (const item of orderItems || []) {
+    const qty = Number(item.quantity) || 1;
+    let itemKg = 0.9; // Standard 0.9kg default per dairy bottle if weight not specified
+    if (item.weight) {
+      const wStr = String(item.weight).toLowerCase().trim();
+      const num = parseFloat(wStr) || 1;
+      if (wStr.includes('kg') || wStr.includes('l') || wStr.includes('ltr') || wStr.includes('liter') || wStr.includes('litre')) {
+        itemKg = num;
+      } else if (wStr.includes('g') || wStr.includes('gm') || wStr.includes('ml')) {
+        itemKg = num / 1000;
+      } else {
+        itemKg = num;
+      }
+    }
+    totalKg += itemKg * qty;
+  }
+  return Math.max(0.5, Math.round(totalKg * 100) / 100);
+}
+
+/**
+ * Helper to build Shiprocket order payload with real customer & order data
  */
 function buildShiprocketPayload(order) {
   const addr = order.shippingAddress || {};
+
+  // Validate customer shipping address
+  if (!addr.street || String(addr.street).trim().length < 3) {
+    throw new Error('Customer street address is required and must be at least 3 characters.');
+  }
+  if (!addr.city || !String(addr.city).trim()) {
+    throw new Error('Customer shipping city is required.');
+  }
+  if (!addr.zipCode || !String(addr.zipCode).trim()) {
+    throw new Error('Customer postal pincode is required.');
+  }
+  if (!addr.state || !String(addr.state).trim()) {
+    throw new Error('Customer shipping state is required.');
+  }
+
+  // Name splitting
+  const rawName = (addr.name || order.user?.name || "Customer").trim();
+  const nameParts = rawName.split(/\s+/).filter(Boolean);
+  const firstName = nameParts[0] || "Customer";
+  const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : ".";
+
+  // Phone number sanitization (keep 10 digits)
+  let cleanPhone = String(addr.phone || "").replace(/\D/g, '');
+  if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) {
+    cleanPhone = cleanPhone.slice(2);
+  }
+  if (cleanPhone.length < 10) {
+    cleanPhone = String(order.user?.phone || "").replace(/\D/g, '');
+    if (cleanPhone.length > 10 && cleanPhone.startsWith('91')) cleanPhone = cleanPhone.slice(2);
+  }
+  if (!cleanPhone || cleanPhone.length < 10) {
+    throw new Error('A valid 10-digit customer contact phone number is required for shipping.');
+  }
+
+  // Email
+  const customerEmail = order.guestEmail || (order.user && order.user.email) || process.env.CONTACT_RECEIVER || "customer@daatasaghee.com";
+
+  // Items
+  const items = (order.orderItems || []).map((item, idx) => ({
+    name: item.name || `Product Item ${idx + 1}`,
+    sku: item.product?._id ? item.product._id.toString().slice(-8) : (item.product ? item.product.toString().slice(-8) : (item._id ? item._id.toString().slice(-8) : `SKU-${idx + 1}`)),
+    units: Math.max(1, Number(item.quantity) || 1),
+    selling_price: Math.max(0, Number(item.price) || 0),
+    discount: 0,
+    tax: 0,
+    hsn: 441122
+  }));
+
+  if (items.length === 0) {
+    throw new Error('Order must contain at least one product item to ship.');
+  }
+
+  // Calculate box dimensions based on total quantity
+  const totalItemsCount = items.reduce((acc, it) => acc + it.units, 0);
+  const calculatedWeight = calculateOrderWeight(order.orderItems);
+  const boxLength = Math.min(50, 12 + Math.max(0, totalItemsCount - 1) * 3);
+  const boxBreadth = Math.min(50, 12 + Math.max(0, totalItemsCount - 1) * 2);
+  const boxHeight = 15;
+
+  const totalDiscount = Math.round(((order.discount || 0) + (order.walletUsed || 0) + (order.giftCard?.amountUsed || 0)) * 100) / 100;
+  const subTotal = Number(order.itemsPrice) || items.reduce((acc, it) => acc + (it.selling_price * it.units), 0);
+
   return {
     order_id: order.orderIdString || order._id.toString(),
-    order_date: new Date(order.createdAt).toISOString().split('T')[0],
-    pickup_location: "Primary", // Must match pickup location name in Shiprocket dashboard
-    billing_customer_name: addr.name || (order.user?.name) || "Customer",
-    billing_last_name: "",
-    billing_address: addr.street || "Main Street",
-    billing_address_2: addr.district || "",
-    billing_city: addr.city || "City",
-    billing_pincode: addr.zipCode || "110001",
-    billing_state: addr.state || "Delhi",
-    billing_country: addr.country || "India",
-    billing_email: order.guestEmail || (order.user?.email) || "customer@daatasa.com",
-    billing_phone: addr.phone || "9999999999",
+    order_date: new Date(order.createdAt || Date.now()).toISOString().split('T')[0],
+    pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "Home",
+    billing_customer_name: firstName,
+    billing_last_name: lastName,
+    billing_address: addr.street.trim(),
+    billing_address_2: (addr.district || "").trim(),
+    billing_city: addr.city.trim(),
+    billing_pincode: String(addr.zipCode).trim(),
+    billing_state: addr.state.trim(),
+    billing_country: (addr.country || "India").trim(),
+    billing_email: customerEmail,
+    billing_phone: cleanPhone,
     shipping_is_billing: true,
-    order_items: (order.orderItems || []).map(item => ({
-      name: item.name,
-      sku: (item.product?._id || item.product || 'PROD').toString().slice(-8),
-      units: item.quantity || 1,
-      selling_price: item.price || 0,
-      discount: 0,
-      tax: 0,
-      hsn: 441122
-    })),
-    payment_method: order.paymentMethod === 'COD' ? 'COD' : 'Prepaid',
-    shipping_charges: order.shippingPrice || 0,
+    order_items: items,
+    payment_method: ['COD', 'cod'].includes(order.paymentMethod) ? 'COD' : 'Prepaid',
+    shipping_charges: Number(order.shippingPrice) || 0,
     giftwrap_charges: 0,
     transaction_charges: 0,
-    total_discount: Math.round(((order.discount || 0) + (order.walletUsed || 0) + (order.giftCard?.amountUsed || 0)) * 100) / 100,
-    sub_total: order.itemsPrice || 0,
-    length: 12,
-    breadth: 12,
-    height: 15,
-    weight: 0.9 // Default 0.9kg for pure ghee bottle
+    total_discount: totalDiscount,
+    sub_total: subTotal,
+    length: boxLength,
+    breadth: boxBreadth,
+    height: boxHeight,
+    weight: calculatedWeight
   };
 }
 
@@ -70,6 +149,7 @@ router.post('/ship/:orderId', auth, auth.admin, auth.hasPermission('orders'), as
       const pushRes = await shiprocketService.createOrder(orderPayload);
       order.shiprocketOrderId = pushRes.order_id;
       order.shiprocketShipmentId = pushRes.shipment_id;
+      await order.save();
     }
 
     // 2️⃣ Generate AWB / Assign Courier (e.g. Delhivery, BlueDart)
@@ -142,7 +222,7 @@ router.post('/ship/:orderId', auth, auth.admin, auth.hasPermission('orders'), as
 
   } catch (error) {
     console.error('Shiprocket 1-Click Ship Error:', error);
-    res.status(500).json({ message: error.message || 'Failed to dispatch via Shiprocket' });
+    res.status(400).json({ message: error.message || 'Failed to dispatch via Shiprocket' });
   }
 });
 
