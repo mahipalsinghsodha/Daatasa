@@ -79,10 +79,14 @@ const Checkout = () => {
     if (authLoading) return;
     
     if (!user) {
+      try { sessionStorage.setItem('auth_redirect', '/checkout'); } catch {}
       toast.info('Please log in to complete your checkout', { toastId: 'login_redirect' });
       navigate('/login', { state: { from: '/checkout' }, replace: true });
       return;
     }
+
+    // Clean up redirect intent now that user has reached checkout
+    try { sessionStorage.removeItem('auth_redirect'); } catch {}
 
     // 1️⃣ Initialize addresses from auth context immediately (0ms delay)
     if (user?.addresses && user.addresses.length > 0) {
@@ -93,12 +97,8 @@ const Checkout = () => {
       fetchAddresses();
     }
 
-    // 2️⃣ Initialize cart from CartContext immediately (0ms delay)
-    if (cartItems && cartItems.length > 0) {
-      setCart({ items: cartItems });
-    } else {
-      fetchCart();
-    }
+    // 2️⃣ Fetch cart (syncs pending item if user just logged in)
+    fetchCart();
 
     // 3️⃣ Parallel fetch for preview and wallet (Zero Waterfall)
     Promise.allSettled([
@@ -146,6 +146,25 @@ const Checkout = () => {
   const fetchCart = async () => {
     try {
       if (user) {
+        // If an item was clicked before login, ensure it is added to the user's cart now
+        const pendingStr = sessionStorage.getItem('pending_cart_item');
+        if (pendingStr) {
+          try {
+            sessionStorage.removeItem('pending_cart_item');
+            const pending = JSON.parse(pendingStr);
+            if (pending?.productId) {
+              await api.post('/api/cart/items', {
+                productId: pending.productId,
+                quantity: pending.quantity || 1,
+                variantId: pending.variantId || null
+              });
+              if (fetchCartCount) fetchCartCount();
+            }
+          } catch (err) {
+            console.error('[Checkout] sync pending item error:', err);
+          }
+        }
+
         const res = await api.get('/api/cart')
         setCart(res.data)
         if (!res.data.items || res.data.items.length === 0) { navigate('/cart'); return }

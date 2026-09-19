@@ -67,6 +67,21 @@ const ProductCard = ({ product, categories = [], rank }) => {
     e.preventDefault()
     e.stopPropagation()
     if (!inStock || isComingSoon || addingToCart) return
+
+    if (!user) {
+      try {
+        sessionStorage.setItem('pending_cart_item', JSON.stringify({
+          productId: String(product._id || product),
+          quantity: 1,
+          variantId: variantId ? String(variantId) : null
+        }))
+        sessionStorage.setItem('auth_redirect', '/checkout')
+      } catch {}
+      toast.info('Please log in to continue', { toastId: 'login-required' })
+      navigate('/login', { state: { from: '/checkout' } })
+      return
+    }
+
     setAddingToCart(true)
     try {
       let qtyToAdd = 1;

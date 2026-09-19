@@ -1,5 +1,5 @@
 import { useAuth } from '../context/AuthContext'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useLocation } from 'react-router-dom'
 
 // ── Branded page loader used during auth resolution ──
 const AuthLoader = () => (
@@ -15,12 +15,15 @@ const AuthLoader = () => (
 
 const ProtectedRoute = ({ children, adminOnly = false, permission = null, supportAccess = false }) => {
   const { user, loading, hasPermission } = useAuth()
+  const location = useLocation()
 
   // ✅ FIX C3: Always show loader while auth is resolving — never render children prematurely
   if (loading) return <AuthLoader />
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    const dest = location.pathname + location.search
+    try { sessionStorage.setItem('auth_redirect', dest) } catch {}
+    return <Navigate to="/login" state={{ from: dest }} replace />
   }
 
   // Admin, Super Admin, and Support Agents can access admin routes

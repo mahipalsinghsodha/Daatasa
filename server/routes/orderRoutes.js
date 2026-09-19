@@ -140,12 +140,12 @@ async function pushStatusAndNotify(order, status, note, updatedBy, notificationD
 // ========================================================================
 // CREATE ORDER - IMPROVED FLOW
 // ========================================================================
-router.post('/', auth.optional, async (req, res) => {
+router.post('/', auth, async (req, res) => {
   try {
-    const { paymentMethod, couponCode, guestEmail, guestCartItems } = req.body;
+    const { paymentMethod, couponCode } = req.body;
 
-    if (!req.user && paymentMethod === 'COD') {
-      return res.status(400).json({ message: 'Cash on Delivery is not available for Guest Checkout' });
+    if (!req.user) {
+      return res.status(401).json({ message: 'Please login to place an order' });
     }
 
     // 🛡️ Clean up any previous abandoned online checkout attempts for this user

@@ -80,14 +80,44 @@ export const CartProvider = ({ children }) => {
       return
     }
 
-    fetchCart()
+    // Sync any pending item saved before login
+    const syncAndFetch = async () => {
+      try {
+        const pendingStr = sessionStorage.getItem('pending_cart_item')
+        if (pendingStr) {
+          sessionStorage.removeItem('pending_cart_item')
+          const pending = JSON.parse(pendingStr)
+          if (pending?.productId) {
+            await api.post('/api/cart/items', {
+              productId: pending.productId,
+              quantity: pending.quantity || 1,
+              variantId: pending.variantId || null
+            })
+          }
+        }
+      } catch (err) {
+        console.error('[Cart] sync pending item error:', err)
+      } finally {
+        fetchCart()
+      }
+    }
+
+    syncAndFetch()
   }, [userId, authLoading, fetchCart])
 
   // ── ADD ITEM ──────────────────────────────────────────────────────────────
   const addItem = async (product, quantity = 1, variantId = null) => {
-    // Guest blocked — must login first
+    // Guest blocked — save intent and redirect to login
     if (!user) {
-      toast.info('Please login to add items to your cart', { toastId: 'login-required' })
+      try {
+        sessionStorage.setItem('pending_cart_item', JSON.stringify({
+          productId: String(product._id || product),
+          quantity: Number(quantity) || 1,
+          variantId: variantId ? String(variantId) : null
+        }))
+        sessionStorage.setItem('auth_redirect', '/checkout')
+      } catch {}
+      toast.info('Please log in to continue', { toastId: 'login-required' })
       window.location.href = '/login'
       return false
     }

@@ -22,14 +22,12 @@ exports.createRazorpayOrder = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (req.user) {
-      if (order.user && order.user.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Unauthorized access to this order' });
-      }
-    } else {
-      if (order.user) {
-        return res.status(403).json({ message: 'Unauthorized access to this order' });
-      }
+    // Strict Auth & Ownership: Login required, and only the order owner can pay
+    if (!req.user) {
+      return res.status(401).json({ message: 'Please login to proceed with payment' });
+    }
+    if (!order.user || order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized access to this order' });
     }
 
     // Security: Only allow Razorpay order creation for PENDING or FAILED unpaid orders
@@ -121,14 +119,12 @@ exports.verifyPayment = async (req, res) => {
       return res.status(404).json({ message: 'Order not found or already processed' });
     }
 
-    if (req.user) {
-      if (order.user && order.user.toString() !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Unauthorized access to this order' });
-      }
-    } else {
-      if (order.user) {
-        return res.status(403).json({ message: 'Unauthorized access to this order' });
-      }
+    // Strict Auth & Ownership: Login required, and only the order owner can verify payment
+    if (!req.user) {
+      return res.status(401).json({ message: 'Please login to verify payment' });
+    }
+    if (!order.user || order.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Unauthorized access to this order' });
     }
 
     // 1️⃣ VERIFY SIGNATURE

@@ -62,6 +62,22 @@ const Register = () => {
   const { register, googleLogin, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const from = location.state?.from || sessionStorage.getItem('auth_redirect') || '/'
+
+  const getRedirectDestination = () => {
+    try {
+      const dest = sessionStorage.getItem('auth_redirect') || location.state?.from || from || '/'
+      return dest
+    } catch {
+      return location.state?.from || from || '/'
+    }
+  }
+
+  useEffect(() => {
+    if (location.state?.from) {
+      try { sessionStorage.setItem('auth_redirect', location.state.from) } catch {}
+    }
+  }, [location.state?.from])
 
   const [name,         setName]         = useState('')
   const [email,        setEmail]        = useState(location.state?.email || '')
@@ -72,7 +88,12 @@ const Register = () => {
   const [showConf,     setShowConf]     = useState(false)
   const [loading,      setLoading]      = useState(false)
 
-  useEffect(() => { if (user) navigate('/', { replace: true }) }, [user, navigate])
+  useEffect(() => {
+    if (user) {
+      const dest = getRedirectDestination()
+      navigate(dest, { replace: true })
+    }
+  }, [user, navigate])
 
   useEffect(() => {
     if (location.state?.email && !email) {
@@ -90,7 +111,8 @@ const Register = () => {
       setLoading(true)
       googleLogin(token).then(() => {
         toast.success('Account created! Welcome to Daatasa 🎉')
-        navigate('/', { replace: true })
+        const dest = getRedirectDestination()
+        navigate(dest, { replace: true })
       }).catch(() => {
         toast.error('Google login failed')
         setLoading(false)
@@ -130,7 +152,8 @@ const Register = () => {
     try {
       await register(name.trim(), email.trim(), password, referralCode.trim())
       toast.success('Account created! Welcome to Daatasa 🎉')
-      navigate('/', { replace: true })
+      const dest = getRedirectDestination()
+      navigate(dest, { replace: true })
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Registration failed. Please try again.')
     } finally { setLoading(false) }
@@ -147,6 +170,9 @@ const Register = () => {
         setLoading(true)
         try {
           await googleLogin(event.data.token)
+          toast.success('Account created! Welcome to Daatasa 🎉')
+          const dest = getRedirectDestination()
+          navigate(dest, { replace: true })
         } catch {
           toast.error('Google login failed')
         } finally {
@@ -192,7 +218,7 @@ const Register = () => {
           <h1 className="text-xl sm:text-2xl font-bold font-display text-brand-primary mb-0.5">{t('auth.createAccount', 'Create Account')}</h1>
           <p className="text-xs text-brand-text/60">
             {t('auth.haveAccount', 'Already have one?')} {' '}
-            <Link to="/login" className="text-brand-secondary font-bold hover:text-brand-primary transition-colors">{t('auth.signInBtn', 'Sign in')}</Link>
+            <Link to="/login" state={{ from }} className="text-brand-secondary font-bold hover:text-brand-primary transition-colors">{t('auth.signInBtn', 'Sign in')}</Link>
           </p>
         </div>
 

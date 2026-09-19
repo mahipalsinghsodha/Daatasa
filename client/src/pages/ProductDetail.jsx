@@ -227,9 +227,26 @@ const ProductDetail = () => {
       toast.info('This product is coming soon and not yet available for order')
       return
     }
+
+    const variantId = (selectedVariant && selectedVariant !== 'base') ? selectedVariant : null;
+
+    if (!user) {
+      try {
+        sessionStorage.setItem('pending_cart_item', JSON.stringify({
+          productId: String(product._id || product),
+          quantity,
+          variantId
+        }))
+        const dest = redirectTo || '/checkout'
+        sessionStorage.setItem('auth_redirect', dest)
+      } catch {}
+      toast.info('Please log in to continue', { toastId: 'login-required' })
+      navigate('/login', { state: { from: redirectTo || '/checkout' } })
+      return
+    }
+
     setAdding(true)
     try {
-      const variantId = (selectedVariant && selectedVariant !== 'base') ? selectedVariant : null;
       const success = await addItem(product, quantity, variantId)
       if (success) {
         if (redirectTo) {

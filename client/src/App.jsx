@@ -80,8 +80,14 @@ function GuestRoute({ children }) {
   if (user) {
     const isAdmin = user.role === 'admin' || user.role === 'superadmin'
     const isSupport = user.role === 'support'
-    // Respect the intended destination set by navigate('/login', { state: { from } })
-    const destination = location.state?.from || (isAdmin ? '/admin' : isSupport ? '/support-panel' : '/')
+    
+    let destination = location.state?.from
+    if (!destination && !isAdmin && !isSupport) {
+      try {
+        destination = sessionStorage.getItem('auth_redirect')
+      } catch {}
+    }
+    destination = destination || (isAdmin ? '/admin' : isSupport ? '/support-panel' : '/')
     return <Navigate to={destination} replace />
   }
   return children

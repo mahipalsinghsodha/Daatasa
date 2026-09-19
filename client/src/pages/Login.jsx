@@ -72,7 +72,22 @@ const Login = () => {
   const { login, loginOtp, googleLogin, user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = location.state?.from || '/'
+  const from = location.state?.from || sessionStorage.getItem('auth_redirect') || '/'
+
+  const getRedirectDestination = () => {
+    try {
+      const dest = sessionStorage.getItem('auth_redirect') || location.state?.from || from || '/'
+      return dest
+    } catch {
+      return location.state?.from || from || '/'
+    }
+  }
+
+  useEffect(() => {
+    if (location.state?.from) {
+      try { sessionStorage.setItem('auth_redirect', location.state.from) } catch {}
+    }
+  }, [location.state?.from])
 
   const [step, setStep]                         = useState('IDENTIFIER')
   const [mode, setMode]                         = useState('mobile') // 'mobile' | 'email'
@@ -87,10 +102,11 @@ const Login = () => {
 
   useEffect(() => {
     if (user) {
+      const dest = getRedirectDestination()
       if (user.role === 'courier') navigate('/courier/scan', { replace: true })
       else if (user.role === 'support') navigate('/support-panel', { replace: true })
-      else if ((user.role === 'admin' || user.role === 'superadmin') && from === '/') navigate('/admin', { replace: true })
-      else navigate(from, { replace: true })
+      else if ((user.role === 'admin' || user.role === 'superadmin') && (!dest || dest === '/')) navigate('/admin', { replace: true })
+      else navigate(dest, { replace: true })
     }
   }, [user, navigate, from])
 
@@ -108,7 +124,8 @@ const Login = () => {
       setLoading(true)
       googleLogin(token).then(() => {
         toast.success('Welcome back! 👋')
-        navigate(from, { replace: true })
+        const dest = getRedirectDestination()
+        navigate(dest, { replace: true })
       }).catch(() => {
         toast.error('Google login failed')
         setLoading(false)
@@ -222,7 +239,8 @@ const Login = () => {
     try {
       await loginOtp(identifier.trim(), fullOtp)
       toast.success('Login successful! 🎉')
-      navigate(from, { replace: true })
+      const dest = getRedirectDestination()
+      navigate(dest, { replace: true })
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid or expired OTP')
       setOtp(['', '', '', '', '', ''])
@@ -243,14 +261,15 @@ const Login = () => {
       const data = await login(identifier.trim(), password)
       toast.success('Welcome back! 👋')
       const targetUser = data?.user
+      const dest = getRedirectDestination()
       if (targetUser?.role === 'support') {
         navigate('/support-panel', { replace: true })
       } else if (targetUser?.role === 'admin' || targetUser?.role === 'superadmin') {
-        navigate(from && from !== '/' ? from : '/admin', { replace: true })
+        navigate(dest && dest !== '/' ? dest : '/admin', { replace: true })
       } else if (targetUser?.role === 'courier') {
         navigate('/courier/scan', { replace: true })
       } else {
-        navigate(from, { replace: true })
+        navigate(dest, { replace: true })
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Invalid credentials')
@@ -263,8 +282,28 @@ const Login = () => {
     const width = 500, height = 600
     const left = window.screen.width / 2 - width / 2
     const top = window.screen.height / 2 - height / 2
+
+    const messageListener = async (event) => {
+      if (event.data && event.data.token) {
+        window.removeEventListener('message', messageListener);
+        setLoading(true)
+        try {
+          await googleLogin(event.data.token)
+          toast.success('Welcome back! 👋')
+          const dest = getRedirectDestination()
+          navigate(dest, { replace: true })
+        } catch {
+          toast.error('Google login failed')
+        } finally {
+          setLoading(false)
+        }
+      }
+    };
+    window.addEventListener('message', messageListener);
+
+    const authBaseUrl = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/+$/, '')
     window.open(
-      `${api.defaults.baseURL || ''}/api/auth/google`,
+      `${authBaseUrl}/api/auth/google`,
       'Google Login',
       `width=${width},height=${height},left=${left},top=${top}`
     )
@@ -419,7 +458,7 @@ const Login = () => {
                             <div className="mt-2.5 flex flex-wrap items-center gap-2">
                               <button
                                 type="button"
-                                onClick={() => navigate('/register', { state: { email: identifier.trim() } })}
+                                onClick={() => navigate('/register', { state: { email: identifier.trim(), from } })}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] shadow-sm transition-all active:scale-95"
                               >
                                 <span>Create an Account</span>
