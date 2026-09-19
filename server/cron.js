@@ -118,26 +118,53 @@ const runNotificationCleanup = async () => {
 };
 
 const initCronJobs = () => {
-  // Keep alive self-ping for Render Free Tier (runs every 10 minutes)
-  cron.schedule('*/10 * * * *', () => {
+  // Keep-alive self-ping for Render Free Tier (runs every 5 minutes)
+  const pingKeepAlive = () => {
     const backendUrl = process.env.BASE_URL || process.env.RENDER_EXTERNAL_URL || 'https://daatasa.onrender.com';
     const healthUrl = `${backendUrl.replace(/\/$/, '')}/api/health`;
 
     try {
-      const client = healthUrl.startsWith('https') ? https : http;
-      client.get(healthUrl, (res) => {
-        if (res.statusCode === 200) {
-          console.log(`[CRON] Keep-alive ping successful: ${healthUrl} (Status: ${res.statusCode})`);
-        } else {
-          console.warn(`[CRON] Keep-alive ping status: ${res.statusCode}`);
+      const urlObj = new URL(healthUrl);
+      const client = urlObj.protocol === 'https:' ? https : http;
+
+      const req = client.get(
+        healthUrl,
+        {
+          headers: {
+            'User-Agent': 'Daatasa-KeepAlive-Cron/1.0',
+            'Accept': 'application/json',
+          },
+          timeout: 15000,
+        },
+        (res) => {
+          if (res.statusCode === 200) {
+            console.log(`[CRON] Keep-alive ping OK (200): ${healthUrl}`);
+          } else {
+            console.warn(`[CRON] Keep-alive ping status: ${res.statusCode} for ${healthUrl}`);
+          }
+          // Consume response data to free up memory/socket
+          res.resume();
         }
-      }).on('error', (err) => {
+      );
+
+      req.on('timeout', () => {
+        req.destroy();
+        console.warn(`[CRON] Keep-alive ping timed out for ${healthUrl}`);
+      });
+
+      req.on('error', (err) => {
         console.error('[CRON] Keep-alive ping error:', err.message);
       });
     } catch (err) {
       console.error('[CRON] Keep-alive trigger error:', err.message);
     }
-  });
+  };
+
+  // Run keep-alive every 5 minutes
+  cron.schedule('*/5 * * * *', pingKeepAlive);
+
+  // Initial ping 10 seconds after server starts up
+  setTimeout(pingKeepAlive, 10000);
 
   // Run every day at 10:00 AM (0 10 * * *)
   cron.schedule('0 10 * * *', runLowStockCheck);
