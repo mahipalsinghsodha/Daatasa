@@ -142,7 +142,15 @@ async function pushStatusAndNotify(order, status, note, updatedBy, notificationD
 // ========================================================================
 router.post('/', auth, async (req, res) => {
   try {
-    const { paymentMethod, couponCode } = req.body;
+    let {
+      paymentMethod,
+      couponCode,
+      giftCardCode,
+      shippingAddress,
+      useWallet,
+      guestEmail,
+      guestCartItems
+    } = req.body;
 
     if (!req.user) {
       return res.status(401).json({ message: 'Please login to place an order' });
@@ -539,7 +547,7 @@ router.post('/', auth, async (req, res) => {
       try {
         const { sendOrderSuccessEmail } = require('../services/emailService');
         const { sendOrderSuccessWhatsApp } = require('../services/whatsappService');
-        const recipientEmail = req.user ? order.user?.email : guestEmail;
+        const recipientEmail = order.user?.email || req.user?.email || guestEmail || order.shippingAddress?.email;
         
         if (recipientEmail) {
           sendOrderSuccessEmail(order, recipientEmail).catch(err => console.error('COD EMAIL ERROR (non-fatal):', err));
