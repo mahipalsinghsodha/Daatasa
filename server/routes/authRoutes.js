@@ -75,9 +75,9 @@ const safeUser = (u) => ({
 
 /* ── Device fingerprint helper ──────────────────────────────────────────────── */
 const makeFingerprint = (req) => {
-  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
   const ua = req.headers['user-agent'] || 'unknown';
-  return crypto.createHash('sha256').update(`${ip}::${ua}`).digest('hex');
+  const lang = req.headers['accept-language'] || '';
+  return crypto.createHash('sha256').update(`${ua}::${lang}`).digest('hex');
 };
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -418,7 +418,7 @@ router.post('/login-otp', authLimiter, dbCheck, [
 /*  Reads httpOnly cookie → verifies → issues new access + rotated refresh    */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/refresh', async (req, res) => {
-  const incomingRefresh = req.body.refreshToken;
+  const incomingRefresh = req.body?.refreshToken || req.cookies?.refreshToken;
   if (!incomingRefresh) {
     return res.status(401).json({ message: 'No refresh token provided' });
   }
@@ -472,7 +472,7 @@ router.post('/refresh', async (req, res) => {
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.post('/logout', async (req, res) => {
   try {
-    const incomingRefresh = req.body.refreshToken;
+    const incomingRefresh = req.body?.refreshToken || req.cookies?.refreshToken;
 
     // If we have an auth header, use it to get user and increment tokenVersion
     const token = req.header('Authorization')?.replace('Bearer ', '');

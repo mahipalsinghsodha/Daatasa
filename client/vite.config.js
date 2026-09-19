@@ -8,6 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      workbox: {
+        globIgnores: ['**/Admin/**', '**/*Admin*', '**/*.map']
+      },
       manifest: {
         name: 'Daatasa E-commerce',
         short_name: 'Daatasa',
@@ -28,6 +31,18 @@ export default defineConfig({
       }
     })
   ],
+  build: {
+    sourcemap: false,
+    modulePreload: false,
+    minify: 'esbuild',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        }
+      }
+    }
+  },
   server: {
     port: 3000,
     proxy: {

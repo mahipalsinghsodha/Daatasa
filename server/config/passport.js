@@ -32,14 +32,14 @@ const googleauth = () => {
             await User.findOne({ email });
 
           if (!user) {
-            user =
-              await User.create({
-                name:
-                  profile.displayName,
-                email,
-                password:
-                  "google-oauth",
-              });
+            const crypto = require("crypto");
+            let referralCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+            user = await User.create({
+              name: profile.displayName || "Google User",
+              email: email.toLowerCase(),
+              avatar: (profile.photos && profile.photos[0]) ? profile.photos[0].value : undefined,
+              referralCode,
+            });
           }
 
           done(null, user);

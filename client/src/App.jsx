@@ -18,13 +18,13 @@ import NotificationDrawer from './components/NotificationDrawer'
 import api from './api/axios'
 import { ConfirmProvider } from './context/ConfirmContext'
 import SupportPopup from './components/chat/SupportPopup'
-import IncomingChatModal from './components/chat/IncomingChatModal'
 import { useSupportStore } from './store/support'
 import BrandLoader from './components/BrandLoader'
+import Home from './pages/Home'
 
+const IncomingChatModal = lazy(() => import('./components/chat/IncomingChatModal'))
 
 // ─── Lazy Imports ─────────────────────────────────────────────────────────────
-const Home = lazy(() => import('./pages/Home'))
 const Products = lazy(() => import('./pages/Products'))
 const SearchResults = lazy(() => import('./pages/SearchResults'))
 const ProductDetail = lazy(() => import('./pages/ProductDetail'))
@@ -67,30 +67,8 @@ const GiftCards = lazy(() => import('./pages/GiftCards'))
 // Support Admin pages
 const SupportDashboard = lazy(() => import('./pages/Admin/SupportDashboard.jsx'))
 
-
-// Admin pages
-const AdminDashboard = lazy(() => import('./pages/Admin/AdminDashboard.jsx'))
-const AdminReturns = lazy(() => import('./pages/Admin/AdminReturns.jsx')) // ✅ P1: Admin Returns page
-const AdminInventory = lazy(() => import('./pages/Admin/AdminInventory.jsx')) // ✅ P1: Admin Inventory page
-const AddProduct = lazy(() => import('./pages/Admin/AddProduct.jsx'))
-const ManageOrders = lazy(() => import('./pages/Admin/ManageOrders.jsx'))
-const AdminReviews = lazy(() => import('./pages/Admin/AdminReviews.jsx'))
-const ManageB2B = lazy(() => import('./pages/Admin/ManageB2B.jsx'))
-const AdminSupport = lazy(() => import('./pages/Admin/AdminSupport.jsx'))
-const AdminCoupons = lazy(() => import('./pages/Admin/AdminCoupons.jsx'))
-const ManageBlogs = lazy(() => import('./pages/Admin/ManageBlogs.jsx'))
-const AdminUsers = lazy(() => import('./pages/Admin/AdminUsers.jsx'))
-const AdminCategories = lazy(() => import('./pages/Admin/AdminCategories.jsx'))
-const AdminProducts = lazy(() => import('./pages/Admin/AdminProducts.jsx'))
-const AdminManagement = lazy(() => import('./pages/Admin/AdminManagement.jsx'))
-const AuditLogs = lazy(() => import('./pages/Admin/AuditLogs.jsx'))
-const AdminAnalytics = lazy(() => import('./pages/Admin/AdminAnalytics.jsx'))
-const AdminProductImages = lazy(() => import('./pages/Admin/AdminProductImages.jsx'))
-const AdminMedia = lazy(() => import('./pages/Admin/AdminMedia.jsx'))
-const AdminSettings = lazy(() => import('./pages/Admin/AdminSettings.jsx'))
-const AdminNewsletters = lazy(() => import('./pages/Admin/AdminNewsletters.jsx'))
-const AdminSubscriptions = lazy(() => import('./pages/Admin/AdminSubscriptions.jsx'))
-const AdminSupportAgents = lazy(() => import('./pages/Admin/AdminSupportAgents.jsx'))
+// Modular Admin Routes (Lazy-loaded as a single chunk ONLY when an admin visits /admin/*)
+const AdminRoutes = lazy(() => import('./pages/Admin/AdminRoutes.jsx'))
 
 // ─── Guest-Only Route ─────────────────────────────────────────────────────────
 function GuestRoute({ children }) {
@@ -118,50 +96,54 @@ function ScrollToTop() {
   return null
 }
 
-// ─── Site Status Interceptor ──────────────────────────────────────────────────
+// ─── Site Status Interceptor (Non-blocking for instant initial render) ────────
 function SiteStatusWrapper({ children }) {
-  const { user, loading: authLoading } = useAuth()
-  const [settings, setSettings] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+  const [settings, setSettings] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('site_settings')
+      return cached ? JSON.parse(cached) : { isMaintenanceMode: false, isComingSoon: false }
+    } catch {
+      return { isMaintenanceMode: false, isComingSoon: false }
+    }
+  })
   const location = useLocation()
 
   useEffect(() => {
     api.get('/api/settings')
-      .then(res => setSettings(res.data))
-      .catch(console.error)
-      .finally(() => setLoading(false))
+      .then(res => {
+        if (res.data) {
+          setSettings(res.data)
+          try { sessionStorage.setItem('site_settings', JSON.stringify(res.data)) } catch {}
+        }
+      })
+      .catch(() => {})
   }, [])
-
-  if (loading || authLoading) return <PageLoader />
 
   const isAdmin = ['admin', 'superadmin', 'support'].includes(user?.role)
 
   if (!isAdmin && settings) {
-    if (settings.isMaintenanceMode || settings.isComingSoon) {
+    if (settings.isMaintenanceMode) {
+      return (
+        <Suspense fallback={<PageLoader />}>
+          <Maintenance />
+        </Suspense>
+      );
+    }
+    if (settings.isComingSoon) {
       let isLaunchPast = false;
-      if (settings.isComingSoon) {
-        isLaunchPast = settings.comingSoonLaunchDate && new Date(settings.comingSoonLaunchDate).getTime() < Date.now();
+      if (settings.comingSoonLaunchDate) {
+        isLaunchPast = new Date(settings.comingSoonLaunchDate).getTime() < Date.now();
       }
-
-      // If active mode is on, lock down the site
-      if (settings.isMaintenanceMode || (settings.isComingSoon && !isLaunchPast)) {
+      if (!isLaunchPast) {
         if (location.pathname !== '/' && location.pathname !== '/login' && !location.pathname.startsWith('/admin')) {
           return <Navigate to="/" replace />;
         }
-
-        if (settings.isMaintenanceMode) {
-          return (
-            <Suspense fallback={<PageLoader />}>
-              <Maintenance />
-            </Suspense>
-          );
-        } else {
-          return (
-            <Suspense fallback={<PageLoader />}>
-              <ComingSoon launchDate={settings.comingSoonLaunchDate} />
-            </Suspense>
-          );
-        }
+        return (
+          <Suspense fallback={<PageLoader />}>
+            <ComingSoon launchDate={settings.comingSoonLaunchDate} />
+          </Suspense>
+        );
       }
     }
   }
@@ -257,38 +239,18 @@ function AnimatedRoutes() {
             <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} /> {/* ✅ P1 */}
             <Route path="/support" element={<ProtectedRoute><SupportRedirect /></ProtectedRoute>} />
 
-            {/* ── Admin ── */}
-            <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/add-product" element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
-            <Route path="/admin/products" element={<ProtectedRoute adminOnly><AdminProducts /></ProtectedRoute>} />
-            <Route path="/admin/categories" element={<ProtectedRoute adminOnly><AdminCategories /></ProtectedRoute>} />
-            <Route path="/products/edit/:id" element={<ProtectedRoute adminOnly><AddProduct /></ProtectedRoute>} />
-            <Route path="/admin/inventory" element={<ProtectedRoute adminOnly><AdminInventory /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/admin/orders" element={<ProtectedRoute adminOnly><ManageOrders /></ProtectedRoute>} />
-            <Route path="/admin/returns" element={<ProtectedRoute adminOnly><AdminReturns /></ProtectedRoute>} /> {/* ✅ P1 */}
-            <Route path="/admin/support" element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
-            <Route path="/admin/newsletters" element={<ProtectedRoute adminOnly><AdminNewsletters /></ProtectedRoute>} />
-            <Route path="/admin/subscriptions" element={<ProtectedRoute adminOnly><AdminSubscriptions /></ProtectedRoute>} />
-            <Route path="/admin/coupons" element={<ProtectedRoute adminOnly><AdminCoupons /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute adminOnly><AdminUsers /></ProtectedRoute>} />
-            <Route path="/admin/analytics" element={<ProtectedRoute adminOnly><AdminAnalytics /></ProtectedRoute>} />
-            <Route path="/admin/settings" element={<ProtectedRoute adminOnly><AdminSettings /></ProtectedRoute>} />
-            <Route path="/admin/media" element={<ProtectedRoute adminOnly><AdminMedia /></ProtectedRoute>} />
-            <Route path="/admin/products/:id/images" element={<ProtectedRoute adminOnly><AdminProductImages /></ProtectedRoute>} />
-            <Route path="/admin/reviews" element={<ProtectedRoute adminOnly><AdminReviews /></ProtectedRoute>} />
-            <Route path="/admin/blogs" element={<ProtectedRoute adminOnly><ManageBlogs /></ProtectedRoute>} />
-            <Route path="/admin/b2b" element={<ProtectedRoute adminOnly><ManageB2B /></ProtectedRoute>} />
+            {/* ── Admin (Encapsulated into AdminRoutes) ── */}
+            <Route path="/admin/*" element={
+              <ProtectedRoute adminOnly>
+                <AdminRoutes />
+              </ProtectedRoute>
+            } />
+            <Route path="/products/edit/:id" element={<Navigate to="/admin/products" replace />} />
 
             {/* ── Support ── */}
             <Route path="/support-panel" element={<ProtectedRoute supportAccess><SupportDashboard /></ProtectedRoute>} />
             <Route path="/support-dashboard" element={<Navigate to="/support-panel" replace />} />
             <Route path="/support-agent" element={<Navigate to="/support-panel" replace />} />
-
-
-            {/* ── Superadmin ── */}
-            <Route path="/admin/manage-admins" element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminManagement /></ProtectedRoute>} />
-            <Route path="/admin/support-agents" element={<ProtectedRoute adminOnly permission="superadmin_view"><AdminSupportAgents /></ProtectedRoute>} />
-            <Route path="/admin/audit-logs" element={<ProtectedRoute adminOnly permission="superadmin_view"><AuditLogs /></ProtectedRoute>} />
 
             {/* ── 404 ── */}
             <Route path="*" element={<NotFound />} />
@@ -315,14 +277,16 @@ function GlobalStaffIncomingChat() {
   if (!isStaff) return null
 
   return (
-    <IncomingChatModal
-      onAcceptChat={(sessionId) => {
-        window.dispatchEvent(new CustomEvent('support:incoming_accepted', { detail: { sessionId } }))
-        if (location.pathname !== '/support-panel' && location.pathname !== '/admin/support') {
-          navigate('/support-panel', { state: { autoSelectSessionId: sessionId } })
-        }
-      }}
-    />
+    <Suspense fallback={null}>
+      <IncomingChatModal
+        onAcceptChat={(sessionId) => {
+          window.dispatchEvent(new CustomEvent('support:incoming_accepted', { detail: { sessionId } }))
+          if (location.pathname !== '/support-panel' && location.pathname !== '/admin/support') {
+            navigate('/support-panel', { state: { autoSelectSessionId: sessionId } })
+          }
+        }}
+      />
+    </Suspense>
   )
 }
 
