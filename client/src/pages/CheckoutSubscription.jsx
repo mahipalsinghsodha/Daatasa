@@ -95,7 +95,7 @@ const CheckoutSubscription = () => {
         subscription_id: subscriptionId,
         name: 'Daatasa',
         description: plan.name,
-        image: 'https://daatasa.in/logo.png', // Optional
+        image: 'https://daatasa.com/logo_circle.png',
         handler: function (response) {
           // Razorpay returns razorpay_payment_id, razorpay_subscription_id, razorpay_signature
           toast.success('Subscription activated successfully!');

@@ -64,6 +64,7 @@ const GiftCards = () => {
         currency: order.currency,
         name: 'Daatasa',
         description: 'Gift Card Purchase',
+        image: 'https://daatasa.com/logo_circle.png',
         order_id: order.orderId,
         handler: async function (response) {
           try {

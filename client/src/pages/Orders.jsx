@@ -675,6 +675,7 @@ const Orders = () => {
         order_id: rzrOrder.id,
         name: 'Daatasa',
         description: `Order #${formatOrderId(order)}`,
+        image: 'https://daatasa.com/logo_circle.png',
         amount: rzrOrder.amount,
         theme: { color: '#F5A623' },
         prefill: {

@@ -972,6 +972,7 @@ const Profile = () => {
         order_id: order.id,
         name: 'Daatasa',
         description: 'Wallet Top-Up',
+        image: 'https://daatasa.com/logo_circle.png',
         amount: order.amount,
         theme: { color: '#F5A623' },
         prefill: { name: user?.name, email: user?.email, contact: user?.phone },

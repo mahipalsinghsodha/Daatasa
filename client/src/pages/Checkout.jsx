@@ -344,7 +344,8 @@ const Checkout = () => {
       key: razorpayKey,
       order_id: rzrOrder.id,
       name: 'Daatasa',
-      description: 'Premium Ghee Purchase',
+      description: 'Pure Vedic Bilona Ghee',
+      image: 'https://daatasa.com/logo_circle.png',
       amount: rzrOrder.amount,
       theme: { color: '#F5A623' },
       prefill: {
