@@ -24,8 +24,13 @@ export default function HowItWorks() {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
-        <title>{t('footer.exploreHowItWorks') || 'How It Works'} — Daatasa</title>
-        <meta name="description" content="Learn about the authentic Vedic Bilona process used to craft Daatasa pure A2 cow ghee." />
+        <title>The Vedic Bilona Process — How Authentic Deshi Ghee is Made | Daatasa</title>
+        <meta name="description" content="Discover the traditional 5-step Vedic Bilona (Belona) hand-churning method used to craft 100% pure A2 Desi Cow Ghee at Daatasa farm in Rajasthan." />
+        <meta name="keywords" content="Vedic Bilona method, how bilona ghee is made, belona ghee process, hand churned ghee, curd churning makhan, A2 deshi cow ghee process, traditional ghee making rajasthan, shudh desi ghee" />
+        <link rel="canonical" href="https://daatasa.com/how-it-works" />
+        <meta property="og:title" content="The Vedic Bilona Process — How Authentic Deshi Ghee is Made | Daatasa" />
+        <meta property="og:description" content="Discover the traditional 5-step Vedic Bilona hand-churning method used to craft pure A2 Desi Cow Ghee." />
+        <meta property="og:url" content="https://daatasa.com/how-it-works" />
       </Helmet>
 
       {/* ── Premium Hero Header ── */}

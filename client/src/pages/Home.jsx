@@ -7,7 +7,8 @@ import { toast } from 'react-toastify'
 import { useTranslation } from 'react-i18next'
 import { 
   FiArrowRight, FiShield, FiStar, FiTruck, FiDroplet, 
-  FiAward, FiCheck, FiPlay, FiEye, FiHeart, FiX, FiCopy, FiCheckCircle 
+  FiAward, FiCheck, FiPlay, FiEye, FiHeart, FiX, FiCopy, FiCheckCircle,
+  FiChevronDown, FiHelpCircle
 } from 'react-icons/fi'
 
 import ProductCarousel from '../components/ProductCarousel'
@@ -41,6 +42,7 @@ export default function Home() {
   const [activeLightboxImage, setActiveLightboxImage] = useState(null)
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false)
   const [copiedCoupon, setCopiedCoupon] = useState(false)
+  const [openFaqIndex, setOpenFaqIndex] = useState(0)
 
   // Newsletter
   const [email, setEmail] = useState('')
@@ -179,22 +181,57 @@ export default function Home() {
     { icon: <FiAward className="text-brand-secondary" size={20} />, name: 'Vedic Bilona', desc: 'Ancient Method' }
   ]
 
+  const HOME_FAQS = [
+    {
+      q: "What makes Daatasa the No. 1 Vedic A2 Bilona Desi Cow Ghee (Shudh Deshi Ghee)?",
+      a: "Daatasa A2 Desi Cow Ghee is handcrafted in Khuri, Jaisalmer (Rajasthan) using the ancient 5-step Vedic Bilona (Belona) method. Sourced from free-grazing, grass-fed indigenous Tharparkar and Rathi cows, our ghee is 100% pure, natural, lab tested, FSSAI certified, and free from any chemicals or preservatives. Its rich golden color, authentic aroma, and grainy (danedar) texture make it India's most trusted pure desi cow ghee."
+    },
+    {
+      q: "What is the difference between Bilona (Belona) Ghee and industrial commercial ghee?",
+      a: "Commercial ghee is mass-produced by heating raw cream separated from industrial milk with machines. In contrast, authentic Vedic Bilona / Belona Ghee is made by culturing whole A2 cow milk into curd (dahi), hand-churning with wooden bi-directional bilona to extract fresh makkhan (butter), and slow-simmering over low heat. This preserves essential nutrients, gut-friendly butyric acid, and A2 beta-casein proteins."
+    },
+    {
+      q: "Why is traditional Deshi Gai ka Ghee (Desi Cow Ghee) good for health & immunity?",
+      a: "Pure A2 Deshi Cow Ghee is revered in Ayurveda for enhancing digestion (Agni), improving memory, lubricating joints, boosting skin glow, and building immunity. It is rich in fat-soluble vitamins (A, D, E, K2) and healthy Omega-3 and Omega-9 fatty acids, with negligible lactose and casein content."
+    },
+    {
+      q: "How can I check the purity and Danedar quality of Daatasa Bilona Ghee?",
+      a: "Real Bilona Deshi Ghee has a distinct granular texture (danedar), pleasing nutty aroma, and melts cleanly at body temperature without leaving a sticky or greasy film. Daatasa batches are 100% lab certified with available purity test certificates."
+    },
+    {
+      q: "Do you offer free shipping across India on Daatasa Pure Desi Ghee?",
+      a: "Yes! We offer fast and secure Pan-India delivery with free shipping on qualifying orders. Every glass jar is safely bubble-wrapped in eco-friendly protective packaging to reach your doorstep fresh from our Rajasthan farm."
+    }
+  ]
+
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text selection:bg-brand-secondary selection:text-white">
       <Helmet>
-        <title>Daatasa — Premium Vedic Bilona Ghee | 100% Pure Desi Cow Ghee</title>
-        <meta name="description" content="Experience the pinnacle of purity with Daatasa authentic A2 Vedic Bilona Ghee, traditionally hand-churned from free-grazing cows in Khuri, Jaisalmer. Fast delivery across India." />
-        <meta name="keywords" content="Daatasa, daatasa.com, A2 ghee, Bilona Ghee, Desi Cow Ghee, Vedic Ghee, Organic Ghee, Pure Ghee Rajasthan, buy ghee online" />
+        <title>Daatasa — 100% Pure Vedic A2 Bilona Desi Cow Ghee | No. 1 Shudh Deshi Ghee Online</title>
+        <meta name="description" content="Buy authentic Vedic A2 Bilona Desi Cow Ghee (Shudh Deshi Ghee) online from Daatasa. Hand-churned using traditional Belona method from grass-fed cows in Rajasthan. 100% Pure, Danedar, Lab Tested & FSSAI Certified." />
+        <meta name="keywords" content="Daatasa, daatasa.com, datasa, dataasa, dhatasa, daatasa ghee, daatasa pure ghee, bilona ghee, belona ghee, bilone ka ghee, desi ghee, deshi ghee, deshi ghree, desi gai ka ghee, gai ka desi ghee, no 1 ghee, no 1 desi ghee, best a2 ghee in india, pure desi cow ghee, a2 bilona cow ghee, vedic bilona ghee, traditional hand churned ghee, valona ghee, shudh desi ghee, danedar ghee, organic ghee online, buy ghee online india, tharparkar cow ghee, rajasthan bilona ghee, grass fed ghee, jaisalmer desi ghee" />
         <link rel="canonical" href="https://daatasa.com/" />
-        <meta property="og:title" content="Daatasa — Premium Vedic Bilona Ghee | 100% Pure Desi Cow Ghee" />
+        <meta property="og:title" content="Daatasa — 100% Pure Vedic A2 Bilona Desi Cow Ghee | Shudh Deshi Ghee" />
         <meta property="og:description" content="Handcrafted Vedic Bilona Ghee direct from our Khuri farm in Rajasthan to your family. 100% Pure & Lab Tested." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://daatasa.com/" />
         <meta property="og:image" content="https://daatasa.com/gallery-jar.png" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Daatasa — Premium Vedic Bilona Ghee" />
+        <meta name="twitter:title" content="Daatasa — India's No 1 Vedic A2 Bilona Desi Cow Ghee" />
         <meta name="twitter:description" content="Handcrafted Vedic Bilona Ghee direct from Rajasthan to your doorstep." />
         <meta name="twitter:image" content="https://daatasa.com/gallery-jar.png" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": HOME_FAQS.map(f => ({
+            "@type": "Question",
+            "name": f.q,
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": f.a
+            }
+          }))
+        })}</script>
       </Helmet>
 
 
@@ -567,6 +604,79 @@ export default function Home() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════ VEDIC BILONA & DESI GHEE KNOWLEDGE & FAQ (SEO HUB) ══════════ */}
+      <section className="py-10 sm:py-16 bg-white border-b border-brand-primary/5">
+        <div className="max-w-[1080px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wider uppercase bg-brand-secondary/10 text-brand-secondary border border-brand-secondary/20 mb-3">
+              <FiHelpCircle size={13} /> Authentic Ghee Guide & FAQs
+            </span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-brand-primary mb-3">
+              Why Daatasa is India's No. 1 Vedic Bilona Desi Cow Ghee
+            </h2>
+            <p className="text-sm sm:text-base text-brand-text/70">
+              Discover the ancient wisdom of authentic Shudh Deshi Ghee, traditional wooden Belona hand-churning, and pure Tharparkar cow milk.
+            </p>
+          </div>
+
+          <div className="space-y-3.5">
+            {HOME_FAQS.map((faq, idx) => {
+              const isOpen = openFaqIndex === idx
+              return (
+                <motion.div
+                  key={idx}
+                  initial={false}
+                  className="rounded-2xl border border-brand-primary/10 overflow-hidden bg-brand-bg/40 transition-all hover:border-brand-secondary/40"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setOpenFaqIndex(isOpen ? -1 : idx)}
+                    className="w-full p-4 sm:p-5 flex items-center justify-between text-left gap-4 cursor-pointer focus:outline-none"
+                    aria-expanded={isOpen}
+                  >
+                    <span className="text-sm sm:text-base font-bold text-brand-primary flex items-center gap-3">
+                      <span className="w-6 h-6 rounded-full bg-brand-secondary/15 text-brand-secondary flex items-center justify-center text-xs font-mono font-bold shrink-0">
+                        {idx + 1}
+                      </span>
+                      {faq.q}
+                    </span>
+                    <FiChevronDown
+                      size={18}
+                      className={`text-brand-secondary shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      >
+                        <div className="px-5 pb-5 pt-1 text-xs sm:text-sm text-brand-text/80 leading-relaxed border-t border-brand-primary/5">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {/* Quick Keywords Summary Pills for Search Visibility & Education */}
+          <div className="mt-8 pt-6 border-t border-brand-primary/5 flex flex-wrap items-center justify-center gap-2 text-[11px] text-brand-text/60">
+            <span className="font-semibold text-brand-primary">Popular Searches:</span>
+            <Link to="/products?search=bilona" className="px-2.5 py-1 rounded-full bg-brand-bg border border-brand-primary/10 hover:border-brand-secondary hover:text-brand-secondary transition-colors">Vedic Bilona Ghee</Link>
+            <Link to="/products?search=desi" className="px-2.5 py-1 rounded-full bg-brand-bg border border-brand-primary/10 hover:border-brand-secondary hover:text-brand-secondary transition-colors">Shudh Deshi Ghee</Link>
+            <Link to="/products?search=a2" className="px-2.5 py-1 rounded-full bg-brand-bg border border-brand-primary/10 hover:border-brand-secondary hover:text-brand-secondary transition-colors">A2 Cow Ghee</Link>
+            <Link to="/products" className="px-2.5 py-1 rounded-full bg-brand-bg border border-brand-primary/10 hover:border-brand-secondary hover:text-brand-secondary transition-colors">No. 1 Ghee in India</Link>
+            <Link to="/how-it-works" className="px-2.5 py-1 rounded-full bg-brand-bg border border-brand-primary/10 hover:border-brand-secondary hover:text-brand-secondary transition-colors">Belona Churning Method</Link>
+            <Link to="/products" className="px-2.5 py-1 rounded-full bg-brand-bg border border-brand-primary/10 hover:border-brand-secondary hover:text-brand-secondary transition-colors">Rajasthan Desi Gai ka Ghee</Link>
           </div>
         </div>
       </section>

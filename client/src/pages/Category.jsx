@@ -57,10 +57,11 @@ const Category = () => {
   return (
     <div className="min-h-screen bg-[var(--bg-base)] pb-20">
       <Helmet>
-        <title>{category.name} — Daatasa | Premium Pure Vedic Ghee</title>
-        <meta name="description" content={category.description || `Buy 100% Pure authentic ${category.name} online from Daatasa. Lab-tested, Vedic bilona method, free shipping.`} />
+        <title>{category.name} — Pure Vedic A2 Bilona Deshi Ghee | Daatasa</title>
+        <meta name="description" content={category.description || `Buy 100% Pure authentic ${category.name} (Shudh Deshi Ghee) online from Daatasa. Lab-tested, Vedic Belona method, free shipping across India.`} />
+        <meta name="keywords" content={`${category.name}, Daatasa ${category.name}, bilona ghee, belona ghee, deshi ghee, desi cow ghee, pure ghee rajasthan, buy ghee online india`} />
         <link rel="canonical" href={`https://daatasa.com/category/${category.slug}`} />
-        <meta property="og:title" content={`${category.name} — Daatasa`} />
+        <meta property="og:title" content={`${category.name} — Pure Vedic A2 Bilona Ghee | Daatasa`} />
         <meta property="og:description" content={category.description || `Shop premium ${category.name} at Daatasa.`} />
         {category.image && <meta property="og:image" content={category.image} />}
       </Helmet>

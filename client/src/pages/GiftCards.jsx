@@ -123,8 +123,10 @@ const GiftCards = () => {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans pb-20">
       <Helmet>
-        <title>Gift Cards — Daatasa</title>
-        <meta name="description" content="Send the gift of pure Bilona ghee to your loved ones." />
+        <title>Pure Vedic Ghee Gift Cards — Give the Gift of Health | Daatasa</title>
+        <meta name="description" content="Send the gift of 100% pure Vedic A2 Bilona Deshi Ghee to your loved ones with Daatasa e-Gift Cards. Delivered instantly via email." />
+        <meta name="keywords" content="Ghee gift cards, healthy gifting India, Vedic bilona ghee gift voucher, corporate wellness gifts" />
+        <link rel="canonical" href="https://daatasa.com/gift-cards" />
       </Helmet>
 
       {/* Header */}

@@ -57,8 +57,13 @@ export default function AboutUs() {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
-        <title>{t('aboutUs.pageTitle')}</title>
+        <title>{t('aboutUs.pageTitle')} — Authentic Vedic A2 Bilona Desi Cow Ghee</title>
         <meta name="description" content={t('aboutUs.pageDescription')} />
+        <meta name="keywords" content="About Daatasa, Daatasa story, Khuri Jaisalmer ghee, traditional bilona ghee, belona method, Vedic A2 Deshi Ghee, pure cow ghee Rajasthan, Tharparkar cow ghee, no 1 bilona ghee" />
+        <link rel="canonical" href="https://daatasa.com/about" />
+        <meta property="og:title" content="About Daatasa — Authentic Vedic Bilona Desi Cow Ghee" />
+        <meta property="og:description" content={t('aboutUs.pageDescription')} />
+        <meta property="og:url" content="https://daatasa.com/about" />
       </Helmet>
 
       {/* ── Premium Hero ── */}

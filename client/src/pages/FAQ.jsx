@@ -75,8 +75,9 @@ export default function FAQ() {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
-        <title>{t('faq.pageTitle')} — Frequently Asked Questions | Daatasa</title>
+        <title>{t('faq.pageTitle')} — Frequently Asked Questions | Daatasa Pure Bilona Ghee</title>
         <meta name="description" content={t('faq.heroDesc')} />
+        <meta name="keywords" content="Bilona ghee FAQ, Deshi ghee questions, Belona ghee difference, is a2 ghee pure, daatasa ghee delivery, how to store desi ghee" />
         <link rel="canonical" href="https://daatasa.com/faq" />
         <meta property="og:title" content={`${t('faq.pageTitle')} — Daatasa`} />
         <meta property="og:description" content={t('faq.heroDesc')} />

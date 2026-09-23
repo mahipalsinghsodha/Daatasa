@@ -38,7 +38,10 @@ const B2B = () => {
   return (
     <div className="min-h-screen bg-[var(--ivory)] pt-20 pb-20">
       <Helmet>
-        <title>Wholesale & B2B Inquiries – Daatasa</title>
+        <title>Bulk Orders & Wholesale B2B — Pure Vedic A2 Bilona Desi Ghee | Daatasa</title>
+        <meta name="description" content="Partner with Daatasa for wholesale, bulk orders, and corporate gifting of 100% pure Vedic A2 Bilona Deshi Cow Ghee directly from Rajasthan." />
+        <meta name="keywords" content="B2B ghee wholesale, bulk bilona ghee, pure desi ghee bulk order, corporate ghee gifting, wholesale desi cow ghee India" />
+        <link rel="canonical" href="https://daatasa.com/b2b" />
       </Helmet>
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6">

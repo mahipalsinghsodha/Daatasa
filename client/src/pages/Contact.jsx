@@ -85,8 +85,10 @@ export default function Contact() {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text">
       <Helmet>
-        <title>{t('contact.pageTitle')}</title>
+        <title>{t('contact.pageTitle')} — Customer Support & Farm Inquiries | Daatasa</title>
         <meta name="description" content={t('contact.pageDesc')} />
+        <meta name="keywords" content="Contact Daatasa, Daatasa phone number, Daatasa address Khuri Jaisalmer, Daatasa ghee customer care, buy ghee support" />
+        <link rel="canonical" href="https://daatasa.com/contact" />
       </Helmet>
 
       {/* ── Premium Hero ── */}

@@ -53,8 +53,9 @@ const BlogDetail = () => {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text pb-12 sm:pb-16">
       <Helmet>
-        <title>{blog.title} — Daatasa Journal</title>
+        <title>{blog.title} — Daatasa Vedic Ghee Journal</title>
         <meta name="description" content={plainSummary} />
+        <meta name="keywords" content={`${blog.title}, Vedic Bilona Ghee, Deshi Ghee, Belona Ghee, Pure Desi Cow Ghee, Daatasa Ghee, Ayurveda, Shudh Desi Ghee`} />
         <link rel="canonical" href={blogUrl} />
         <meta property="og:title" content={`${blog.title} — Daatasa`} />
         <meta property="og:description" content={plainSummary} />

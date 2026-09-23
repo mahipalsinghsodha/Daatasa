@@ -6,8 +6,41 @@ const express = require('express');
 const router  = express.Router();
 const Product = require('../models/Product');
 
+const SYNONYM_MAP = {
+  deshi: ['deshi', 'desi'],
+  desi: ['desi', 'deshi'],
+  ghree: ['ghree', 'ghee'],
+  ghe: ['ghe', 'ghee'],
+  belona: ['belona', 'bilona', 'bilone', 'valona'],
+  bilona: ['bilona', 'belona', 'bilone', 'valona'],
+  valona: ['valona', 'bilona', 'belona'],
+  datasa: ['datasa', 'daatasa', 'dataasa'],
+  dataasa: ['dataasa', 'daatasa', 'datasa'],
+  daatasa: ['daatasa', 'dataasa', 'datasa'],
+  shudh: ['shudh', 'shuddh', 'pure'],
+  shuddh: ['shuddh', 'shudh', 'pure'],
+  asli: ['asli', 'pure'],
+  gai: ['gai', 'gaay', 'cow'],
+  gaay: ['gaay', 'gai', 'cow'],
+  'no 1': ['no 1', 'no.1', 'no1', 'best', 'bilona', 'ghee'],
+  'no1': ['no1', 'no 1', 'best', 'bilona', 'ghee']
+};
+
+const buildSynonymRegex = (term) => {
+  if (!term || typeof term !== 'string') return null;
+  const words = term.trim().toLowerCase().split(/\s+/);
+  const regexParts = words.map(w => {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (SYNONYM_MAP[w]) {
+      return `(${[...new Set([escaped, ...SYNONYM_MAP[w]])].join('|')})`;
+    }
+    return escaped;
+  });
+  return new RegExp(regexParts.join('.*'), 'i');
+};
+
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  FULL-TEXT SEARCH                                                           */
+/*  FULL-TEXT & FUZZY SEARCH                                                   */
 /* ─────────────────────────────────────────────────────────────────────────── */
 router.get('/', async (req, res) => {
   try {
@@ -28,9 +61,15 @@ router.get('/', async (req, res) => {
 
     const query = { isActive: true };
 
-    // Full-text search using MongoDB text index
+    // Search using regex with synonym expansion (covers deshi, belona, ghree, datasa, etc.)
     if (q && q.trim()) {
-      query.$text = { $search: q.trim() };
+      const synRegex = buildSynonymRegex(q);
+      query.$or = [
+        { name: synRegex },
+        { description: synRegex },
+        { tags: synRegex },
+        { category: synRegex }
+      ];
     }
 
     if (category) query.category = category.toLowerCase();
@@ -43,9 +82,7 @@ router.get('/', async (req, res) => {
 
     // Sort options
     let sortOption = {};
-    if (q && q.trim() && sort === 'relevance') {
-      sortOption = { score: { $meta: 'textScore' } };
-    } else if (sort === 'price_asc') {
+    if (sort === 'price_asc') {
       sortOption = { price: 1 };
     } else if (sort === 'price_desc') {
       sortOption = { price: -1 };
@@ -54,15 +91,11 @@ router.get('/', async (req, res) => {
     } else if (sort === 'popularity') {
       sortOption = { numReviews: -1, rating: -1 };
     } else {
-      sortOption = q && q.trim() ? { score: { $meta: 'textScore' } } : { createdAt: -1 };
+      sortOption = { rating: -1, createdAt: -1 };
     }
 
-    const projection = q && q.trim()
-      ? { score: { $meta: 'textScore' } }
-      : {};
-
     const [products, total] = await Promise.all([
-      Product.find(query, projection)
+      Product.find(query)
         .sort(sortOption)
         .skip(skip)
         .limit(limitNum)
@@ -95,11 +128,17 @@ router.get('/suggestions', async (req, res) => {
       return res.json({ suggestions: [] });
     }
 
-    // Regex-based autocomplete (fast, no full-text score needed)
-    const regex = new RegExp(q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const synRegex = buildSynonymRegex(q);
 
     const products = await Product.find(
-      { name: regex, isActive: true },
+      {
+        isActive: true,
+        $or: [
+          { name: synRegex },
+          { tags: synRegex },
+          { category: synRegex }
+        ]
+      },
       { name: 1, slug: 1, category: 1, image: 1, price: 1 }
     )
       .limit(8)

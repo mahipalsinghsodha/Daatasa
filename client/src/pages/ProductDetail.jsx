@@ -366,9 +366,10 @@ const ProductDetail = () => {
     <div className="min-h-screen bg-[var(--ivory)] pb-20">
       {product && (
         <Helmet>
-          <title>{product.name} – Daatasa | Premium Bilona Ghee</title>
-          <meta name="description" content={`${product.description?.slice(0, 155)}... Buy ${product.name} online from Daatasa. FSSAI certified, lab tested, pan India delivery.`} />
-          <meta property="og:title" content={`${product.name} – Daatasa`} />
+          <title>{product.name} – Pure Vedic A2 Bilona Deshi Ghee | Daatasa</title>
+          <meta name="description" content={`Buy 100% Pure ${product.name} online from Daatasa. Hand-churned using traditional Vedic Belona method from grass-fed cows in Rajasthan. FSSAI certified, lab tested, danedar texture, pan-India delivery.`} />
+          <meta name="keywords" content={`${product.name}, Daatasa ${product.name}, A2 Bilona Ghee, Deshi Ghee, Belona Ghee, Desi Cow Ghee, Shudh Desi Ghee, Pure Danedar Ghee, Vedic A2 Ghee, No 1 Ghee India, buy ghee online`} />
+          <meta property="og:title" content={`${product.name} – Pure Vedic A2 Bilona Ghee | Daatasa`} />
           <meta property="og:description" content={product.description?.slice(0, 200)} />
           <meta property="og:image" content={product.image} />
           <meta property="og:type" content="product" />
@@ -378,21 +379,33 @@ const ProductDetail = () => {
             '@context': 'https://schema.org',
             '@type': 'Product',
             name: product.name,
+            alternateName: [
+              `${product.name} - Bilona Deshi Ghee`,
+              `${product.name} - Belona A2 Ghee`,
+              `Daatasa ${product.name}`
+            ],
             image: product.image,
             description: product.description,
             brand: { '@type': 'Brand', name: 'Daatasa' },
+            category: product.category || 'A2 Desi Cow Ghee',
+            sku: String(product._id),
             offers: {
               '@type': 'Offer',
               priceCurrency: 'INR',
               price: product.price,
+              itemCondition: 'https://schema.org/NewCondition',
               availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
               url: `https://daatasa.com/products/${product._id}`,
+              seller: {
+                '@type': 'Organization',
+                name: 'Daatasa'
+              }
             },
             ...(product.rating && {
               aggregateRating: {
                 '@type': 'AggregateRating',
                 ratingValue: product.rating.toFixed(1),
-                reviewCount: product.numReviews || 0,
+                reviewCount: product.numReviews || 1,
               },
             }),
           })}</script>

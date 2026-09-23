@@ -94,10 +94,21 @@ const Products = () => {
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text selection:bg-brand-secondary selection:text-white">
       <Helmet>
         <title>{selectedCategory && selectedCategory !== 'all'
-          ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Ghee — Daatasa`
-          : 'Buy Pure Desi Ghee Online — Daatasa'}</title>
-        <meta name="description" content="Shop premium Bilona Desi Ghee online. Traditional Tharparkar cow ghee crafted in our Rajasthan village. FSSAI certified. Free shipping above ₹500. Pan India delivery." />
-        <link rel="canonical" href="https://daatasa.in/products" />
+          ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Ghee — Pure Deshi Bilona Ghee | Daatasa`
+          : 'Buy Vedic A2 Bilona Desi Cow Ghee Online — No. 1 Shudh Deshi Ghee | Daatasa'}</title>
+        <meta name="description" content="Shop 100% pure authentic Vedic A2 Bilona Desi Cow Ghee (Shudh Deshi Ghee) online from Daatasa. Hand-churned with traditional wooden Belona method in Rajasthan. Lab tested, FSSAI certified, pan-India free delivery." />
+        <meta name="keywords" content="Daatasa, daatasa.com, datasa, dataasa, bilona ghee, belona ghee, bilone ka ghee, desi ghee, deshi ghee, deshi ghree, desi gai ka ghee, no 1 ghee, pure desi cow ghee, a2 bilona cow ghee, vedic bilona ghee, buy ghee online india, danedar ghee, rajasthan ghee" />
+        <link rel="canonical" href="https://daatasa.com/products" />
+        <meta property="og:title" content="Buy Vedic A2 Bilona Desi Cow Ghee Online — Daatasa" />
+        <meta property="og:description" content="Shop authentic hand-churned Vedic Bilona Deshi Ghee from grass-fed Tharparkar cows in Rajasthan." />
+        <meta property="og:url" content="https://daatasa.com/products" />
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "name": "Daatasa Pure Vedic A2 Bilona Desi Cow Ghee Collection",
+          "description": "Authentic, lab-tested Vedic A2 Bilona Desi Cow Ghee handcrafted in Rajasthan.",
+          "url": "https://daatasa.com/products"
+        })}</script>
       </Helmet>
 
       {/* ── Premium Hero Header ── */}

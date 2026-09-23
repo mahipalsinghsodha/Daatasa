@@ -18,8 +18,10 @@ const Blogs = () => {
   return (
     <div className="min-h-screen bg-[var(--ivory)] font-sans text-brand-text pb-12 sm:pb-16">
       <Helmet>
-        <title>Our Journal — Daatasa</title>
-        <meta name="description" content="Read our latest articles about Bilona ghee, wellness, and Ayurveda." />
+        <title>Vedic Ghee Journal & Health Guides — Daatasa Bilona Ghee</title>
+        <meta name="description" content="Explore insightful articles, Ayurvedic recipes, health benefits, and the heritage behind authentic Vedic A2 Bilona Desi Cow Ghee (Shudh Deshi Ghee)." />
+        <meta name="keywords" content="Bilona ghee benefits, A2 deshi cow ghee articles, belona ghee health, ayurvedic ghee recipes, pure ghee benefits for health, daatasa blog" />
+        <link rel="canonical" href="https://daatasa.com/blogs" />
       </Helmet>
 
       {/* Header */}

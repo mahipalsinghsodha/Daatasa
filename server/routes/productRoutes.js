@@ -13,6 +13,39 @@ const fs = require('fs');
 
 const upload = multer({ dest: 'uploads/' });
 
+const SYNONYM_MAP = {
+  deshi: ['deshi', 'desi'],
+  desi: ['desi', 'deshi'],
+  ghree: ['ghree', 'ghee'],
+  ghe: ['ghe', 'ghee'],
+  belona: ['belona', 'bilona', 'bilone', 'valona'],
+  bilona: ['bilona', 'belona', 'bilone', 'valona'],
+  valona: ['valona', 'bilona', 'belona'],
+  datasa: ['datasa', 'daatasa', 'dataasa'],
+  dataasa: ['dataasa', 'daatasa', 'datasa'],
+  daatasa: ['daatasa', 'dataasa', 'datasa'],
+  shudh: ['shudh', 'shuddh', 'pure'],
+  shuddh: ['shuddh', 'shudh', 'pure'],
+  asli: ['asli', 'pure'],
+  gai: ['gai', 'gaay', 'cow'],
+  gaay: ['gaay', 'gai', 'cow'],
+  'no 1': ['no 1', 'no.1', 'no1', 'best', 'bilona', 'ghee'],
+  'no1': ['no1', 'no 1', 'best', 'bilona', 'ghee']
+};
+
+const buildSynonymRegex = (term) => {
+  if (!term || typeof term !== 'string') return null;
+  const words = term.trim().toLowerCase().split(/\s+/);
+  const regexParts = words.map(w => {
+    const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (SYNONYM_MAP[w]) {
+      return `(${[...new Set([escaped, ...SYNONYM_MAP[w]])].join('|')})`;
+    }
+    return escaped;
+  });
+  return new RegExp(regexParts.join('.*'), 'i');
+};
+
 // Validation middleware for product creation/updates
 const validateProduct = [
   body('name').trim().notEmpty().withMessage('Product name is required'),
@@ -77,13 +110,14 @@ router.get('/', dbCheck, async (req, res) => {
       }
     }
 
-    //  Search: use $regex for partial substring matching
+    //  Search: use regex with synonym expansion for partial & phonetic matching
     if (search && search.trim()) {
-      const regex = new RegExp(search.trim(), 'i');
+      const synRegex = buildSynonymRegex(search);
       query.$or = [
-        { name: regex },
-        { description: regex },
-        { tags: regex }
+        { name: synRegex },
+        { description: synRegex },
+        { tags: synRegex },
+        { category: synRegex }
       ];
     }
 
